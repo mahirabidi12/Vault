@@ -19,7 +19,12 @@ export async function ReportDetail({
       <VerdictHero record={record} />
       <SignalsRow signals={record.signals} />
       <FindingsSection findings={report.findings ?? []} />
-      <AiReviewSection aiReview={report.aiReview} aiError={report.aiError} aiFailed={record.aiFailed} />
+      <AiReviewSection
+        aiReview={report.aiReview}
+        aiError={report.aiError}
+        aiFailed={record.aiFailed}
+        finalVerdict={record.verdict}
+      />
       <div className="grid gap-6 lg:grid-cols-2">
         <PackageInfoCard metadata={report.metadata} />
         <div className="flex flex-col gap-6">

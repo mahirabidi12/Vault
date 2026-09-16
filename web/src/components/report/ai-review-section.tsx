@@ -1,20 +1,31 @@
-import { Sparkles, FileText, Clock, Wrench } from "lucide-react";
+import { ShieldAlert, Sparkles, FileText, Clock, Wrench } from "lucide-react";
 import { VerdictBadge, ConfidencePill } from "@/components/verdict-ui";
-import type { AIReview } from "@/lib/types/domain";
+import { verdictStyle } from "@/lib/verdict";
+import type { AIReview, Verdict } from "@/lib/types/domain";
 
 /**
  * Renders defensively: the analyzer's AI step (Step 5) is new, so every
  * field here is treated as possibly absent even where the schema now marks
  * it required, per BRIEF.md §5.3.
+ *
+ * `finalVerdict` is the record's actual verdict (the one in the hero). The
+ * AI's own read (`aiReview.verdict`) can disagree with it — e.g. a package
+ * confirmed MALICIOUS by threat intel where the code the AI read looks
+ * harmless on its own. Per FUTURE_SCOPE.md's "one source of truth" lesson,
+ * the AI can never downgrade hard evidence, so when they disagree this
+ * shows an explicit callout saying which one wins and why, rather than
+ * silently showing two badges a reader has to reconcile themselves.
  */
 export function AiReviewSection({
   aiReview,
   aiError,
   aiFailed,
+  finalVerdict,
 }: {
   aiReview?: AIReview | null;
   aiError?: string | null;
   aiFailed?: boolean;
+  finalVerdict?: Verdict | null;
 }) {
   if (!aiReview) {
     if (aiFailed || aiError) {
@@ -38,6 +49,9 @@ export function AiReviewSection({
     ? aiReview.reasoning.split(/\n{2,}/).filter(Boolean)
     : [];
 
+  const overridden = !!finalVerdict && finalVerdict !== aiReview.verdict;
+  const finalStyle = overridden ? verdictStyle(finalVerdict) : null;
+
   return (
     <section className="flex flex-col gap-4 rounded-2xl border border-brand/20 bg-gradient-to-br from-accent/40 to-transparent p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -51,10 +65,22 @@ export function AiReviewSection({
           )}
         </div>
         <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">The AI thought:</span>
           <VerdictBadge verdict={aiReview.verdict} size="sm" />
           <ConfidencePill confidence={aiReview.confidence} />
         </div>
       </div>
+
+      {overridden && finalStyle && (
+        <div className={`flex items-start gap-2.5 rounded-xl border px-4 py-3 text-sm ${finalStyle.badgeClass}`}>
+          <ShieldAlert className="mt-0.5 size-4 shrink-0" />
+          <p>
+            <span className="font-semibold">PkgGuard&apos;s final verdict is {finalStyle.shortLabel.toLowerCase()}</span>,
+            not what the AI read below. Threat intelligence and other hard evidence always outrank the AI&apos;s
+            own read of the code — the AI never gets to downgrade a confirmed threat.
+          </p>
+        </div>
+      )}
 
       {aiReview.summary && <p className="text-sm font-medium text-foreground">{aiReview.summary}</p>}
 

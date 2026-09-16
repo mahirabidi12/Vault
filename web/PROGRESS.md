@@ -79,6 +79,10 @@ One module, exactly the functions BRIEF.md §6 lists (`getPackage`, `getReport`,
 
 None right now — the AI review draft shape in BRIEF.md §5.3 was resolved automatically: the scanner agent shipped the real `AIReview`/`AIEvidence`/`FindingAssessment` schema and real examples mid-session, so the report page's AI review section renders real data (express, lodash, `ai-cleared-esbuild`), not a mock.
 
+### AI-vs-final-verdict disagreement (`malicious-safedep-test-pkg`)
+
+That fixture's AI read the code as harmless (`aiReview.verdict: "SAFE"`) while the record's actual verdict stays `MALICIOUS` (`decidedBy: "intel"` — SafeDep's human-verified malware flag). `AiReviewSection` now takes a `finalVerdict` prop (passed from `record.verdict` in `report-detail.tsx`) and shows an explicit callout when the two disagree: *"PkgGuard's final verdict is malicious, not what the AI read below. Threat intelligence and other hard evidence always outrank the AI's own read of the code — the AI never gets to downgrade a confirmed threat."* This is the FUTURE_SCOPE.md "one source of truth" lesson made visible in the UI, not just true in the scoring logic.
+
 ---
 
 ## Commit
