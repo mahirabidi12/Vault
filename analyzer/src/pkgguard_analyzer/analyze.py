@@ -12,6 +12,7 @@ import httpx
 from ulid import ULID
 
 from pkgguard_analyzer import ANALYZER_VERSION
+from pkgguard_analyzer.code_scan import scan_code
 from pkgguard_analyzer.extract import ArchiveTooLarge, safe_extract
 from pkgguard_analyzer.intel import run_intel
 from pkgguard_analyzer.metadata_checks import check_metadata, parse_time
@@ -122,11 +123,12 @@ def _analyze(
     except (tarfile.TarError, EOFError, OSError) as error:
         return stopped(ScanStatus.FAILED, f"could not unpack tarball: {error}", sha256=sha256)
 
+    tarball_manifest = _read_manifest(files_dir / "package.json")
     intel = run_intel(client, name, resolved)
-    metadata, metadata_findings = check_metadata(
-        packument, resolved, _read_manifest(files_dir / "package.json"), extracted.skipped, now
-    )
-    findings = intel.findings + metadata_findings
+    metadata, metadata_findings = check_metadata(packument, resolved, tarball_manifest, extracted.skipped, now)
+    # The tarball's package.json is what npm actually runs; fall back to registry metadata if it's missing.
+    code = scan_code(files_dir, tarball_manifest or packument["versions"][resolved])
+    findings = intel.findings + metadata_findings + code.findings
     decision = decide(findings)
     analyzed_at = datetime.now(UTC)
 
@@ -142,6 +144,7 @@ def _analyze(
             "fileCount": extracted.file_count,
             "unpackedBytes": extracted.unpacked_bytes,
         },
+        code_scan=code.summary,
     )
     record = VerdictRecord(
         **base,

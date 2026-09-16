@@ -12,6 +12,8 @@ from pkgguard_analyzer.analyze import analyze, parse_spec
 from pkgguard_analyzer.npm_registry import PackageNotFound
 from pkgguard_analyzer.schema import ScanStatus
 
+MAX_PRINTED_FINDINGS = 15
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="analyze", description="Scan one npm package version.")
@@ -51,10 +53,20 @@ def main(argv: list[str] | None = None) -> int:
         print(f"  Verdict:   {record.verdict} (confidence {record.confidence}, decided by {record.decided_by})")
         print(f"  Summary:   {record.summary}")
     if report:
+        code = report.code_scan
+        if code:
+            print(
+                f"  Code:      {code['filesScanned']} files scanned, {code['filesParsed']} parsed"
+                f", install-time files: {', '.join(code['installTimeFiles']) or 'none'}"
+            )
         print(f"  Findings:  {len(report.findings)}")
-        for finding in report.findings:
-            where = f"  ({finding.file})" if finding.file else ""
-            print(f"    [{finding.severity}] {finding.title}{where}")
+        for finding in report.findings[:MAX_PRINTED_FINDINGS]:
+            where = f"{finding.file}:{finding.line}" if finding.file and finding.line else finding.file
+            extras = " [install]" if finding.install_time else ""
+            extras += f" x{finding.occurrences}" if finding.occurrences > 1 else ""
+            print(f"    [{finding.severity}] {finding.title}{extras}" + (f"  ({where})" if where else ""))
+        if len(report.findings) > MAX_PRINTED_FINDINGS:
+            print(f"    ... and {len(report.findings) - MAX_PRINTED_FINDINGS} more in report.json")
         osv, safedep = report.intel.get("osv", {}), report.intel.get("safedep", {})
         osv_text = osv.get("error") and "lookup failed" or f"{len(osv.get('maliciousIds', []))} malicious"
         safedep_text = safedep.get("error") and "lookup failed" or (

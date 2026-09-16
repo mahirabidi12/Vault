@@ -99,6 +99,8 @@ class Finding(Model):
     file: str | None = None
     line: int | None = Field(default=None, ge=1)
     snippet: str | None = None
+    install_time: bool = False
+    occurrences: int = Field(default=1, ge=1)
 
 
 class VerdictRecord(Model):
@@ -141,7 +143,7 @@ class VerdictRecord(Model):
 
 
 class Report(Model):
-    """Full report stored in S3. Intel, metadata and AI sections get typed as those steps are built."""
+    """Full report stored in S3. Intel, metadata, code scan and AI sections get typed as those steps settle."""
 
     package: PackageRef
     analyzer_version: str
@@ -149,5 +151,6 @@ class Report(Model):
     findings: list[Finding] = Field(default_factory=list)
     intel: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
+    code_scan: dict[str, Any] = Field(default_factory=dict)
     ai_review: dict[str, Any] | None = None
     human_review: dict[str, Any] | None = None

@@ -72,6 +72,17 @@
           ],
           "default": null,
           "title": "Snippet"
+        },
+        "installTime": {
+          "default": false,
+          "title": "Installtime",
+          "type": "boolean"
+        },
+        "occurrences": {
+          "default": 1,
+          "minimum": 1,
+          "title": "Occurrences",
+          "type": "integer"
         }
       },
       "required": [
@@ -128,7 +139,7 @@
     }
   },
   "additionalProperties": false,
-  "description": "Full report stored in S3. Intel, metadata and AI sections get typed as those steps are built.",
+  "description": "Full report stored in S3. Intel, metadata, code scan and AI sections get typed as those steps settle.",
   "properties": {
     "package": {
       "$ref": "#/$defs/PackageRef"
@@ -157,6 +168,11 @@
     "metadata": {
       "additionalProperties": true,
       "title": "Metadata",
+      "type": "object"
+    },
+    "codeScan": {
+      "additionalProperties": true,
+      "title": "Codescan",
       "type": "object"
     },
     "aiReview": {

