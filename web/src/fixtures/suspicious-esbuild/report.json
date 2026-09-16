@@ -1,0 +1,118 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "esbuild",
+    "version": "0.28.2"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-16T19:57:16.132389Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "node install.js",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "install.js",
+      "line": 103,
+      "snippet": "stdout = child_process.execFileSync(command.shift(), command, {",
+      "installTime": true,
+      "occurrences": 3
+    },
+    {
+      "ruleId": "code.install_download_exec",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Downloads and runs programs during install",
+      "file": "install.js",
+      "line": 103,
+      "snippet": "stdout = child_process.execFileSync(command.shift(), command, {",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "bin/esbuild",
+      "line": 220,
+      "snippet": "require(\"child_process\").execFileSync(\"node\", [binPath].concat(process.argv.slice(2)), { stdio: \"inherit\" });",
+      "installTime": false,
+      "occurrences": 2
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "lib/main.js",
+      "line": 2272,
+      "snippet": "let child = child_process.spawn(command, args.concat(`--service=${\"0.28.2\"}`, \"--ping\"), {",
+      "installTime": false,
+      "occurrences": 2
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": "An extremely fast JavaScript and CSS bundler and minifier.",
+    "license": "MIT",
+    "publisher": "GitHub Actions",
+    "trustedPublishing": true,
+    "provenance": true,
+    "maintainers": [
+      "esbuild"
+    ],
+    "publishedAt": "2026-08-08T20:00:55.454000+00:00",
+    "previousVersion": "0.28.1",
+    "installScripts": {
+      "postinstall": "node install.js"
+    },
+    "repository": "git+https://github.com/evanw/esbuild.git",
+    "dependencies": {},
+    "sha256": "e045f94c235c7adc50e77ba2a579c7bec41b496b6b47c3a7845f7c1e19959a88",
+    "fileCount": 7,
+    "unpackedBytes": 147361
+  },
+  "codeScan": {
+    "filesScanned": 3,
+    "filesParsed": 3,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [
+      "install.js"
+    ],
+    "entryFiles": [
+      "bin/esbuild",
+      "lib/main.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "humanReview": null
+}

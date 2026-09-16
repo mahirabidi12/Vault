@@ -1,0 +1,150 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "express",
+    "version": "4.18.2"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-16T19:55:50.419799Z",
+  "findings": [],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": [
+        "GHSA-qw6h-vgh9-j6wx",
+        "GHSA-rv95-896h-c2vc"
+      ]
+    },
+    "safedep": {
+      "found": true,
+      "isMalware": false,
+      "confidence": "CONFIDENCE_MEDIUM",
+      "humanVerified": false,
+      "analysisId": "01JHQ441AXE8JCNX0MQ6N4VVT1"
+    }
+  },
+  "metadata": {
+    "description": "Fast, unopinionated, minimalist web framework",
+    "license": "MIT",
+    "publisher": "dougwilson",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "mikeal",
+      "dougwilson",
+      "jasnell"
+    ],
+    "publishedAt": "2022-10-08T20:14:32.495000+00:00",
+    "previousVersion": "4.18.1",
+    "installScripts": {},
+    "repository": "git+https://github.com/expressjs/express.git",
+    "dependencies": {
+      "qs": "6.11.0",
+      "depd": "2.0.0",
+      "etag": "~1.8.1",
+      "send": "0.18.0",
+      "vary": "~1.1.2",
+      "debug": "2.6.9",
+      "fresh": "0.5.2",
+      "cookie": "0.5.0",
+      "accepts": "~1.3.8",
+      "methods": "~1.1.2",
+      "type-is": "~1.6.18",
+      "parseurl": "~1.3.3",
+      "statuses": "2.0.1",
+      "encodeurl": "~1.0.2",
+      "proxy-addr": "~2.0.7",
+      "body-parser": "1.20.1",
+      "escape-html": "~1.0.3",
+      "http-errors": "2.0.0",
+      "on-finished": "2.4.1",
+      "safe-buffer": "5.2.1",
+      "utils-merge": "1.0.1",
+      "content-type": "~1.0.4",
+      "finalhandler": "1.2.0",
+      "range-parser": "~1.2.1",
+      "serve-static": "1.15.0",
+      "array-flatten": "1.1.1",
+      "path-to-regexp": "0.1.7",
+      "setprototypeof": "1.2.0",
+      "cookie-signature": "1.0.6",
+      "merge-descriptors": "1.0.1",
+      "content-disposition": "0.5.4"
+    },
+    "sha256": "8a4a69997fb326bd5966256709dbce2acff6cd53e048fc017c28b8c85f91c37e",
+    "fileCount": 16,
+    "unpackedBytes": 213863
+  },
+  "codeScan": {
+    "filesScanned": 12,
+    "filesParsed": 12,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [],
+    "entryFiles": [
+      "index.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": {
+    "verdict": "SAFE",
+    "confidence": "HIGH",
+    "summary": "This express@4.18.2 package contains the standard Express framework code and does not perform any install-time actions, network calls, or secret exfiltration in its entry or install files.",
+    "reasoning": "I inspected the entry point (index.js) and the main module (lib/express.js). index.js simply exports lib/express. lib/express.js constructs the Express application, exposes middleware and constructors, and references common dependencies (body-parser, serve-static) without executing external commands or performing I/O at import time. Searches for suspicious patterns (child_process, exec, process.env usage beyond NODE_ENV) found only a NODE_ENV read in lib/application.js and no spawn/exec/fetch/http request code. No preinstall/install/postinstall scripts were present in the package listing. The behavior matches the package description (web framework) and typical code structure for Express.",
+    "evidence": [
+      {
+        "file": "index.js",
+        "line": 11,
+        "explanation": "Entry file simply exports lib/express."
+      },
+      {
+        "file": "lib/express.js",
+        "line": 37,
+        "explanation": "createApplication function builds app and calls app.init(), typical framework behavior; no network or shell calls."
+      },
+      {
+        "file": "lib/express.js",
+        "line": 78,
+        "explanation": "Exposes middleware and references body-parser and serve-static, benign dependencies."
+      },
+      {
+        "file": "lib/application.js",
+        "line": 78,
+        "explanation": "Only reads process.env.NODE_ENV, normal for config."
+      }
+    ],
+    "findingAssessments": [
+      {
+        "ruleId": "install-time files",
+        "file": null,
+        "assessment": "benign",
+        "explanation": "Package listing shows no install-time (pre/post install) scripts or files that run at install."
+      },
+      {
+        "ruleId": "entry file execution",
+        "file": "index.js",
+        "assessment": "benign",
+        "explanation": "index.js only exports lib/express; import has no side-effects beyond typical module initialization."
+      },
+      {
+        "ruleId": "suspicious APIs",
+        "file": "lib",
+        "assessment": "benign",
+        "explanation": "Searches for child_process, exec, and network calls found none; code uses standard Express constructs."
+      }
+    ],
+    "model": "gpt-5-mini",
+    "mode": "quick_look",
+    "filesRead": [
+      "index.js",
+      "lib/express.js"
+    ],
+    "toolCalls": 6,
+    "inputTokens": 16003,
+    "outputTokens": 590,
+    "durationSeconds": 14.54
+  },
+  "aiError": null,
+  "humanReview": null
+}

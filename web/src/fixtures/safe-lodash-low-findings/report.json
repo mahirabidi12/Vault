@@ -1,0 +1,182 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "lodash",
+    "version": "4.18.1"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-16T19:56:19.410133Z",
+  "findings": [
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "_root.js",
+      "line": 7,
+      "snippet": "var root = freeGlobal || freeSelf || Function('return this')();",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "core.js",
+      "line": 71,
+      "snippet": "var root = freeGlobal || freeSelf || Function('return this')();",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "core.min.js",
+      "line": 25,
+      "snippet": "self==\"object\"&&self&&self.Object===Object&&self,kt=Et||Nt||Function(\"return this\")(),Ft=typeof exports==\"object\"&&exports&&!exports.nodeType&&exports,Tt=Ft&&typeof module==\"object\"&&module&&!module.n",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "lodash.js",
+      "line": 437,
+      "snippet": "var root = freeGlobal || freeSelf || Function('return this')();",
+      "installTime": false,
+      "occurrences": 2
+    },
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "lodash.min.js",
+      "line": 18,
+      "snippet": "self==\"object\"&&self&&self.Object===Object&&self,re=ne||te||Function(\"return this\")(),ee=typeof exports==\"object\"&&exports&&!exports.nodeType&&exports,ue=ee&&typeof module==\"object\"&&module&&!module.n",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.dynamic_code",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs dynamically generated code (eval / Function / vm)",
+      "file": "template.js",
+      "line": 271,
+      "snippet": "return Function(importsKeys, sourceURL + 'return ' + source)",
+      "installTime": false,
+      "occurrences": 1
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": true,
+      "isMalware": false,
+      "confidence": "CONFIDENCE_HIGH",
+      "humanVerified": false,
+      "analysisId": "01KN5DSM9R46F6J43RM0VQKJHP"
+    }
+  },
+  "metadata": {
+    "description": "Lodash modular utilities.",
+    "license": "MIT",
+    "publisher": "jdalton",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "mathias",
+      "jdalton",
+      "bnjmnt4n"
+    ],
+    "publishedAt": "2026-04-01T21:01:20.458000+00:00",
+    "previousVersion": "4.18.0",
+    "installScripts": {},
+    "repository": "git+https://github.com/lodash/lodash.git",
+    "dependencies": {},
+    "sha256": "696942c2a488c9d7428e9ca5f12ccf03b52de01dcdbfe4d4751d392f0491ae16",
+    "fileCount": 1051,
+    "unpackedBytes": 1413741
+  },
+  "codeScan": {
+    "filesScanned": 1048,
+    "filesParsed": 1048,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [],
+    "entryFiles": [
+      "lodash.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": {
+    "verdict": "SAFE",
+    "confidence": "MEDIUM",
+    "summary": "This lodash@4.18.1 package is a legitimate utility library; the dynamic code use is limited to standard patterns (accessing the global object and compiling user templates) and there are no install-time scripts or network calls.",
+    "reasoning": "I inspected the package entry file (lodash.js) and found standard Lodash implementation code (utility functions, regexes, and template support). The automated findings flag use of Function(...) and generated code; these are expected for a library that (1) obtains the global object in diverse JS environments and (2) compiles user templates into functions using the Function constructor. There are no install-time lifecycle scripts and no code that exfiltrates data, spawns shells, or downloads remote payloads in the inspected entry file. The use of dynamic Function is therefore benign given Lodash's documented behavior.",
+    "evidence": [
+      {
+        "file": "lodash.js",
+        "line": 9,
+        "explanation": "File header and start of the main IIFE for the library (standard Lodash distribution)."
+      },
+      {
+        "file": "lodash.js",
+        "line": 140,
+        "explanation": "Definition of template delimiters (reEscape, reEvaluate, reInterpolate) indicating presence of template compilation features that use dynamic Function to produce template functions."
+      },
+      {
+        "file": "lodash.js",
+        "line": 270,
+        "explanation": "Comments and code relating to template validation and safety checks (reForbiddenIdentifierChars), supporting that Function-based template compilation is intentional and guarded."
+      }
+    ],
+    "findingAssessments": [
+      {
+        "ruleId": "code.dynamic_code (Function('return this'))",
+        "file": "lodash.js",
+        "assessment": "benign",
+        "explanation": "Pattern used to obtain the global object across environments; common harmless technique in libraries."
+      },
+      {
+        "ruleId": "code.dynamic_code (template Function)",
+        "file": "lodash.js",
+        "assessment": "benign",
+        "explanation": "_.template compiles templates into functions via the Function constructor; this is documented behavior and only executes user-provided template strings, not hidden remote payloads."
+      },
+      {
+        "ruleId": "install-time files",
+        "file": null,
+        "assessment": "benign",
+        "explanation": "Automated metadata shows no preinstall/install/postinstall scripts; I found no install-time behavior in the entry file."
+      }
+    ],
+    "model": "gpt-5-mini",
+    "mode": "quick_look",
+    "filesRead": [
+      "lodash.js"
+    ],
+    "toolCalls": 6,
+    "inputTokens": 44324,
+    "outputTokens": 824,
+    "durationSeconds": 25.1
+  },
+  "aiError": null,
+  "humanReview": null
+}
