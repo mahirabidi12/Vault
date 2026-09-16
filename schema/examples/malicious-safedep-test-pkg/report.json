@@ -1,0 +1,68 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "safedep-test-pkg",
+    "version": "0.1.3"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-16T19:31:41.457941Z",
+  "findings": [
+    {
+      "ruleId": "intel.safedep.malware",
+      "layer": "intel",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Flagged as malware by SafeDep (human verified)",
+      "file": null,
+      "line": null,
+      "snippet": null,
+      "installTime": false,
+      "occurrences": 1
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": true,
+      "isMalware": true,
+      "confidence": "CONFIDENCE_HIGH",
+      "humanVerified": true,
+      "analysisId": "01KF5JYDND9XR94WNEJ2G74KY2"
+    }
+  },
+  "metadata": {
+    "description": "Test npm Package",
+    "license": "ISC",
+    "publisher": "GitHub Actions",
+    "trustedPublishing": true,
+    "provenance": true,
+    "maintainers": [
+      "abhisek-safedep"
+    ],
+    "publishedAt": "2026-01-17T09:05:37.582000+00:00",
+    "previousVersion": "0.1.2",
+    "installScripts": {},
+    "repository": "git+https://github.com/safedep/npm-test-package.git",
+    "dependencies": {},
+    "sha256": "29b4861ecf29d8ff25b83c0756b99d285056a5818a75264df472a4f41d9c12e1",
+    "fileCount": 5,
+    "unpackedBytes": 3410
+  },
+  "codeScan": {
+    "filesScanned": 2,
+    "filesParsed": 1,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [],
+    "entryFiles": [
+      "main.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "humanReview": null
+}

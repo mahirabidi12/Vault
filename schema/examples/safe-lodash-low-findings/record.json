@@ -1,0 +1,27 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "lodash",
+    "version": "4.18.1"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2NV7Z34SANE7CVCRKEBPP9K",
+  "verdict": "SAFE",
+  "confidence": "MEDIUM",
+  "decidedBy": "rules",
+  "summary": "No issues found in threat intelligence, package metadata or code.",
+  "signals": [],
+  "sha256": "696942c2a488c9d7428e9ca5f12ccf03b52de01dcdbfe4d4751d392f0491ae16",
+  "integrity": "sha512-dMInicTPVE8d1e5otfwmmjlxkZoUpiVLwyeTdUsi/Caj/gfzzblBcCE5sRHV/AsjuCmxWrte2TNGSYuCeCq+0Q==",
+  "tarballUrl": "https://registry.npmjs.org/lodash/-/lodash-4.18.1.tgz",
+  "publishedAt": "2026-04-01T21:01:20.458000Z",
+  "requestedAt": "2026-09-16T19:31:34.534601Z",
+  "analyzedAt": "2026-09-16T19:31:37.315488Z",
+  "model": null,
+  "ranOn": "local",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null
+}

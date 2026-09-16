@@ -1,0 +1,29 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "safedep-test-pkg",
+    "version": "0.1.3"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2NV843NP9TAMKB1WW4S6EYM",
+  "verdict": "MALICIOUS",
+  "confidence": "HIGH",
+  "decidedBy": "intel",
+  "summary": "Flagged as malware by SafeDep threat intelligence.",
+  "signals": [
+    "Flagged as malware by SafeDep (human verified)"
+  ],
+  "sha256": "29b4861ecf29d8ff25b83c0756b99d285056a5818a75264df472a4f41d9c12e1",
+  "integrity": "sha512-E8tr0axOtLl3rlN0BcBI5ie7CtVfLyELS6Q+X1AB9qq1ILm7CUndEej/XcqxoDPui6D8R1cGvfWdtJKvYkqR7g==",
+  "tarballUrl": "https://registry.npmjs.org/safedep-test-pkg/-/safedep-test-pkg-0.1.3.tgz",
+  "publishedAt": "2026-01-17T09:05:37.582000Z",
+  "requestedAt": "2026-09-16T19:31:39.248798Z",
+  "analyzedAt": "2026-09-16T19:31:41.457941Z",
+  "model": null,
+  "ranOn": "local",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null
+}

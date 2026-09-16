@@ -1,0 +1,19 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "left-pad-demo",
+    "version": "1.3.0"
+  },
+  "scanId": "01M2NV7RSAH7WJWS61CQ87HFS7",
+  "signals": [],
+  "integrity": "sha512-5/PsL6iGPdfQ/lKM1UuielYgv3BUoJfz1aUwU9vHZ+J7gyvwdQXFEBIEIaxeGf0GIcreATNyBExtalisDbuMqQ==",
+  "tarballUrl": "https://registry.npmjs.org/express/-/express-4.18.2.tgz",
+  "publishedAt": "2022-10-08T20:14:32.495000Z",
+  "requestedAt": "2026-09-16T19:31:27.828488Z",
+  "ranOn": "local",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "aiFailed": false,
+  "status": "SKIPPED",
+  "failureReason": "package is larger than 200 MB unpacked"
+}

@@ -132,6 +132,16 @@ Rules 3–6 get revisited when the AI step lands.
 
 ---
 
+## Parallel work: UI agent
+
+A second Claude instance builds the website in `web/` at the same time (decided 2026-09-17, so the UI isn't squeezed at the end).
+- Its instructions: [`web/BRIEF.md`](web/BRIEF.md). Its progress log: `web/PROGRESS.md`.
+- It builds against real scan results in `schema/examples/` (express SAFE, lodash SAFE with LOW findings, esbuild SUSPICIOUS, safedep-test-pkg MALICIOUS, plus pending/scanning/failed/skipped records), through a single data module, so switching to the real API later is one file.
+- **Contract the scanner agent must honor:** `schema/*.json` + `schema/examples/`. When changing `schema.py`, re-export the schema, **regenerate the examples**, and tell the user so the UI agent can re-copy them. `web/BRIEF.md` §5.3 holds a **draft `aiReview` shape**: build Step 5 to match it, or update the brief and tell the user.
+- Ownership: the UI agent edits only `web/`; the scanner agent edits everything else.
+
+---
+
 ## Open decisions
 
 - 🟡 **AI coverage (Step 5).** Proposed to the user, still awaiting explicit confirmation: the AI does a **quick look on every package** (install scripts + the files they run + main entry file, later the diff vs previous version), and a **deep-dive agent** only when rules or the quick look find something. Reason: rules-only gating means novel malware that trips no rule never reaches the AI. OpenAI credits are sponsored, so cost is low. The AI can never downgrade hard evidence (OSV/SafeDep). `codeScan.installTimeFiles` / `entryFiles` already identify the files the quick look would read. esbuild is the reference case the AI must clear.

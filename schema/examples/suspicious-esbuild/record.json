@@ -1,0 +1,31 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "esbuild",
+    "version": "0.28.2"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2NV829HQ7891GZFD14JM8ZM",
+  "verdict": "SUSPICIOUS",
+  "confidence": "LOW",
+  "decidedBy": "rules",
+  "summary": "Several warnings: Runs a 'postinstall' script during install; Runs system commands (child_process); Downloads and runs programs during install.",
+  "signals": [
+    "Runs a 'postinstall' script during install",
+    "Runs system commands (child_process)",
+    "Downloads and runs programs during install"
+  ],
+  "sha256": "e045f94c235c7adc50e77ba2a579c7bec41b496b6b47c3a7845f7c1e19959a88",
+  "integrity": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==",
+  "tarballUrl": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
+  "publishedAt": "2026-08-08T20:00:55.454000Z",
+  "requestedAt": "2026-09-16T19:31:37.618092Z",
+  "analyzedAt": "2026-09-16T19:31:38.975875Z",
+  "model": null,
+  "ranOn": "local",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null
+}
