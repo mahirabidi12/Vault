@@ -6,8 +6,11 @@ import sys
 from pathlib import Path
 
 import httpx
+from dotenv import find_dotenv, load_dotenv
 from pydantic import ValidationError
 
+from pkgguard_analyzer.ai.config import AIConfig, AIMode
+from pkgguard_analyzer.ai.reviewer import make_reviewer
 from pkgguard_analyzer.analyze import analyze, parse_spec
 from pkgguard_analyzer.npm_registry import PackageNotFound
 from pkgguard_analyzer.schema import ScanStatus
@@ -21,11 +24,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("version", nargs="?", help="exact version or dist-tag (default: latest)")
     parser.add_argument("--json", action="store_true", help="print the full record and report as JSON")
     parser.add_argument("--out", type=Path, default=Path("tmp/scans"), help="where results and unpacked files go")
+    parser.add_argument("--no-ai", action="store_true", help="skip the AI review")
     args = parser.parse_args(argv)
+
+    load_dotenv(find_dotenv(usecwd=True))
+    config = AIConfig.from_env()
+    ai_mode = AIMode.OFF if args.no_ai else config.mode
+    reviewer = None
+    if ai_mode != AIMode.OFF:
+        if problem := config.problem():
+            print(f"note: AI review skipped ({problem}). Add it to .env to enable.", file=sys.stderr)
+            ai_mode = AIMode.OFF
+        else:
+            reviewer = make_reviewer(config)
 
     name, spec_version = parse_spec(args.package)
     try:
-        result = analyze(name, args.version or spec_version, out_dir=args.out)
+        result = analyze(name, args.version or spec_version, out_dir=args.out, reviewer=reviewer, ai_mode=ai_mode)
     except (ValueError, ValidationError, PackageNotFound) as error:
         print(f"error: {error}", file=sys.stderr)
         return 2
@@ -73,6 +88,15 @@ def main(argv: list[str] | None = None) -> int:
             "malware" if safedep.get("isMalware") else "not flagged" if safedep.get("found") else "no report"
         )
         print(f"  Intel:     OSV {osv_text} · SafeDep {safedep_text}")
+        if review := report.ai_review:
+            tokens = f", {review.input_tokens or 0:,} in / {review.output_tokens or 0:,} out tokens" if review.input_tokens else ""
+            print(
+                f"  AI:        {review.mode.replace('_', ' ')} → {review.verdict} ({review.confidence})"
+                f" · {review.tool_calls} tool calls, read {len(review.files_read)} files{tokens}, {review.duration_seconds}s"
+            )
+            print(f"             {review.summary}")
+        elif report.ai_error:
+            print(f"  AI:        failed ({report.ai_error})")
     print(f"  Saved to:  {result.scan_dir}\n")
     return 0
 

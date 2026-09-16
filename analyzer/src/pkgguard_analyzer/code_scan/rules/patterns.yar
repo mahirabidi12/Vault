@@ -123,3 +123,18 @@ rule javascript_obfuscator
     condition:
         #name > 30
 }
+
+rule llm_prompt_injection
+{
+    meta:
+        title = "Contains text aimed at AI code reviewers (prompt injection)"
+        severity = "MEDIUM"
+        confidence = "MEDIUM"
+        capabilities = ""
+    strings:
+        $ignore = /ignore (all |any )?(the )?(previous|prior|above) instructions/ nocase
+        $reviewer = /(ai|llm|gpt|claude|automated|security) (code )?(reviewer|scanner|auditor|analyzer|analyst)s?[^\n]{0,80}(safe|benign|not malicious|no issues)/ nocase
+        $classify = /(mark|classify|report|treat) (this|the) (package|code|file|module) as (safe|benign|clean|trusted)/ nocase
+    condition:
+        any of them
+}

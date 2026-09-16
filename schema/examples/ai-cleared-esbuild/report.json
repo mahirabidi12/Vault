@@ -1,0 +1,208 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "esbuild",
+    "version": "0.28.2"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-16T19:56:43.762286Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "node install.js",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "install.js",
+      "line": 103,
+      "snippet": "stdout = child_process.execFileSync(command.shift(), command, {",
+      "installTime": true,
+      "occurrences": 3
+    },
+    {
+      "ruleId": "code.install_download_exec",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Downloads and runs programs during install",
+      "file": "install.js",
+      "line": 103,
+      "snippet": "stdout = child_process.execFileSync(command.shift(), command, {",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "bin/esbuild",
+      "line": 220,
+      "snippet": "require(\"child_process\").execFileSync(\"node\", [binPath].concat(process.argv.slice(2)), { stdio: \"inherit\" });",
+      "installTime": false,
+      "occurrences": 2
+    },
+    {
+      "ruleId": "code.exec",
+      "layer": "static",
+      "severity": "LOW",
+      "confidence": "HIGH",
+      "title": "Runs system commands (child_process)",
+      "file": "lib/main.js",
+      "line": 2272,
+      "snippet": "let child = child_process.spawn(command, args.concat(`--service=${\"0.28.2\"}`, \"--ping\"), {",
+      "installTime": false,
+      "occurrences": 2
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": "An extremely fast JavaScript and CSS bundler and minifier.",
+    "license": "MIT",
+    "publisher": "GitHub Actions",
+    "trustedPublishing": true,
+    "provenance": true,
+    "maintainers": [
+      "esbuild"
+    ],
+    "publishedAt": "2026-08-08T20:00:55.454000+00:00",
+    "previousVersion": "0.28.1",
+    "installScripts": {
+      "postinstall": "node install.js"
+    },
+    "repository": "git+https://github.com/evanw/esbuild.git",
+    "dependencies": {},
+    "sha256": "e045f94c235c7adc50e77ba2a579c7bec41b496b6b47c3a7845f7c1e19959a88",
+    "fileCount": 7,
+    "unpackedBytes": 147361
+  },
+  "codeScan": {
+    "filesScanned": 3,
+    "filesParsed": 3,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [
+      "install.js"
+    ],
+    "entryFiles": [
+      "bin/esbuild",
+      "lib/main.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": {
+    "verdict": "SAFE",
+    "confidence": "HIGH",
+    "summary": "esbuild@0.28.2 runs a postinstall script that fetches or installs a platform-specific native esbuild binary and validates it; it does not attempt to steal data or run untrusted remote code beyond downloading from the npm registry and checking SHA-256 hashes.",
+    "reasoning": "I inspected install.js, bin/esbuild, and lib/main.js. The postinstall script (install.js) determines the correct platform package, attempts to resolve or install the platform-specific @esbuild/* package, and falls back to downloading the package tarball from the official npm registry. It validates downloaded binaries using stored SHA-256 hashes before writing them to disk and uses child_process only to run npm or validate the binary with --version. The CLI wrapper (bin/esbuild) and lib/main spawn or exec the platform binary to provide the service; this is expected behavior for a bundler that uses a native executable. There is no network exfiltration, secret collection, or execution of arbitrary remote scripts; network activity targets registry.npmjs.org and uses integrity checks.",
+    "evidence": [
+      {
+        "file": "install.js",
+        "line": 244,
+        "explanation": "downloadDirectlyFromNPM constructs URL to registry.npmjs.org and downloads the package tarball."
+      },
+      {
+        "file": "install.js",
+        "line": 236,
+        "explanation": "maybeOptimizePackage and download/install flow choose binary path and produce toPath; uses require.resolve to find platform package."
+      },
+      {
+        "file": "install.js",
+        "line": 237,
+        "explanation": "binaryIntegrityCheck computes SHA-256 and compares to hashes from package.json before accepting the binary."
+      },
+      {
+        "file": "install.js",
+        "line": 99,
+        "explanation": "validateBinaryVersion runs child_process.execFileSync with --version to ensure the binary version matches package.json."
+      },
+      {
+        "file": "install.js",
+        "line": 180,
+        "explanation": "installUsingNPM runs `npm install ...` via child_process.execSync to install optional platform package when needed."
+      },
+      {
+        "file": "bin/esbuild",
+        "line": 217,
+        "explanation": "If ESBUILD_BINARY_PATH override is set, the wrapper writes a small JS shim that execFileSyncs the binary (expected behavior)."
+      },
+      {
+        "file": "bin/esbuild",
+        "line": 218,
+        "explanation": "execFileSync is used to invoke the esbuild native binary for CLI usage."
+      },
+      {
+        "file": "lib/main.js",
+        "line": 2271,
+        "explanation": "ensureServiceIsRunning spawns the platform binary as a long-lived child process to provide build service."
+      }
+    ],
+    "findingAssessments": [
+      {
+        "ruleId": "metadata.install_script",
+        "file": "package.json",
+        "assessment": "benign",
+        "explanation": "postinstall runs install.js to set up a platform-specific native binary; expected for native modules."
+      },
+      {
+        "ruleId": "code.exec",
+        "file": "install.js:103",
+        "assessment": "benign",
+        "explanation": "execFileSync is used to run the binary with --version to validate version; not used to run untrusted code."
+      },
+      {
+        "ruleId": "code.install_download_exec",
+        "file": "install.js:244-251",
+        "assessment": "benign",
+        "explanation": "downloadDirectlyFromNPM downloads a tgz from registry.npmjs.org and performs a SHA-256 integrity check before writing the binary."
+      },
+      {
+        "ruleId": "code.exec",
+        "file": "bin/esbuild:220",
+        "assessment": "benign",
+        "explanation": "execFileSync invokes the local esbuild binary to implement the CLI; expected behavior."
+      },
+      {
+        "ruleId": "code.exec",
+        "file": "lib/main.js:2272",
+        "assessment": "benign",
+        "explanation": "child_process.spawn creates a persistent esbuild service process for performance; this is normal for this package."
+      }
+    ],
+    "model": "gpt-5-mini",
+    "mode": "deep_dive",
+    "filesRead": [
+      "install.js",
+      "bin/esbuild",
+      "lib/main.js"
+    ],
+    "toolCalls": 4,
+    "inputTokens": 29187,
+    "outputTokens": 998,
+    "durationSeconds": 21.63
+  },
+  "aiError": null,
+  "humanReview": null
+}

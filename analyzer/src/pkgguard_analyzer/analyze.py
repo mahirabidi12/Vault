@@ -12,6 +12,8 @@ import httpx
 from ulid import ULID
 
 from pkgguard_analyzer import ANALYZER_VERSION
+from pkgguard_analyzer.ai.config import AIMode
+from pkgguard_analyzer.ai.reviewer import Reviewer, review_mode, run_review
 from pkgguard_analyzer.code_scan import scan_code
 from pkgguard_analyzer.extract import ArchiveTooLarge, safe_extract
 from pkgguard_analyzer.intel import run_intel
@@ -67,20 +69,29 @@ def analyze(
     ran_on: RanOn = RanOn.LOCAL,
     client: httpx.Client | None = None,
     now: datetime | None = None,
+    reviewer: Reviewer | None = None,
+    ai_mode: AIMode = AIMode.OFF,
 ) -> ScanResult:
     if not NPM_NAME_RE.fullmatch(name):
         raise ValueError(f"invalid npm package name: {name!r}")
     owns_client = client is None
     client = client or make_client()
     try:
-        return _analyze(client, name, version, out_dir, ran_on, now or datetime.now(UTC))
+        return _analyze(client, name, version, out_dir, ran_on, now or datetime.now(UTC), reviewer if ai_mode != AIMode.OFF else None, ai_mode)
     finally:
         if owns_client:
             client.close()
 
 
 def _analyze(
-    client: httpx.Client, name: str, version: str | None, out_dir: Path, ran_on: RanOn, now: datetime
+    client: httpx.Client,
+    name: str,
+    version: str | None,
+    out_dir: Path,
+    ran_on: RanOn,
+    now: datetime,
+    reviewer: Reviewer | None,
+    ai_mode: AIMode,
 ) -> ScanResult:
     packument = fetch_packument(client, name)
     resolved = resolve_version(packument, version)
@@ -129,13 +140,10 @@ def _analyze(
     # The tarball's package.json is what npm actually runs; fall back to registry metadata if it's missing.
     code = scan_code(files_dir, tarball_manifest or packument["versions"][resolved])
     findings = intel.findings + metadata_findings + code.findings
-    decision = decide(findings)
-    analyzed_at = datetime.now(UTC)
-
     report = Report(
         package=package,
         analyzer_version=ANALYZER_VERSION,
-        generated_at=analyzed_at,
+        generated_at=datetime.now(UTC),
         findings=findings,
         intel=intel.summary,
         metadata={
@@ -146,6 +154,14 @@ def _analyze(
         },
         code_scan=code.summary,
     )
+
+    ai_review, ai_error = None, None
+    if reviewer is not None and (mode := review_mode(findings, ai_mode)):
+        ai_review, ai_error = run_review(files_dir, report, reviewer, mode)
+
+    decision = decide(findings, ai_review)
+    analyzed_at = datetime.now(UTC)
+    report = report.model_copy(update={"generated_at": analyzed_at, "ai_review": ai_review, "ai_error": ai_error})
     record = VerdictRecord(
         **base,
         status=ScanStatus.COMPLETE,
@@ -156,6 +172,8 @@ def _analyze(
         signals=signals(findings),
         sha256=sha256,
         analyzed_at=analyzed_at,
+        model=reviewer.model_id if (ai_review or ai_error) and reviewer else None,
+        ai_failed=ai_error is not None,
     )
     return ScanResult(record, report, scan_dir)
 

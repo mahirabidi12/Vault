@@ -1,5 +1,141 @@
 {
   "$defs": {
+    "AIEvidence": {
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "explanation"
+      ],
+      "title": "AIEvidence",
+      "type": "object"
+    },
+    "AIReview": {
+      "additionalProperties": false,
+      "description": "AI verdict plus facts recorded by PkgGuard (never taken from the model's own claims).",
+      "properties": {
+        "verdict": {
+          "$ref": "#/$defs/Verdict"
+        },
+        "confidence": {
+          "$ref": "#/$defs/Confidence"
+        },
+        "summary": {
+          "description": "One or two plain sentences for developers",
+          "title": "Summary",
+          "type": "string"
+        },
+        "reasoning": {
+          "description": "A few short paragraphs explaining what the code does and why",
+          "title": "Reasoning",
+          "type": "string"
+        },
+        "evidence": {
+          "description": "Only files and lines you actually read",
+          "items": {
+            "$ref": "#/$defs/AIEvidence"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "findingAssessments": {
+          "items": {
+            "$ref": "#/$defs/FindingAssessment"
+          },
+          "title": "Findingassessments",
+          "type": "array"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "mode": {
+          "$ref": "#/$defs/ReviewMode"
+        },
+        "filesRead": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Filesread",
+          "type": "array"
+        },
+        "toolCalls": {
+          "default": 0,
+          "title": "Toolcalls",
+          "type": "integer"
+        },
+        "inputTokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Inputtokens"
+        },
+        "outputTokens": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Outputtokens"
+        },
+        "durationSeconds": {
+          "title": "Durationseconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "verdict",
+        "confidence",
+        "summary",
+        "reasoning",
+        "model",
+        "mode",
+        "durationSeconds"
+      ],
+      "title": "AIReview",
+      "type": "object"
+    },
+    "Assessment": {
+      "enum": [
+        "benign",
+        "malicious",
+        "uncertain"
+      ],
+      "title": "Assessment",
+      "type": "string"
+    },
     "Confidence": {
       "enum": [
         "HIGH",
@@ -95,6 +231,41 @@
       "title": "Finding",
       "type": "object"
     },
+    "FindingAssessment": {
+      "additionalProperties": false,
+      "properties": {
+        "ruleId": {
+          "title": "Ruleid",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "assessment": {
+          "$ref": "#/$defs/Assessment"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ruleId",
+        "assessment",
+        "explanation"
+      ],
+      "title": "FindingAssessment",
+      "type": "object"
+    },
     "FindingLayer": {
       "enum": [
         "intel",
@@ -128,6 +299,14 @@
       "title": "PackageRef",
       "type": "object"
     },
+    "ReviewMode": {
+      "enum": [
+        "quick_look",
+        "deep_dive"
+      ],
+      "title": "ReviewMode",
+      "type": "string"
+    },
     "Severity": {
       "enum": [
         "HIGH",
@@ -136,10 +315,19 @@
       ],
       "title": "Severity",
       "type": "string"
+    },
+    "Verdict": {
+      "enum": [
+        "SAFE",
+        "SUSPICIOUS",
+        "MALICIOUS"
+      ],
+      "title": "Verdict",
+      "type": "string"
     }
   },
   "additionalProperties": false,
-  "description": "Full report stored in S3. Intel, metadata, code scan and AI sections get typed as those steps settle.",
+  "description": "Full report stored in S3. Intel, metadata and code scan sections get typed as those steps settle.",
   "properties": {
     "package": {
       "$ref": "#/$defs/PackageRef"
@@ -178,15 +366,25 @@
     "aiReview": {
       "anyOf": [
         {
-          "additionalProperties": true,
-          "type": "object"
+          "$ref": "#/$defs/AIReview"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "aiError": {
+      "anyOf": [
+        {
+          "type": "string"
         },
         {
           "type": "null"
         }
       ],
       "default": null,
-      "title": "Aireview"
+      "title": "Aierror"
     },
     "humanReview": {
       "anyOf": [

@@ -5,7 +5,7 @@
     "version": "0.28.2"
   },
   "analyzerVersion": "0.1.0",
-  "generatedAt": "2026-09-16T19:31:38.975875Z",
+  "generatedAt": "2026-09-16T19:57:16.132389Z",
   "findings": [
     {
       "ruleId": "metadata.install_script",
@@ -113,5 +113,6 @@
     "findingsTruncated": false
   },
   "aiReview": null,
+  "aiError": null,
   "humanReview": null
 }
