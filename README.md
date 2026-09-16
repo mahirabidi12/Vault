@@ -3,7 +3,7 @@
 > **What this file is:** the complete record of the project idea, the research behind it, every decision made so far (and why), the architecture, the build plan and the gotchas.
 > **Who it's for:** a new Claude instance (or teammate) picking this project up with no prior context.
 > **Last updated:** 2026-09-16, the night before hackathon kickoff.
-> **Related file:** [`FUTURE_SCOPE.md`](FUTURE_SCOPE.md), which holds everything deliberately postponed (MCP/skill scanning, dynamic sandbox, more ecosystems…).
+> **Related files:** [`PROGRESS.md`](PROGRESS.md) (what is actually built so far) · [`FUTURE_SCOPE.md`](FUTURE_SCOPE.md) (everything deliberately postponed: MCP/skill scanning, dynamic sandbox, more ecosystems…).
 
 ---
 
