@@ -1,0 +1,20 @@
+[project]
+name = "pkgguard-analyzer"
+version = "0.1.0"
+description = "PkgGuard package analyzer: fetch, checks, AI triage, scoring"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2.9",
+]
+
+[project.scripts]
+pkgguard-export-schema = "pkgguard_analyzer.export_schema:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

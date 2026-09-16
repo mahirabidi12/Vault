@@ -1,0 +1,286 @@
+{
+  "$defs": {
+    "Confidence": {
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW"
+      ],
+      "title": "Confidence",
+      "type": "string"
+    },
+    "DecidedBy": {
+      "enum": [
+        "intel",
+        "rules",
+        "ai",
+        "human"
+      ],
+      "title": "DecidedBy",
+      "type": "string"
+    },
+    "Ecosystem": {
+      "enum": [
+        "npm"
+      ],
+      "title": "Ecosystem",
+      "type": "string"
+    },
+    "PackageRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ecosystem": {
+          "$ref": "#/$defs/Ecosystem"
+        },
+        "name": {
+          "maxLength": 214,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ecosystem",
+        "name",
+        "version"
+      ],
+      "title": "PackageRef",
+      "type": "object"
+    },
+    "RanOn": {
+      "enum": [
+        "local",
+        "cloud"
+      ],
+      "title": "RanOn",
+      "type": "string"
+    },
+    "RecordSource": {
+      "enum": [
+        "pkgguard",
+        "osv-import"
+      ],
+      "title": "RecordSource",
+      "type": "string"
+    },
+    "ScanStatus": {
+      "enum": [
+        "PENDING",
+        "SCANNING",
+        "COMPLETE",
+        "FAILED",
+        "SKIPPED"
+      ],
+      "title": "ScanStatus",
+      "type": "string"
+    },
+    "Verdict": {
+      "enum": [
+        "SAFE",
+        "SUSPICIOUS",
+        "MALICIOUS"
+      ],
+      "title": "Verdict",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Summary stored in DynamoDB and returned by the API.",
+  "properties": {
+    "package": {
+      "$ref": "#/$defs/PackageRef"
+    },
+    "status": {
+      "$ref": "#/$defs/ScanStatus"
+    },
+    "scanId": {
+      "minLength": 1,
+      "title": "Scanid",
+      "type": "string"
+    },
+    "verdict": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Verdict"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "confidence": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Confidence"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "decidedBy": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DecidedBy"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "summary": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Summary"
+    },
+    "signals": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Signals",
+      "type": "array"
+    },
+    "sha256": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Sha256"
+    },
+    "integrity": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Integrity"
+    },
+    "tarballUrl": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Tarballurl"
+    },
+    "publishedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Publishedat"
+    },
+    "requestedAt": {
+      "format": "date-time",
+      "title": "Requestedat",
+      "type": "string"
+    },
+    "analyzedAt": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Analyzedat"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "ranOn": {
+      "$ref": "#/$defs/RanOn"
+    },
+    "analyzerVersion": {
+      "title": "Analyzerversion",
+      "type": "string"
+    },
+    "source": {
+      "$ref": "#/$defs/RecordSource",
+      "default": "pkgguard"
+    },
+    "reportS3Key": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Reports3Key"
+    },
+    "aiFailed": {
+      "default": false,
+      "title": "Aifailed",
+      "type": "boolean"
+    },
+    "failureReason": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Failurereason"
+    }
+  },
+  "required": [
+    "package",
+    "status",
+    "scanId",
+    "requestedAt",
+    "ranOn",
+    "analyzerVersion"
+  ],
+  "title": "VerdictRecord",
+  "type": "object"
+}
