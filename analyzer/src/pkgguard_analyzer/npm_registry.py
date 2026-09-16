@@ -7,6 +7,8 @@ from urllib.parse import quote
 import httpx
 
 REGISTRY_URL = "https://registry.npmjs.org"
+# Much smaller registry response: dist-tags and versions only (no readme, times or maintainers).
+ABBREVIATED_METADATA = "application/vnd.npm.install-v1+json"
 MAX_TARBALL_BYTES = 50 * 1024 * 1024
 SRI_ALGORITHMS = ("sha512", "sha384", "sha256")
 
@@ -34,6 +36,15 @@ def packument_url(name: str) -> str:
 
 def fetch_packument(client: httpx.Client, name: str) -> dict:
     response = client.get(packument_url(name))
+    if response.status_code == 404:
+        raise PackageNotFound(f"package {name!r} not found on npm")
+    response.raise_for_status()
+    return response.json()
+
+
+def fetch_abbreviated_packument(client: httpx.Client, name: str) -> dict:
+    """Fast lookup used by the API to resolve versions before deciding whether to scan."""
+    response = client.get(packument_url(name), headers={"Accept": ABBREVIATED_METADATA})
     if response.status_code == 404:
         raise PackageNotFound(f"package {name!r} not found on npm")
     response.raise_for_status()

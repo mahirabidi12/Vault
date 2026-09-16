@@ -20,6 +20,7 @@ pkgguard-export-schema = "pkgguard_analyzer.export_schema:main"
 
 [dependency-groups]
 dev = [
+    "moto[dynamodb,s3,secretsmanager,stepfunctions]>=5.2.3",
     "pytest>=8",
 ]
 

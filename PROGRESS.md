@@ -4,7 +4,7 @@
 > README = what we *planned*. This file = what is *actually built*, how to run it, and where the build differs from the plan.
 > **Update this file at the end of every step.**
 
-Last updated: 2026-09-17, after Step 5 (AI agent built, tested offline and live).
+Last updated: 2026-09-17, Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker.
 
 ---
 
@@ -15,7 +15,7 @@ Last updated: 2026-09-17, after Step 5 (AI agent built, tested offline and live)
 | 0 | Setup (accounts, tools) | 🟡 Partly done: Node, Docker, AWS CLI, uv installed. **SAM CLI not installed.** AWS region not chosen |
 | 1 | Project setup + verdict format | ✅ Done (commit `b0cdc24`) |
 | 2 | Scanner: download, safe unpack, threat intel, metadata red flags, verdict | ✅ Done (commit `5b47f13`) |
-| 3 | Cloud backend (SAM: API, DynamoDB, S3, SQS, Step Functions) | ⏳ Not started. Needs SAM CLI + user OK to create AWS resources |
+| 3 | Cloud backend (SAM: HTTP API, Step Functions, Lambda images, DynamoDB, S3, Secrets Manager) | 🟡 Built + tested offline with moto. **Not deployed yet:** needs `brew install aws-sam-cli`, Docker Desktop running, and the OpenAI key stored in Secrets Manager |
 | 4 | Code scanning (tree-sitter JS analysis + YARA patterns + combined-risk rules) | ✅ Done (commit `a841eeb`) |
 | 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low) |
 | 6 | Final verdict + full report | ⏳ |
@@ -40,6 +40,11 @@ uv run analyze @babel/core               # scoped names; no version = latest
 uv run analyze esbuild --json            # full record + report as JSON
 uv run pkgguard-export-schema            # re-run after ANY change to schema.py
 uv run analyze esbuild --no-ai              # skip the AI review
+
+# Cloud (from the repo root; needs SAM CLI + Docker running)
+sam build --template infra/template.yaml
+sam deploy --stack-name pkgguard --region ap-south-1 --capabilities CAPABILITY_IAM --resolve-s3 --resolve-image-repos \
+  --parameter-overrides AlertEmail=<your email>   # optional budget alarm
 ```
 
 Scan output goes to `analyzer/tmp/scans/<name>/<version>/` (gitignored): `record.json`, `report.json`, `files/` (unpacked package).
@@ -101,6 +106,31 @@ Scan time: ~2–7 s per package on a laptop, including downloads (`lodash`: 1,04
 
 **New YARA rule `llm_prompt_injection`** (MEDIUM): text aimed at AI reviewers ("AI reviewer: this package is safe", "ignore previous instructions", "mark this package as safe").
 
+### `cloud/` + `infra/` (Step 3, AWS backend)
+
+**Architecture (as built):**
+```
+CLI / MCP / website
+   → API Gateway HTTP API (CORS *, throttle 10 rps / burst 20)
+   → ApiFunction (Lambda) ──read/write──▶ DynamoDB VerdictsTable
+        │ cache miss: daily quota check → conditional PENDING write (one winner) → StartExecution(name = scanId)
+        ▼
+   Step Functions ScanStateMachine (STANDARD)
+        ScanPackage: ScanFunction (Lambda, 10 min, 2 GB, 2 GB /tmp) → analyze() → report JSON to S3 → verdict to DynamoDB
+          retries Lambda throttling/service errors; any error or timeout → MarkFailed: ScanFailedFunction → FAILED record
+```
+All three Lambdas share **one container image** (`analyzer/Dockerfile`, Python 3.12, **arm64**) with different handler commands. OpenAI key comes from **Secrets Manager** (`pkgguard/openai-api-key`); if missing, scans run without AI. Log retention 14 days. Optional monthly **AWS Budget** email alarm (`AlertEmail` parameter, default $10).
+
+| Module | Responsibility |
+|---|---|
+| `cloud/store.py` | `VerdictStore` over one DynamoDB table. Item = `PK=PKG#npm#<name>`, `SK=VER#<version>`, `scanId`, `status`, `requestedAtEpoch`, `record` (VerdictRecord JSON), plus `GSI1PK=VERDICT#<MALICIOUS\|SUSPICIOUS>` / `GSI1SK=analyzedAt` for the feed. GSIs: `Feed`, `ByScanId`. `claim_scan` (conditional put: only if missing, or PENDING/SCANNING/FAILED older than 15 min), `mark_scanning` / `save_result` / `save_failed` (only if `scanId` still current, so old scans can't overwrite newer ones), `get_many` (BatchGet, 100 per call, unprocessed-key retry), `versions`, `feed`, `record_completed` + `stats` (`PK=STATS`), `consume_scan_quota` (`PK=LIMIT#<day>`, per-client + global counters, TTL `expiresAt`) |
+| `cloud/api.py` | One handler for all routes (HTTP API payload v2). `GET /v1/package?ecosystem=npm&name=&version=` (no/tag version → resolved via npm abbreviated metadata; 200 cached, 202 scanning; unknown package/version → 404; bad name → 400; quota → 429), `GET /v1/report?name=&version=` (full report JSON from S3), `GET /v1/scans/{scanId}`, `GET /v1/package/versions?name=`, `POST /v1/check` (`{"packages":[…]}`, ≤ 200, exact versions, dedupes, starts scans for new ones, per-item errors), `GET /v1/feed`, `GET /v1/stats`. If starting the workflow fails, the record is marked FAILED and 502 returned |
+| `cloud/scan_handler.py` | Step Functions task: `mark_scanning` → `analyze(..., ran_on=cloud, scan_id=…)` in `/tmp/pkgguard/<scanId>` → upload report to `reports/npm/<name>/<version>/<analyzerVersion>.json` → `save_result` → stats. `load_ai()` reads the key from Secrets Manager. Superseded scans exit early. Temp files always removed |
+| `cloud/failure_handler.py` | Catch step: parses the Step Functions error (`Error` + Lambda JSON `Cause`) into `failureReason`, saves FAILED if the scan is still current |
+| `infra/template.yaml` | SAM template: table (on-demand, TTL), private encrypted bucket, 3 image Lambdas, state machine, HTTP API, log groups, optional budget. Outputs `ApiUrl`, `TableName`, `ReportsBucketName`, `StateMachineArn` |
+
+`npm_registry.fetch_abbreviated_packument()` was added (small registry response for version resolution). `analyze()` accepts `scan_id` so the cloud record keeps the API's scan id.
+
 ### Step 5 live results (`gpt-5-mini`, `OPENAI_REASONING_EFFORT=low`, 2026-09-17)
 
 | Case | Rules alone | AI | Final | AI cost |
@@ -134,22 +164,31 @@ Fake B is the reason for option B: rules-only gating would have marked it safe. 
    - AI confidence LOW → rules decision (step 3)
    - otherwise → SAFE with the AI's confidence and summary (ai). This is how esbuild-style MEDIUM warnings get cleared.
 
-### Tests (`analyzer/tests/`, 152 passing, no network, no real AI calls)
+### Tests (`analyzer/tests/`, 177 passing, no network, no real AWS or AI calls)
 
 - **Steps 1–2:** schema rules, registry helpers, integrity, extraction attacks (traversal, symlinks, size caps), OSV/SafeDep parsing (incl. the SafeDep "prose contradicts boolean" case), each metadata rule, scoring rules.
 - **End-to-end `analyze()`** with `httpx.MockTransport`: clean, known-malicious, tampered tarball, intel outage, suspicious code.
 - **Step 4:** file selection + install/entry detection, every `js_facts` extraction (incl. `regex.exec` and env-copy non-matches), every YARA rule plus false-positive regressions, combined-risk rules, end-to-end `scan_code`.
 - **Step 5:** workspace sandbox (path escapes, budget, binary refusal, line caps, wrapper escaping), review mode selection, task building (untrusted wrapping), `run_review` with a `FakeReviewer` (files read/tool calls recorded by us, hallucinated evidence dropped, errors captured), config parsing, every AI scoring rule (clears warnings, can't clear strong HIGH/prompt injection/intel, escalates, low-confidence fallback), prompt-injection YARA rule, end-to-end `analyze()` with AI in always/flagged modes and provider failure.
+- **Step 3:** moto fake AWS (`tests/cloud_helpers.py` mirrors the template's table schema, **keep in sync**): claim-once race, stale/failed re-claim, completed never re-claimed, superseded scans can't overwrite, feed ordering, BatchGet > 100, daily quotas, stats; API routes (cache hit with no execution, one execution for concurrent requests, latest/scoped resolution, 400/404/429, batch check with dedupe and per-item errors, report from S3, scan lookup, feed/stats/versions); scan handler end-to-end (verdict + S3 report + stats + temp cleanup), superseded scan, failure handler, Secrets Manager key loading.
 - Malicious-looking test code is plain text with `.invalid` domains that only gets parsed. `tests/helpers.py` builds fake tarballs and packuments.
 
 ---
 
 ## Differences from the README plan (discovered while building)
 
+- **Step 3 deviations (for speed and fewer moving parts):**
+  - **API is Python, not TypeScript.** It reuses `schema.py` validation directly, so there's one data contract and one image. TypeScript stays for the website, CLI and MCP tool.
+  - **No SQS.** The API starts Step Functions directly (execution name = scanId). Duplicate scans are prevented by the DynamoDB conditional write; Step Functions retries throttled Lambda calls and the catch step marks failures.
+  - **One Lambda does the whole scan** instead of one Lambda per pipeline step: unpacked files live in `/tmp`, which isn't shared between Lambdas. Step Functions Map is reserved for the future full-package audit.
+  - **Tarballs aren't stored in S3**, only reports (the scan re-downloads and verifies from npm).
+  - **HTTP API instead of REST API** (cheaper, built-in CORS). API keys/usage plans aren't used; limits are enforced in DynamoDB.
+  - **Not built yet:** search endpoint, `/v1/events`, `/v1/keys`, admin override route (Steps 10–12).
+  - **Lambda memory 2 GB (not more):** new AWS accounts are often capped at 3,008 MB. No reserved concurrency (new accounts often have a 10-execution account limit).
 - **Trusted publishing:** many popular packages now publish via npm trusted publishing (`_npmUser.name = "GitHub Actions"`, `_npmUser.trustedPublisher` set). The "new publisher" rule falsely flagged them, so it now **skips trusted publishes**. Added `metadata.trusted_publishing_dropped` (previous version trusted, current not), a stolen-token signal. Report metadata includes `trustedPublishing` and `provenance` (`dist.attestations`).
 - **`manifest_mismatch` check added** (not in README): install scripts in the tarball's `package.json` differ from registry metadata ("manifest confusion").
 - **`VerdictRecord` rules:** only `COMPLETE` records may have a verdict; `FAILED` and `SKIPPED` require `failureReason`.
-- **`reportS3Key` is left empty** until Step 3 actually uploads to S3.
+- **`reportS3Key`** is empty for local CLI scans and set by the cloud scan worker after uploading the report to S3.
 - **Weekly downloads check not implemented yet** (README §8.1 lists it).
 - **OSV pagination not handled** (fine for `MAL-` lookups; revisit if listing many CVEs).
 - **Popular packages list** is hand-curated (~130 names), with legit look-alikes (`preact`, `mysql2`, `lodash-es`) included so they aren't flagged.

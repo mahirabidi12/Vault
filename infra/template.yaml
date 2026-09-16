@@ -1,0 +1,270 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: PkgGuard backend - verdict API, scan workflow, verdict database and report storage.
+
+Parameters:
+  OpenAISecretName:
+    Type: String
+    Default: pkgguard/openai-api-key
+    Description: Secrets Manager secret holding the OpenAI API key (plain string).
+  OpenAIModel:
+    Type: String
+    Default: gpt-5-mini
+  OpenAIReasoningEffort:
+    Type: String
+    Default: low
+  AIMode:
+    Type: String
+    Default: always
+    AllowedValues: [always, flagged, "off"]
+  MaxNewScansPerDay:
+    Type: Number
+    Default: 300
+    Description: New (not cached) scans allowed per day across all users. Protects AI credits.
+  MaxNewScansPerClientPerDay:
+    Type: Number
+    Default: 30
+    Description: New scans allowed per client IP per day.
+  AlertEmail:
+    Type: String
+    Default: ""
+    Description: Email for the monthly budget alarm. Leave empty to skip creating the budget.
+  MonthlyBudgetUSD:
+    Type: Number
+    Default: 10
+
+Conditions:
+  HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+
+Globals:
+  Function:
+    PackageType: Image
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 1024
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref VerdictsTable
+        BUCKET_NAME: !Ref ReportsBucket
+        HOME: /tmp
+
+Resources:
+  VerdictsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: PK, AttributeType: S }
+        - { AttributeName: SK, AttributeType: S }
+        - { AttributeName: GSI1PK, AttributeType: S }
+        - { AttributeName: GSI1SK, AttributeType: S }
+        - { AttributeName: scanId, AttributeType: S }
+      KeySchema:
+        - { AttributeName: PK, KeyType: HASH }
+        - { AttributeName: SK, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: Feed
+          KeySchema:
+            - { AttributeName: GSI1PK, KeyType: HASH }
+            - { AttributeName: GSI1SK, KeyType: RANGE }
+          Projection: { ProjectionType: ALL }
+        - IndexName: ByScanId
+          KeySchema:
+            - { AttributeName: scanId, KeyType: HASH }
+          Projection: { ProjectionType: ALL }
+      TimeToLiveSpecification:
+        AttributeName: expiresAt
+        Enabled: true
+
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  ScanFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Scans one npm package version (download, intel, metadata, code scan, AI review) and saves the verdict.
+      Timeout: 600
+      MemorySize: 2048
+      EphemeralStorage: { Size: 2048 }
+      ImageConfig:
+        Command: ["pkgguard_analyzer.cloud.scan_handler.handler"]
+      Environment:
+        Variables:
+          AI_MODE: !Ref AIMode
+          MODEL_PROVIDER: openai
+          OPENAI_MODEL: !Ref OpenAIModel
+          OPENAI_REASONING_EFFORT: !Ref OpenAIReasoningEffort
+          OPENAI_SECRET_NAME: !Ref OpenAISecretName
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
+        - S3CrudPolicy: { BucketName: !Ref ReportsBucket }
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*
+    Metadata:
+      DockerContext: ../analyzer
+      Dockerfile: Dockerfile
+      DockerTag: v1
+
+  ScanFailedFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: Marks a scan FAILED when the scan task errors or times out.
+      ImageConfig:
+        Command: ["pkgguard_analyzer.cloud.failure_handler.handler"]
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
+    Metadata:
+      DockerContext: ../analyzer
+      Dockerfile: Dockerfile
+      DockerTag: v1
+
+  ScanStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      Type: STANDARD
+      Definition:
+        Comment: Scan one npm package version and save the verdict. Failures and timeouts are recorded.
+        StartAt: ScanPackage
+        States:
+          ScanPackage:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              FunctionName: ${ScanFunctionArn}
+              Payload.$: $
+            OutputPath: $.Payload
+            TimeoutSeconds: 660
+            Retry:
+              - ErrorEquals:
+                  - Lambda.TooManyRequestsException
+                  - Lambda.ServiceException
+                  - Lambda.AWSLambdaException
+                  - Lambda.SdkClientException
+                IntervalSeconds: 10
+                MaxAttempts: 6
+                BackoffRate: 2
+            Catch:
+              - ErrorEquals: [States.ALL]
+                ResultPath: $.error
+                Next: MarkFailed
+            End: true
+          MarkFailed:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              FunctionName: ${ScanFailedFunctionArn}
+              Payload.$: $
+            OutputPath: $.Payload
+            End: true
+      DefinitionSubstitutions:
+        ScanFunctionArn: !GetAtt ScanFunction.Arn
+        ScanFailedFunctionArn: !GetAtt ScanFailedFunction.Arn
+      Policies:
+        - LambdaInvokePolicy: { FunctionName: !Ref ScanFunction }
+        - LambdaInvokePolicy: { FunctionName: !Ref ScanFailedFunction }
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ["*"]
+        AllowMethods: [GET, POST, OPTIONS]
+        AllowHeaders: [content-type]
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 20
+        ThrottlingRateLimit: 10
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: PkgGuard HTTP API (verdict lookup, batch check, reports, feed, stats).
+      ImageConfig:
+        Command: ["pkgguard_analyzer.cloud.api.handler"]
+      Environment:
+        Variables:
+          STATE_MACHINE_ARN: !Ref ScanStateMachine
+          MAX_NEW_SCANS_PER_DAY: !Ref MaxNewScansPerDay
+          MAX_NEW_SCANS_PER_CLIENT_PER_DAY: !Ref MaxNewScansPerClientPerDay
+      Policies:
+        - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
+        - S3ReadPolicy: { BucketName: !Ref ReportsBucket }
+        - StepFunctionsExecutionPolicy: { StateMachineName: !GetAtt ScanStateMachine.Name }
+      Events:
+        GetRoutes:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: "/v1/{proxy+}", Method: GET }
+        PostRoutes:
+          Type: HttpApi
+          Properties: { ApiId: !Ref HttpApi, Path: "/v1/{proxy+}", Method: POST }
+    Metadata:
+      DockerContext: ../analyzer
+      Dockerfile: Dockerfile
+      DockerTag: v1
+
+  ApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ApiFunction}
+      RetentionInDays: 14
+  ScanLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ScanFunction}
+      RetentionInDays: 14
+  ScanFailedLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${ScanFailedFunction}
+      RetentionInDays: 14
+
+  MonthlyBudget:
+    Type: AWS::Budgets::Budget
+    Condition: HasAlertEmail
+    Properties:
+      Budget:
+        BudgetName: !Sub ${AWS::StackName}-monthly
+        BudgetType: COST
+        TimeUnit: MONTHLY
+        BudgetLimit:
+          Amount: !Ref MonthlyBudgetUSD
+          Unit: USD
+      NotificationsWithSubscribers:
+        - Notification:
+            NotificationType: ACTUAL
+            ComparisonOperator: GREATER_THAN
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - { SubscriptionType: EMAIL, Address: !Ref AlertEmail }
+        - Notification:
+            NotificationType: FORECASTED
+            ComparisonOperator: GREATER_THAN
+            Threshold: 100
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - { SubscriptionType: EMAIL, Address: !Ref AlertEmail }
+
+Outputs:
+  ApiUrl:
+    Description: Base URL of the PkgGuard API
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com
+  TableName:
+    Value: !Ref VerdictsTable
+  ReportsBucketName:
+    Value: !Ref ReportsBucket
+  StateMachineArn:
+    Value: !Ref ScanStateMachine

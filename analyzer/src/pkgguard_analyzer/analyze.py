@@ -71,13 +71,24 @@ def analyze(
     now: datetime | None = None,
     reviewer: Reviewer | None = None,
     ai_mode: AIMode = AIMode.OFF,
+    scan_id: str | None = None,
 ) -> ScanResult:
     if not NPM_NAME_RE.fullmatch(name):
         raise ValueError(f"invalid npm package name: {name!r}")
     owns_client = client is None
     client = client or make_client()
     try:
-        return _analyze(client, name, version, out_dir, ran_on, now or datetime.now(UTC), reviewer if ai_mode != AIMode.OFF else None, ai_mode)
+        return _analyze(
+            client,
+            name,
+            version,
+            out_dir,
+            ran_on,
+            now or datetime.now(UTC),
+            reviewer if ai_mode != AIMode.OFF else None,
+            ai_mode,
+            scan_id or str(ULID()),
+        )
     finally:
         if owns_client:
             client.close()
@@ -92,6 +103,7 @@ def _analyze(
     now: datetime,
     reviewer: Reviewer | None,
     ai_mode: AIMode,
+    scan_id: str,
 ) -> ScanResult:
     packument = fetch_packument(client, name)
     resolved = resolve_version(packument, version)
@@ -101,7 +113,7 @@ def _analyze(
     dist = packument["versions"][resolved].get("dist", {})
     base = {
         "package": package,
-        "scan_id": str(ULID()),
+        "scan_id": scan_id,
         "requested_at": now,
         "ran_on": ran_on,
         "analyzer_version": ANALYZER_VERSION,
