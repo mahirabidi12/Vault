@@ -1,0 +1,4 @@
+{
+  "description": "install script pipes a downloaded script straight into a shell",
+  "shouldFlag": true
+}

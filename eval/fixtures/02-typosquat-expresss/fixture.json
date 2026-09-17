@@ -1,0 +1,6 @@
+{
+  "description": "name is one character off from the popular package 'express'; the code itself is unremarkable",
+  "shouldFlag": true,
+  "requiresAi": true,
+  "note": "rules alone score a single MEDIUM typosquat finding as SAFE/LOW (see scoring.py); catching this reliably needs the AI review to weigh the name similarity"
+}

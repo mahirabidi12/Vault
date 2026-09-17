@@ -1,0 +1,4 @@
+{
+  "description": "the exfil path is gated behind process.env.CI, hoping to only trigger in someone else's pipeline",
+  "shouldFlag": true
+}

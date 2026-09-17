@@ -1,0 +1,4 @@
+{
+  "description": "a legitimate download helper (network only, no secrets) \u2014 false-positive test",
+  "shouldFlag": false
+}

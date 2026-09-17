@@ -1,0 +1,7 @@
+{
+  "name": "pkgguard-fixture-ssh-key-read",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node index.js"
+  }
+}

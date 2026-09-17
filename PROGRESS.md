@@ -4,7 +4,7 @@
 > README = what we *planned*. This file = what is *actually built*, how to run it, and where the build differs from the plan.
 > **Update this file at the end of every step.**
 
-Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), the MCP agent tool (Step 9, `mcp/`), and the CLI (Step 8, `cli/`) — both clients verified live end to end against the local dev API. See the sections below.
+Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), the MCP agent tool (Step 9, `mcp/`), the CLI (Step 8, `cli/`) — both clients verified live end to end against the local dev API — and an eval harness (Step 7, `eval/` + `pkgguard-eval`), 14/15 fixtures correct rules-only. See the sections below.
 
 ---
 
@@ -19,7 +19,7 @@ Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deplo
 | 4 | Code scanning (tree-sitter JS analysis + YARA patterns + combined-risk rules) | ✅ Done (commit `a841eeb`) |
 | 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low). Extra `--full-audit` mode (parallel worker sub-agents read all code, coordinator merges) built and working locally, not yet run in the cloud |
 | 6 | Final verdict + full report | ✅ Scoring rules done since Step 5. Report now also carries a UI-ready layer: merged `codeIssues` (rule + AI findings + real code excerpts), `behavior` profile, file hashes, IOCs, `reviewFlags` — built, uncommitted |
-| 7 | Eval, tuning, seed 50 packages, OSV import | 🟡 `pkgguard-seed` script built (scan 50 packages locally + upload to the deployed stack), package list picked, but not fully run yet (cloud isn't deployed, nothing uploaded). **Not built:** formal `eval/` fixtures + accuracy script, OSV bulk import script |
+| 7 | Eval, tuning, seed 50 packages, OSV import | 🟡 **Eval harness done:** `eval/fixtures/` (15 fixtures) + `pkgguard-eval`, 14/15 passing rules-only (1 correctly flagged as AI-dependent), 0 false positives on a small real benign run. `pkgguard-seed` script built (scan 50 packages locally + upload to the deployed stack), package list picked, but not fully run yet — only 3/50 scanned so far as a smoke test. **Not built:** OSV bulk import script |
 | 8 | CLI installer | ✅ Built: `cli/` (`pkgguard`), `check` + `install`, TypeScript + Commander. Verified live end to end: `install safedep-test-pkg` blocked (nothing written), `install is-odd` really installed the exact checked versions |
 | 9 | MCP agent tool | ✅ Built: `mcp/`, one tool (`check_package`), TypeScript + official MCP SDK, stdio. Verified live: real JSON-RPC handshake + tool call against `pkgguard-dev-api`, `express` → allow, `safedep-test-pkg` → block |
 | 10 | Website | ⏳ |
@@ -41,6 +41,7 @@ uv run analyze esbuild --json            # full record + report as JSON
 uv run pkgguard-export-schema            # re-run after ANY change to schema.py
 uv run analyze esbuild --no-ai              # skip the AI review
 uv run pkgguard-dev-api                     # local stand-in for the cloud API, no AWS: http://127.0.0.1:8787
+uv run pkgguard-eval                        # accuracy eval: 15 fixtures, rules-only by default (add --with-ai, --benign)
 
 # Cloud (from the repo root; needs SAM CLI + Docker running)
 sam build --template infra/template.yaml
@@ -179,7 +180,7 @@ Tests: `npm test` (vitest, 24 passing) — `format.ts` decision table + text, `c
 
 **Not done:** publishing to npm; a `ping`/connectivity tool (SafeDep has one; skipped for now since `check_package`'s own errors already say clearly when the API can't be reached — add if it turns out to matter); testing against a real Claude Code/Cursor session (only the raw protocol was exercised above, not a live agent's tool-choice behavior).
 
-### `cli/` (Step 8, CLI installer — uncommitted)
+### `cli/` (Step 8, CLI installer — commit `020d26f`)
 
 TypeScript, Commander, published as `pkgguard`. Two commands, matching README §11.1:
 
@@ -198,6 +199,22 @@ Tests: `npm test` (vitest, 37 passing) — lockfile parsing (v2/v3 + legacy, sco
 **Verified live (2026-09-17), no mocks, real npm:** against `pkgguard-dev-api` — `pkgguard check express@4.18.2` → allow, with a live pending → scanning → complete spinner. `pkgguard install safedep-test-pkg` → resolved the tree, checked it, printed `🛑 Blocked`, exit code `2`, **wrote nothing** to the test directory. `pkgguard install is-odd` → resolved `is-odd` + its transitive dep `is-number`, checked both, then ran a real `npm install` that produced a real `node_modules/` with the exact pinned versions — the precise "Done when" check from README's Step 8.
 
 **Not done:** publishing to npm; `pkgguard check`'s output could use a compact table for large lockfiles (currently prints every flagged package as its own block, fine up to dozens); no `pnpm`/`yarn` lockfile support (npm only, matching the README's stated scope).
+
+### `eval/` (Step 7, accuracy harness — uncommitted)
+
+README §14's fixture eval, plus a false-positive check against the benign seed set. Top-level `eval/` (not under `analyzer/`, matching the README's repo layout — see `eval/README.md`), driven by `analyzer/src/pkgguard_analyzer/eval.py` (`pkgguard-eval`).
+
+**How a fixture gets scanned without touching npm or running anything:** each of the 15 directories under `eval/fixtures/` is packed into an in-memory tarball with a synthetic packument, then fed to the real, unmodified `analyze()` over an `httpx.MockTransport` — no real download, and OSV/SafeDep are mocked to "not found" (a fixture obviously isn't in any real feed, and this keeps the eval fully network-free and deterministic). Same technique the test suite already uses for end-to-end `analyze()` tests, just pointed at real fixture directories. Each fixture is a `package.json` + code + a `fixture.json` (`{"description", "shouldFlag", "requiresAi"?}`) — `shouldFlag` is deliberately binary ("caught" vs "false positive", matching README's own framing), not a specific verdict string.
+
+**The 15 fixtures** (README §14's list): postinstall env-exfil, typosquat name with clean code, obfuscated base64 `eval`, install-time `curl\|sh`, reads `~/.ssh/id_rsa`, Discord webhook exfil, crypto-miner wallet, dependency-confusion name (`v99.9.9` + exfil), hex-encoded install payload, prompt injection aimed at the AI reviewer, a benign downloader (false-positive test), a date-gated time bomb, a `CI`-gated trigger, DNS exfil, and a clean control package.
+
+**Live result (2026-09-17), rules-only:** **14/15 correct.** The one non-pass, `02-typosquat-expresss`, is *expected* to need AI — a lone `metadata.typosquat` finding scores SAFE/LOW under the rules-only branch of `scoring.py` (a single MEDIUM finding isn't enough alone), so `pkgguard-eval` marks it `requiresAi` and reports it separately instead of counting it as a miss. `uv run pkgguard-eval --with-ai` will exercise that path once AI credits are available.
+
+**Benign false-positive check:** `uv run pkgguard-eval --benign` reads whatever `pkgguard-seed scan` has already saved (doesn't launch scans itself) and reports false positives, excluding the `README`-documented "known noisy" packages (`esbuild`, `sharp`, `puppeteer`, `bcrypt`, `husky`) that are expected to need AI to clear. Verified live on a 3-package smoke run (`express`, `lodash`, `esbuild`, rules-only): 0 unexpected false positives, `esbuild` correctly reported as "still flagged (expected without AI)".
+
+Tests: `analyzer/tests/test_eval.py` (10 passing, folded into the main suite — 221 total now) — `test_every_real_fixture_scores_as_expected_without_ai` re-runs all 15 committed fixtures on every `pytest` run, so a scoring change that breaks one fails CI immediately, plus unit tests for the pass/fail and benign-merge logic.
+
+**Not done:** OSV bulk import script; a GPT-vs-Claude comparison (README §14); persisting eval results to disk (currently stdout only — redirect it yourself for a saved copy).
 
 ### Step 5 live results (`gpt-5-mini`, `OPENAI_REASONING_EFFORT=low`, 2026-09-17)
 
@@ -232,7 +249,7 @@ Fake B is the reason for option B: rules-only gating would have marked it safe. 
    - AI confidence LOW → rules decision (step 3)
    - otherwise → SAFE with the AI's confidence and summary (ai). This is how esbuild-style MEDIUM warnings get cleared.
 
-### Tests (`analyzer/tests/`, 211 passing, no network, no real AWS or AI calls)
+### Tests (`analyzer/tests/`, 221 passing, no network, no real AWS or AI calls)
 
 Newer, uncommitted: `test_audit.py` (chunking, worker/coordinator merge, `FakeReviewer`-style fakes), `test_seed.py` (package list parsing, `scan_one`, upload skip/force logic against a fake store), `test_insights.py`, `test_issues.py` (merge + dedupe rules, excerpt reading), `test_behavior.py` (host classification).
 

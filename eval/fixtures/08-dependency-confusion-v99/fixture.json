@@ -1,0 +1,4 @@
+{
+  "description": "internal-sounding name with an implausibly high version (dependency confusion), plus an env-exfil postinstall",
+  "shouldFlag": true
+}

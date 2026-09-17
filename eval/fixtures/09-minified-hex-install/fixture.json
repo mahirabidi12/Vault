@@ -1,0 +1,4 @@
+{
+  "description": "install script hides a payload behind hex escape sequences before eval-ing it",
+  "shouldFlag": true
+}

@@ -1,0 +1,4 @@
+{
+  "description": "connects to a mining pool and logs in with a hardcoded wallet address",
+  "shouldFlag": true
+}

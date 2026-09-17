@@ -1,0 +1,4 @@
+{
+  "description": "encodes machine info into a DNS lookup hostname \u2014 exfiltration over DNS",
+  "shouldFlag": true
+}

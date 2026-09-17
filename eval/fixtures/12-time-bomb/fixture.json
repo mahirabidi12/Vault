@@ -1,0 +1,5 @@
+{
+  "description": "the risky payload only runs after a future date",
+  "shouldFlag": true,
+  "note": "static analysis must not be fooled by the date gate \u2014 it never executes anything, so the gate can't hide the pattern"
+}

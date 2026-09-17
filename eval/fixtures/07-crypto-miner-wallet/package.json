@@ -1,0 +1,7 @@
+{
+  "name": "pkgguard-fixture-crypto-miner",
+  "version": "1.0.0",
+  "scripts": {
+    "postinstall": "node miner.js"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "base64-decodes a string at runtime and eval()s it",
+  "shouldFlag": true
+}

@@ -1,0 +1,4 @@
+{
+  "description": "sends machine info to a Discord webhook, a common exfil channel",
+  "shouldFlag": true
+}

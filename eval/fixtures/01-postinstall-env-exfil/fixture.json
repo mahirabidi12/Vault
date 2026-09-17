@@ -1,0 +1,4 @@
+{
+  "description": "postinstall script reads every environment variable and POSTs it to an external collector",
+  "shouldFlag": true
+}

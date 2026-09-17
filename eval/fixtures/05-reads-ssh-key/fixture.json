@@ -1,0 +1,4 @@
+{
+  "description": "install-time script reads the user's SSH private key",
+  "shouldFlag": true
+}
