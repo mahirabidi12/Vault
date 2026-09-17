@@ -154,6 +154,10 @@ class VerdictStore:
         failed = current.model_copy(update={"status": ScanStatus.FAILED, "failure_reason": reason[:500] or "scan failed"})
         return self._replace_if_current(failed, (ScanStatus.PENDING, ScanStatus.SCANNING))
 
+    def put_seeded(self, record: VerdictRecord) -> None:
+        """Write a record scanned elsewhere (the local seed run). Overwrites unconditionally; callers decide."""
+        self.table.put_item(Item=self._item(record))
+
     def record_completed(self, record: VerdictRecord) -> None:
         outcome = (record.verdict.value if record.verdict else record.status.value).lower()
         self.table.update_item(

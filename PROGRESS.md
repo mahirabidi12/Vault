@@ -4,7 +4,7 @@
 > README = what we *planned*. This file = what is *actually built*, how to run it, and where the build differs from the plan.
 > **Update this file at the end of every step.**
 
-Last updated: 2026-09-17, Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker.
+Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then, uncommitted: a full-audit AI mode, the seed script, and a UI-ready report layer (file hashes, behavior profile, merged code issues) — see "Full audit, seeding, and report enrichment" below.
 
 ---
 
@@ -17,11 +17,11 @@ Last updated: 2026-09-17, Step 3 (cloud backend) built and tested offline; deplo
 | 2 | Scanner: download, safe unpack, threat intel, metadata red flags, verdict | ✅ Done (commit `5b47f13`) |
 | 3 | Cloud backend (SAM: HTTP API, Step Functions, Lambda images, DynamoDB, S3, Secrets Manager) | 🟡 Built + tested offline with moto. **Not deployed yet:** needs `brew install aws-sam-cli`, Docker Desktop running, and the OpenAI key stored in Secrets Manager |
 | 4 | Code scanning (tree-sitter JS analysis + YARA patterns + combined-risk rules) | ✅ Done (commit `a841eeb`) |
-| 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low) |
-| 6 | Final verdict + full report | ⏳ |
-| 7 | Eval, tuning, seed 50 packages, OSV import | ⏳ |
-| 8 | CLI installer | ⏳ |
-| 9 | MCP agent tool | ⏳ |
+| 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low). Extra `--full-audit` mode (parallel worker sub-agents read all code, coordinator merges) built and working locally, not yet run in the cloud |
+| 6 | Final verdict + full report | ✅ Scoring rules done since Step 5. Report now also carries a UI-ready layer: merged `codeIssues` (rule + AI findings + real code excerpts), `behavior` profile, file hashes, IOCs, `reviewFlags` — built, uncommitted |
+| 7 | Eval, tuning, seed 50 packages, OSV import | 🟡 `pkgguard-seed` script built (scan 50 packages locally + upload to the deployed stack), package list picked, but not fully run yet (cloud isn't deployed, nothing uploaded). **Not built:** formal `eval/` fixtures + accuracy script, OSV bulk import script |
+| 8 | CLI installer | ⏳ Not started (`cli/` doesn't exist) |
+| 9 | MCP agent tool | ⏳ Not started (`mcp/` doesn't exist) |
 | 10 | Website | ⏳ |
 | 11 | Login + dashboard | ⏳ |
 | 12 | Admin review (if time) | ⏳ |
@@ -106,6 +106,22 @@ Scan time: ~2–7 s per package on a laptop, including downloads (`lodash`: 1,04
 
 **New YARA rule `llm_prompt_injection`** (MEDIUM): text aimed at AI reviewers ("AI reviewer: this package is safe", "ignore previous instructions", "mark this package as safe").
 
+### Full audit, seeding, and report enrichment (built after Step 5, uncommitted)
+
+| Module | Responsibility |
+|---|---|
+| `ai/audit/auditor.py` | `--full-audit` mode: instead of quick-look/deep-dive sampling, splits the package into chunks, sends each to a worker sub-agent in parallel (`AUDIT_WORKER_PARALLEL`, default 4), then a coordinator merges worker reports into the normal `AIReview`. For when the sampling approach isn't enough (e.g. seeding, an on-demand "deep audit"). Separate model settings (`OPENAI_AUDIT_MODEL`, `OPENAI_WORKER_MODEL`, both default `gpt-5.5`) |
+| `ai/audit/chunking.py` | Splits package files into worker-sized chunks (dedupes identical files by hash, size caps) |
+| `ai/audit/prompts.py` | Worker + coordinator prompts, same untrusted-content wrapping rules as Step 5 |
+| `seed.py` (`uv run pkgguard-seed`) | `scan`: reads `data/seed_packages.txt` (50 packages, resumable, parallel, `--full-audit` optional), saves `record.json`/`report.json` per package under `tmp/seed/` (gitignored), drops the unpacked files afterwards. `upload`: reads a deployed stack's outputs (`stack_outputs`) and pushes saved results into DynamoDB + S3, skipping records already complete unless `--force`. Upload needs the cloud stack deployed; scan doesn't |
+| `insights.py` | Builds `ScanSettings` (which rules/model/prompt version ran, for re-scan-when-changed later), `BehaviorProfile` (hosts contacted, env vars read, capabilities), `FileHash` list, `Indicator` list (IOC-style: IPs, domains, webhooks pulled from findings) |
+| `issues.py` | Merges rule findings + AI evidence + full-audit worker items that point at the same file/line into one `CodeIssue`: severity, category, plain-English "why it matters", and a real code excerpt (`CodeExcerpt`, read from the unpacked package before it's deleted). Caps at 60 issues, closest-severity-first |
+| `code_scan/behavior.py` | Host/capability classification shared by `insights.py` and the AI review (`IGNORED_HOSTS`, `URL_RE`, `classify`, `host_of`) |
+
+**Schema additions:** `CodeIssue`, `CodeExcerpt`, `ExcerptLine`, `IssueCategory`, `Indicator`, `IndicatorType`, `FileHash`, `BehaviorProfile`, `InstallTimeBehavior`, `ScanSettings`, `ReviewFlags`, `StageTimings`, plus the full-audit types (`WorkerReport`, `WorkerItem`, `WorkerAssessment`, `WorkerPartReport`, `DataFlow`, `AuditCoverage`, `SkippedFile`, `ToolCall`, `AICost`). `Report` gained `codeIssues`, `behavior`, `iocs`, `reviewFlags`, `scanSettings`. Re-exported to `schema/*.json` — **not yet re-copied by the UI agent's `web/`**, though `web/`'s in-progress components (`code-evidence.tsx`, `finding-card.tsx`, etc.) already look like they're coding against this new shape. Worth confirming with the UI agent before either side commits.
+
+**Not done:** wiring `--full-audit` into the cloud (Step Functions Map, per `FUTURE_SCOPE.md` §2); a formal `eval/` accuracy harness (the "Fake A/Fake B" injection-test packages from Step 5 live testing should become its first fixtures).
+
 ### `cloud/` + `infra/` (Step 3, AWS backend)
 
 **Architecture (as built):**
@@ -164,7 +180,9 @@ Fake B is the reason for option B: rules-only gating would have marked it safe. 
    - AI confidence LOW → rules decision (step 3)
    - otherwise → SAFE with the AI's confidence and summary (ai). This is how esbuild-style MEDIUM warnings get cleared.
 
-### Tests (`analyzer/tests/`, 177 passing, no network, no real AWS or AI calls)
+### Tests (`analyzer/tests/`, 211 passing, no network, no real AWS or AI calls)
+
+Newer, uncommitted: `test_audit.py` (chunking, worker/coordinator merge, `FakeReviewer`-style fakes), `test_seed.py` (package list parsing, `scan_one`, upload skip/force logic against a fake store), `test_insights.py`, `test_issues.py` (merge + dedupe rules, excerpt reading), `test_behavior.py` (host classification).
 
 - **Steps 1–2:** schema rules, registry helpers, integrity, extraction attacks (traversal, symlinks, size caps), OSV/SafeDep parsing (incl. the SafeDep "prose contradicts boolean" case), each metadata rule, scoring rules.
 - **End-to-end `analyze()`** with `httpx.MockTransport`: clean, known-malicious, tampered tarball, intel outage, suspicious code.

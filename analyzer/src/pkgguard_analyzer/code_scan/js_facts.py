@@ -39,6 +39,7 @@ class FileFacts:
     network_calls: list[Location] = field(default_factory=list)
     env_dumps: list[Location] = field(default_factory=list)
     env_copies: list[Location] = field(default_factory=list)
+    env_names: set[str] = field(default_factory=set)
     recon_calls: list[Location] = field(default_factory=list)
     decode_calls: list[Location] = field(default_factory=list)
     strings: list[StringLiteral] = field(default_factory=list)
@@ -178,10 +179,17 @@ class _Extractor:
         if parent is not None:
             # process.env.HOME or process.env["HOME"] reads one variable, which is normal.
             if parent.type in ("member_expression", "subscript_expression") and _same(parent.child_by_field_name("object"), node):
+                if name := self._property_name(parent):
+                    self.facts.env_names.add(name)
                 return
             # const { HOME } = process.env also reads specific variables.
             if parent.type == "variable_declarator" and (pattern := parent.child_by_field_name("name")) is not None:
                 if pattern.type == "object_pattern":
+                    for part in pattern.named_children:
+                        if part.type == "shorthand_property_identifier_pattern":
+                            self.facts.env_names.add(_text(part))
+                        elif part.type == "pair_pattern":
+                            self.facts.env_names.add(_text(part.child_by_field_name("key")).strip("\"'"))
                     return
             # { ...process.env, X: 1 } or { env: process.env } passes the environment on to a child process.
             if parent.type == "spread_element" or (

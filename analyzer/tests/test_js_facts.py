@@ -58,3 +58,8 @@ def test_copying_env_for_child_process_is_not_a_dump():
     f = facts('spawn(cmd, args, { env: { ...process.env, EXTRA: "1" } }); execSync(c, { env: process.env });')
     assert f.env_dumps == []
     assert len(f.env_copies) == 2
+
+
+def test_env_variable_names_are_recorded():
+    f = facts('const t = process.env.NPM_TOKEN; const h = process.env["HOME"]; const { CI, key: ALIAS } = process.env;')
+    assert f.env_names == {"NPM_TOKEN", "HOME", "CI", "key"}

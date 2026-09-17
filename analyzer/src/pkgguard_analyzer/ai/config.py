@@ -25,6 +25,12 @@ class AIConfig:
     openai_api_key: str | None = None
     aws_region: str | None = None
     reasoning_effort: str | None = None  # OpenAI reasoning models: minimal | low | medium | high
+    # Full audit (optional): a stronger coordinator model and a cheaper worker model. Default to model_id.
+    audit_model_id: str | None = None
+    audit_reasoning_effort: str | None = None
+    worker_model_id: str | None = None
+    worker_reasoning_effort: str | None = None
+    audit_worker_parallel: int = 4
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> "AIConfig":
@@ -37,6 +43,11 @@ class AIConfig:
             openai_api_key=env.get("OPENAI_API_KEY", "").strip() or None,
             aws_region=env.get("AWS_REGION", "").strip() or None,
             reasoning_effort=env.get("OPENAI_REASONING_EFFORT", "").strip().lower() or None,
+            audit_model_id=env.get("OPENAI_AUDIT_MODEL" if provider == Provider.OPENAI else "BEDROCK_AUDIT_MODEL_ID", "").strip() or None,
+            audit_reasoning_effort=env.get("OPENAI_AUDIT_REASONING_EFFORT", "").strip().lower() or None,
+            worker_model_id=env.get("OPENAI_WORKER_MODEL" if provider == Provider.OPENAI else "BEDROCK_WORKER_MODEL_ID", "").strip() or None,
+            worker_reasoning_effort=env.get("OPENAI_WORKER_REASONING_EFFORT", "").strip().lower() or None,
+            audit_worker_parallel=int(env.get("AUDIT_WORKER_PARALLEL", "").strip() or 4),
         )
 
     def problem(self) -> str | None:

@@ -32,7 +32,13 @@ Verdicts:
 - SAFE: behavior fits the package's purpose and you found nothing harmful.
 Confidence: HIGH only when you read the relevant code yourself. LOW when you couldn't inspect enough.
 
-Write the summary in one or two plain sentences a developer understands. Keep the reasoning short. For evidence, cite only files and lines you actually read. Give an assessment (benign, malicious or uncertain) for each automated finding you examined."""
+Write the summary in one or two plain sentences a developer understands. Keep the reasoning short. Give an assessment (benign, malicious or uncertain) for each automated finding you examined.
+
+Evidence is shown to developers next to the real code, so be exact:
+- Cite only files and lines you actually read. Use the line numbers exactly as shown in the tool output. For minified lines shown as 12.3, use 12.
+- Give line (first line) and end_line (last line) covering exactly the relevant code, not the whole function.
+- Give a short title (under 10 words) and an explanation of what that code does and why it matters.
+- Set severity (HIGH, MEDIUM or LOW) only for real problems. Leave severity empty for evidence that explains why something is fine."""
 
 
 def build_task(report: Report, mode: ReviewMode, max_tool_calls: int) -> str:

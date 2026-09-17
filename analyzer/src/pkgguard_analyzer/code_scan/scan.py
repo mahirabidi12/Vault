@@ -6,11 +6,12 @@ from typing import Any
 
 import yara
 
+from pkgguard_analyzer.code_scan.behavior import BehaviorBuilder
 from pkgguard_analyzer.code_scan.files import select_files
 from pkgguard_analyzer.code_scan.js_facts import extract_facts
 from pkgguard_analyzer.code_scan.patterns import scan_patterns
 from pkgguard_analyzer.code_scan.rules import FindingCollector, add_file_findings
-from pkgguard_analyzer.schema import Confidence, Finding, Severity
+from pkgguard_analyzer.schema import BehaviorProfile, Confidence, Finding, Indicator, Severity
 
 MAX_FINDINGS = 200
 
@@ -19,11 +20,14 @@ MAX_FINDINGS = 200
 class CodeScanResult:
     summary: dict[str, Any]
     findings: list[Finding]
+    behavior: BehaviorProfile | None = None
+    indicators: list[Indicator] | None = None
 
 
 def scan_code(files_dir: Path, manifest: dict) -> CodeScanResult:
     selection = select_files(files_dir, manifest)
     collector = FindingCollector()
+    behavior = BehaviorBuilder()
     files_with_parse_errors = 0
 
     for code_file in selection.code_files:
@@ -36,6 +40,7 @@ def scan_code(files_dir: Path, manifest: dict) -> CodeScanResult:
         facts = extract_facts(data) if code_file.parse_ast else None
         files_with_parse_errors += bool(facts and facts.parse_errors)
         add_file_findings(code_file, facts, hits, collector)
+        behavior.add_file(code_file, facts, hits)
 
     for path, kind in selection.executables:
         collector.add("code.executable", Severity.LOW, Confidence.HIGH, f"Ships a native executable ({kind})", path, None)
@@ -51,4 +56,5 @@ def scan_code(files_dir: Path, manifest: dict) -> CodeScanResult:
         "skipped": selection.skipped,
         "findingsTruncated": len(findings) > MAX_FINDINGS,
     }
-    return CodeScanResult(summary, findings[:MAX_FINDINGS])
+    profile, indicators = behavior.build([path for path, _ in selection.executables])
+    return CodeScanResult(summary, findings[:MAX_FINDINGS], profile, indicators)

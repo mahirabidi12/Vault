@@ -1,5 +1,47 @@
 {
   "$defs": {
+    "AICost": {
+      "additionalProperties": false,
+      "properties": {
+        "coordinatorInputTokens": {
+          "default": 0,
+          "title": "Coordinatorinputtokens",
+          "type": "integer"
+        },
+        "coordinatorOutputTokens": {
+          "default": 0,
+          "title": "Coordinatoroutputtokens",
+          "type": "integer"
+        },
+        "coordinatorSeconds": {
+          "default": 0.0,
+          "title": "Coordinatorseconds",
+          "type": "number"
+        },
+        "workerInputTokens": {
+          "default": 0,
+          "title": "Workerinputtokens",
+          "type": "integer"
+        },
+        "workerOutputTokens": {
+          "default": 0,
+          "title": "Workeroutputtokens",
+          "type": "integer"
+        },
+        "workerCalls": {
+          "default": 0,
+          "title": "Workercalls",
+          "type": "integer"
+        },
+        "workerSeconds": {
+          "default": 0.0,
+          "title": "Workerseconds",
+          "type": "number"
+        }
+      },
+      "title": "AICost",
+      "type": "object"
+    },
     "AIEvidence": {
       "additionalProperties": false,
       "properties": {
@@ -18,7 +60,47 @@
             }
           ],
           "default": null,
+          "description": "First line number, exactly as shown in the numbered code",
           "title": "Line"
+        },
+        "endLine": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last line number of the relevant code (same as line for one line)",
+          "title": "Endline"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Short label, e.g. 'Sends NPM_TOKEN to remote server'",
+          "title": "Title"
+        },
+        "severity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Severity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Set only for real problems; leave empty for context explaining why code is fine"
         },
         "explanation": {
           "title": "Explanation",
@@ -113,6 +195,42 @@
         "durationSeconds": {
           "title": "Durationseconds",
           "type": "number"
+        },
+        "coverage": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AuditCoverage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "trace": {
+          "items": {
+            "$ref": "#/$defs/ToolCall"
+          },
+          "title": "Trace",
+          "type": "array"
+        },
+        "workerReports": {
+          "items": {
+            "$ref": "#/$defs/WorkerPartReport"
+          },
+          "title": "Workerreports",
+          "type": "array"
+        },
+        "cost": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/AICost"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [
@@ -136,6 +254,311 @@
       "title": "Assessment",
       "type": "string"
     },
+    "AuditCoverage": {
+      "additionalProperties": false,
+      "description": "How much of the package a full audit actually read.",
+      "properties": {
+        "filesTotal": {
+          "title": "Filestotal",
+          "type": "integer"
+        },
+        "filesAnalyzed": {
+          "title": "Filesanalyzed",
+          "type": "integer"
+        },
+        "bytesTotal": {
+          "title": "Bytestotal",
+          "type": "integer"
+        },
+        "bytesAnalyzed": {
+          "title": "Bytesanalyzed",
+          "type": "integer"
+        },
+        "duplicatesSkipped": {
+          "default": 0,
+          "title": "Duplicatesskipped",
+          "type": "integer"
+        },
+        "chunks": {
+          "title": "Chunks",
+          "type": "integer"
+        },
+        "chunksFailed": {
+          "default": 0,
+          "title": "Chunksfailed",
+          "type": "integer"
+        },
+        "workerModel": {
+          "title": "Workermodel",
+          "type": "string"
+        },
+        "skippedFiles": {
+          "items": {
+            "$ref": "#/$defs/SkippedFile"
+          },
+          "title": "Skippedfiles",
+          "type": "array"
+        }
+      },
+      "required": [
+        "filesTotal",
+        "filesAnalyzed",
+        "bytesTotal",
+        "bytesAnalyzed",
+        "chunks",
+        "workerModel"
+      ],
+      "title": "AuditCoverage",
+      "type": "object"
+    },
+    "BehaviorProfile": {
+      "additionalProperties": false,
+      "description": "What the package's code can do, from deterministic rules. Stable across runs, so versions can be compared.",
+      "properties": {
+        "networkModules": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Networkmodules",
+          "type": "array"
+        },
+        "hosts": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Hosts",
+          "type": "array"
+        },
+        "ipAddresses": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ipaddresses",
+          "type": "array"
+        },
+        "envVars": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Envvars",
+          "type": "array"
+        },
+        "readsAllEnv": {
+          "default": false,
+          "title": "Readsallenv",
+          "type": "boolean"
+        },
+        "sensitivePaths": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sensitivepaths",
+          "type": "array"
+        },
+        "runsCommands": {
+          "default": false,
+          "title": "Runscommands",
+          "type": "boolean"
+        },
+        "dynamicCode": {
+          "default": false,
+          "title": "Dynamiccode",
+          "type": "boolean"
+        },
+        "decodesData": {
+          "default": false,
+          "title": "Decodesdata",
+          "type": "boolean"
+        },
+        "readsMachineInfo": {
+          "default": false,
+          "title": "Readsmachineinfo",
+          "type": "boolean"
+        },
+        "nativeExecutables": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Nativeexecutables",
+          "type": "array"
+        },
+        "installTime": {
+          "$ref": "#/$defs/InstallTimeBehavior"
+        },
+        "filesByCapability": {
+          "additionalProperties": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Filesbycapability",
+          "type": "object"
+        }
+      },
+      "title": "BehaviorProfile",
+      "type": "object"
+    },
+    "CodeExcerpt": {
+      "additionalProperties": false,
+      "description": "Real lines copied from the package file (never from model output), with context around the issue.",
+      "properties": {
+        "startLine": {
+          "title": "Startline",
+          "type": "integer"
+        },
+        "endLine": {
+          "title": "Endline",
+          "type": "integer"
+        },
+        "highlightStart": {
+          "title": "Highlightstart",
+          "type": "integer"
+        },
+        "highlightEnd": {
+          "title": "Highlightend",
+          "type": "integer"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/ExcerptLine"
+          },
+          "title": "Lines",
+          "type": "array"
+        }
+      },
+      "required": [
+        "startLine",
+        "endLine",
+        "highlightStart",
+        "highlightEnd",
+        "lines"
+      ],
+      "title": "CodeExcerpt",
+      "type": "object"
+    },
+    "CodeIssue": {
+      "additionalProperties": false,
+      "description": "One problem at an exact place in the code, merged from rules and AI. Built for the report page.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "lineStart": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Linestart"
+        },
+        "lineEnd": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lineend"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "category": {
+          "$ref": "#/$defs/IssueCategory"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "whyItMatters": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Whyitmatters"
+        },
+        "analysis": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Analysis"
+        },
+        "sources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "ruleIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Ruleids",
+          "type": "array"
+        },
+        "aiAssessment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Assessment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "installTime": {
+          "default": false,
+          "title": "Installtime",
+          "type": "boolean"
+        },
+        "excerpt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CodeExcerpt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "file",
+        "severity",
+        "category",
+        "title"
+      ],
+      "title": "CodeIssue",
+      "type": "object"
+    },
     "Confidence": {
       "enum": [
         "HIGH",
@@ -145,12 +568,108 @@
       "title": "Confidence",
       "type": "string"
     },
+    "DataFlow": {
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "description": "Where data comes from, e.g. 'process.env.NPM_TOKEN', '~/.npmrc', 'os.hostname()'",
+          "title": "Source",
+          "type": "string"
+        },
+        "sink": {
+          "description": "Where it goes, e.g. 'HTTPS request to https://api.example.com/collect', 'eval', 'child_process'",
+          "title": "Sink",
+          "type": "string"
+        },
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "description": {
+          "title": "Description",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source",
+        "sink",
+        "file",
+        "description"
+      ],
+      "title": "DataFlow",
+      "type": "object"
+    },
     "Ecosystem": {
       "enum": [
         "npm"
       ],
       "title": "Ecosystem",
       "type": "string"
+    },
+    "ExcerptLine": {
+      "additionalProperties": false,
+      "properties": {
+        "number": {
+          "title": "Number",
+          "type": "integer"
+        },
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "highlighted": {
+          "default": false,
+          "title": "Highlighted",
+          "type": "boolean"
+        },
+        "clipped": {
+          "default": false,
+          "title": "Clipped",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "number",
+        "text"
+      ],
+      "title": "ExcerptLine",
+      "type": "object"
+    },
+    "FileHash": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "size": {
+          "title": "Size",
+          "type": "integer"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "size",
+        "sha256"
+      ],
+      "title": "FileHash",
+      "type": "object"
     },
     "Finding": {
       "additionalProperties": false,
@@ -275,6 +794,106 @@
       "title": "FindingLayer",
       "type": "string"
     },
+    "Indicator": {
+      "additionalProperties": false,
+      "description": "Indicator of compromise: something an attacker controls (a collection URL, webhook, IP).",
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/IndicatorType"
+        },
+        "value": {
+          "title": "Value",
+          "type": "string"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "File"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Line"
+        },
+        "source": {
+          "title": "Source",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "value",
+        "source"
+      ],
+      "title": "Indicator",
+      "type": "object"
+    },
+    "IndicatorType": {
+      "enum": [
+        "url",
+        "domain",
+        "ip",
+        "webhook"
+      ],
+      "title": "IndicatorType",
+      "type": "string"
+    },
+    "InstallTimeBehavior": {
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "default": false,
+          "title": "Network",
+          "type": "boolean"
+        },
+        "commands": {
+          "default": false,
+          "title": "Commands",
+          "type": "boolean"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Files",
+          "type": "array"
+        }
+      },
+      "title": "InstallTimeBehavior",
+      "type": "object"
+    },
+    "IssueCategory": {
+      "enum": [
+        "secret_theft",
+        "network",
+        "commands",
+        "hidden_code",
+        "secrets_access",
+        "install_script",
+        "prompt_injection",
+        "mining",
+        "remote_control",
+        "binary",
+        "archive",
+        "other"
+      ],
+      "title": "IssueCategory",
+      "type": "string"
+    },
     "PackageRef": {
       "additionalProperties": false,
       "properties": {
@@ -299,13 +918,96 @@
       "title": "PackageRef",
       "type": "object"
     },
+    "ReviewFlags": {
+      "additionalProperties": false,
+      "description": "Signals that a human should look at this result.",
+      "properties": {
+        "rulesAiDisagree": {
+          "default": false,
+          "title": "Rulesaidisagree",
+          "type": "boolean"
+        },
+        "workerCoordinatorDisagree": {
+          "default": false,
+          "title": "Workercoordinatordisagree",
+          "type": "boolean"
+        },
+        "promptInjectionDetected": {
+          "default": false,
+          "title": "Promptinjectiondetected",
+          "type": "boolean"
+        },
+        "lowCoverage": {
+          "default": false,
+          "title": "Lowcoverage",
+          "type": "boolean"
+        },
+        "aiFailed": {
+          "default": false,
+          "title": "Aifailed",
+          "type": "boolean"
+        },
+        "needsHumanReview": {
+          "default": false,
+          "title": "Needshumanreview",
+          "type": "boolean"
+        },
+        "reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        }
+      },
+      "title": "ReviewFlags",
+      "type": "object"
+    },
     "ReviewMode": {
       "enum": [
         "quick_look",
-        "deep_dive"
+        "deep_dive",
+        "full_audit"
       ],
       "title": "ReviewMode",
       "type": "string"
+    },
+    "ScanSettings": {
+      "additionalProperties": false,
+      "description": "Everything that affects results, so we know which scans to redo after changing rules, prompts or models.",
+      "properties": {
+        "analyzerVersion": {
+          "title": "Analyzerversion",
+          "type": "string"
+        },
+        "rulesHash": {
+          "title": "Ruleshash",
+          "type": "string"
+        },
+        "promptHashes": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Prompthashes",
+          "type": "object"
+        },
+        "ai": {
+          "additionalProperties": true,
+          "title": "Ai",
+          "type": "object"
+        },
+        "settingsHash": {
+          "title": "Settingshash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "analyzerVersion",
+        "rulesHash",
+        "settingsHash"
+      ],
+      "title": "ScanSettings",
+      "type": "object"
     },
     "Severity": {
       "enum": [
@@ -316,6 +1018,117 @@
       "title": "Severity",
       "type": "string"
     },
+    "SkippedFile": {
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "title": "SkippedFile",
+      "type": "object"
+    },
+    "StageTimings": {
+      "additionalProperties": false,
+      "properties": {
+        "downloadSeconds": {
+          "default": 0.0,
+          "title": "Downloadseconds",
+          "type": "number"
+        },
+        "unpackSeconds": {
+          "default": 0.0,
+          "title": "Unpackseconds",
+          "type": "number"
+        },
+        "intelSeconds": {
+          "default": 0.0,
+          "title": "Intelseconds",
+          "type": "number"
+        },
+        "metadataSeconds": {
+          "default": 0.0,
+          "title": "Metadataseconds",
+          "type": "number"
+        },
+        "codeScanSeconds": {
+          "default": 0.0,
+          "title": "Codescanseconds",
+          "type": "number"
+        },
+        "aiSeconds": {
+          "default": 0.0,
+          "title": "Aiseconds",
+          "type": "number"
+        },
+        "totalSeconds": {
+          "default": 0.0,
+          "title": "Totalseconds",
+          "type": "number"
+        }
+      },
+      "title": "StageTimings",
+      "type": "object"
+    },
+    "ToolCall": {
+      "additionalProperties": false,
+      "description": "One step of the agent's investigation. Arguments only; file contents are never stored.",
+      "properties": {
+        "step": {
+          "title": "Step",
+          "type": "integer"
+        },
+        "tool": {
+          "title": "Tool",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ]
+          },
+          "title": "Arguments",
+          "type": "object"
+        },
+        "outcome": {
+          "title": "Outcome",
+          "type": "string"
+        },
+        "resultChars": {
+          "title": "Resultchars",
+          "type": "integer"
+        },
+        "seconds": {
+          "title": "Seconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "step",
+        "tool",
+        "arguments",
+        "outcome",
+        "resultChars",
+        "seconds"
+      ],
+      "title": "ToolCall",
+      "type": "object"
+    },
     "Verdict": {
       "enum": [
         "SAFE",
@@ -324,6 +1137,189 @@
       ],
       "title": "Verdict",
       "type": "string"
+    },
+    "WorkerAssessment": {
+      "enum": [
+        "benign",
+        "suspicious",
+        "malicious"
+      ],
+      "title": "WorkerAssessment",
+      "type": "string"
+    },
+    "WorkerItem": {
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "title": "File",
+          "type": "string"
+        },
+        "line": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "First line number, exactly as shown in the numbered code",
+          "title": "Line"
+        },
+        "endLine": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last line number of the relevant code",
+          "title": "Endline"
+        },
+        "behavior": {
+          "description": "Short label, e.g. 'reads NPM_TOKEN', 'spawns shell', 'decodes base64 and evals'",
+          "title": "Behavior",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        },
+        "explanation": {
+          "title": "Explanation",
+          "type": "string"
+        }
+      },
+      "required": [
+        "file",
+        "behavior",
+        "severity",
+        "explanation"
+      ],
+      "title": "WorkerItem",
+      "type": "object"
+    },
+    "WorkerPartReport": {
+      "additionalProperties": false,
+      "properties": {
+        "part": {
+          "title": "Part",
+          "type": "integer"
+        },
+        "files": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Files",
+          "type": "array"
+        },
+        "report": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WorkerReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "inputTokens": {
+          "default": 0,
+          "title": "Inputtokens",
+          "type": "integer"
+        },
+        "outputTokens": {
+          "default": 0,
+          "title": "Outputtokens",
+          "type": "integer"
+        },
+        "durationSeconds": {
+          "default": 0.0,
+          "title": "Durationseconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "part",
+        "files"
+      ],
+      "title": "WorkerPartReport",
+      "type": "object"
+    },
+    "WorkerReport": {
+      "additionalProperties": false,
+      "description": "What one full-audit worker returns for one part of the code.",
+      "properties": {
+        "summary": {
+          "description": "Two or three sentences: what this code does",
+          "title": "Summary",
+          "type": "string"
+        },
+        "capabilities": {
+          "description": "Any of: network, exec, dynamic_code, env_access, sensitive_files, obfuscation, crypto, filesystem_write, none",
+          "items": {
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "suspiciousItems": {
+          "items": {
+            "$ref": "#/$defs/WorkerItem"
+          },
+          "title": "Suspiciousitems",
+          "type": "array"
+        },
+        "dataFlows": {
+          "items": {
+            "$ref": "#/$defs/DataFlow"
+          },
+          "title": "Dataflows",
+          "type": "array"
+        },
+        "externalEndpoints": {
+          "description": "Full URLs, hosts or IPs the code contacts",
+          "items": {
+            "type": "string"
+          },
+          "title": "Externalendpoints",
+          "type": "array"
+        },
+        "envVars": {
+          "description": "Names of environment variables read (names only, never values)",
+          "items": {
+            "type": "string"
+          },
+          "title": "Envvars",
+          "type": "array"
+        },
+        "assessment": {
+          "$ref": "#/$defs/WorkerAssessment"
+        }
+      },
+      "required": [
+        "summary",
+        "capabilities",
+        "assessment"
+      ],
+      "title": "WorkerReport",
+      "type": "object"
     }
   },
   "additionalProperties": false,
@@ -385,6 +1381,76 @@
       ],
       "default": null,
       "title": "Aierror"
+    },
+    "behavior": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/BehaviorProfile"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "iocs": {
+      "items": {
+        "$ref": "#/$defs/Indicator"
+      },
+      "title": "Iocs",
+      "type": "array"
+    },
+    "fileHashes": {
+      "items": {
+        "$ref": "#/$defs/FileHash"
+      },
+      "title": "Filehashes",
+      "type": "array"
+    },
+    "fileHashesTruncated": {
+      "default": false,
+      "title": "Filehashestruncated",
+      "type": "boolean"
+    },
+    "settings": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ScanSettings"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "timings": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/StageTimings"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "reviewFlags": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ReviewFlags"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "codeIssues": {
+      "items": {
+        "$ref": "#/$defs/CodeIssue"
+      },
+      "title": "Codeissues",
+      "type": "array"
     },
     "humanReview": {
       "anyOf": [

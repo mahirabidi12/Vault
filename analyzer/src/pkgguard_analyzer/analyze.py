@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 import tarfile
+import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -15,6 +16,8 @@ from pkgguard_analyzer import ANALYZER_VERSION
 from pkgguard_analyzer.ai.config import AIMode
 from pkgguard_analyzer.ai.reviewer import Reviewer, review_mode, run_review
 from pkgguard_analyzer.code_scan import scan_code
+from pkgguard_analyzer.insights import ai_indicators, hash_files, merge_indicators, review_flags, scan_settings
+from pkgguard_analyzer.issues import build_code_issues
 from pkgguard_analyzer.extract import ArchiveTooLarge, safe_extract
 from pkgguard_analyzer.intel import run_intel
 from pkgguard_analyzer.metadata_checks import check_metadata, parse_time
@@ -33,6 +36,7 @@ from pkgguard_analyzer.schema import (
     RanOn,
     Report,
     ScanStatus,
+    StageTimings,
     VerdictRecord,
 )
 from pkgguard_analyzer.scoring import decide, signals
@@ -72,7 +76,9 @@ def analyze(
     reviewer: Reviewer | None = None,
     ai_mode: AIMode = AIMode.OFF,
     scan_id: str | None = None,
+    auditor=None,
 ) -> ScanResult:
+    """auditor: optional FullAuditor. When given, it replaces the quick look / deep dive with a full-package audit."""
     if not NPM_NAME_RE.fullmatch(name):
         raise ValueError(f"invalid npm package name: {name!r}")
     owns_client = client is None
@@ -88,6 +94,7 @@ def analyze(
             reviewer if ai_mode != AIMode.OFF else None,
             ai_mode,
             scan_id or str(ULID()),
+            auditor,
         )
     finally:
         if owns_client:
@@ -104,7 +111,16 @@ def _analyze(
     reviewer: Reviewer | None,
     ai_mode: AIMode,
     scan_id: str,
+    auditor,
 ) -> ScanResult:
+    started = time.monotonic()
+    timings = StageTimings()
+
+    def lap(field: str, since: float) -> float:
+        now = time.monotonic()
+        setattr(timings, field, round(now - since, 3))
+        return now
+
     packument = fetch_packument(client, name)
     resolved = resolve_version(packument, version)
     package = PackageRef(ecosystem=Ecosystem.NPM, name=name, version=resolved)
@@ -135,6 +151,7 @@ def _analyze(
     except (IntegrityError, httpx.HTTPError) as error:
         return stopped(ScanStatus.FAILED, str(error))
 
+    mark = lap("download_seconds", started)
     sha256 = hashlib.sha256(tarball).hexdigest()
     files_dir = scan_dir / "files"
     if files_dir.exists():
@@ -146,11 +163,16 @@ def _analyze(
     except (tarfile.TarError, EOFError, OSError) as error:
         return stopped(ScanStatus.FAILED, f"could not unpack tarball: {error}", sha256=sha256)
 
+    file_hashes, hashes_truncated = hash_files(files_dir)
+    mark = lap("unpack_seconds", mark)
     tarball_manifest = _read_manifest(files_dir / "package.json")
     intel = run_intel(client, name, resolved)
+    mark = lap("intel_seconds", mark)
     metadata, metadata_findings = check_metadata(packument, resolved, tarball_manifest, extracted.skipped, now)
+    mark = lap("metadata_seconds", mark)
     # The tarball's package.json is what npm actually runs; fall back to registry metadata if it's missing.
     code = scan_code(files_dir, tarball_manifest or packument["versions"][resolved])
+    mark = lap("code_scan_seconds", mark)
     findings = intel.findings + metadata_findings + code.findings
     report = Report(
         package=package,
@@ -165,15 +187,38 @@ def _analyze(
             "unpackedBytes": extracted.unpacked_bytes,
         },
         code_scan=code.summary,
+        behavior=code.behavior,
+        file_hashes=file_hashes,
+        file_hashes_truncated=hashes_truncated,
     )
 
     ai_review, ai_error = None, None
-    if reviewer is not None and (mode := review_mode(findings, ai_mode)):
+    if auditor is not None:
+        ai_review, ai_error = auditor.audit(files_dir, report)
+    elif reviewer is not None and (mode := review_mode(findings, ai_mode)):
         ai_review, ai_error = run_review(files_dir, report, reviewer, mode)
+    ai_model = (auditor or reviewer).model_id if (ai_review or ai_error) else None
+
+    lap("ai_seconds", mark)
 
     decision = decide(findings, ai_review)
+    flags = review_flags(findings, decide(findings), decision, ai_review, ai_error)
+    indicators = merge_indicators(code.indicators or [], ai_indicators(ai_review))
+    settings = scan_settings(ai_mode, reviewer, auditor)
+    timings.total_seconds = round(time.monotonic() - started, 3)
     analyzed_at = datetime.now(UTC)
-    report = report.model_copy(update={"generated_at": analyzed_at, "ai_review": ai_review, "ai_error": ai_error})
+    report = report.model_copy(
+        update={
+            "generated_at": analyzed_at,
+            "ai_review": ai_review,
+            "ai_error": ai_error,
+            "iocs": indicators,
+            "settings": settings,
+            "timings": timings,
+            "review_flags": flags,
+            "code_issues": build_code_issues(files_dir, findings, ai_review, code.summary.get("installTimeFiles")),
+        }
+    )
     record = VerdictRecord(
         **base,
         status=ScanStatus.COMPLETE,
@@ -184,8 +229,11 @@ def _analyze(
         signals=signals(findings),
         sha256=sha256,
         analyzed_at=analyzed_at,
-        model=reviewer.model_id if (ai_review or ai_error) and reviewer else None,
+        model=ai_model,
         ai_failed=ai_error is not None,
+        needs_review=flags.needs_human_review,
+        ioc_count=len(indicators),
+        settings_hash=settings.settings_hash,
     )
     return ScanResult(record, report, scan_dir)
 

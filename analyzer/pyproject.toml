@@ -16,6 +16,7 @@ dependencies = [
 
 [project.scripts]
 analyze = "pkgguard_analyzer.cli:main"
+pkgguard-seed = "pkgguard_analyzer.seed:main"
 pkgguard-export-schema = "pkgguard_analyzer.export_schema:main"
 
 [dependency-groups]

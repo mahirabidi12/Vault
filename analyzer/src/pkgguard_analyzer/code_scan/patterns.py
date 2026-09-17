@@ -21,6 +21,7 @@ class PatternHit:
     capabilities: frozenset[str]
     location: Location
     occurrences: int
+    matches: list[str]
 
 
 @cache
@@ -54,6 +55,7 @@ def scan_patterns(data: bytes) -> list[PatternHit]:
                 capabilities=frozenset(filter(None, meta.get("capabilities", "").split(","))),
                 location=location_at(data, min(instance.offset for instance in instances)),
                 occurrences=len(instances),
+                matches=list(dict.fromkeys(i.matched_data.decode("utf-8", "replace") for i in instances))[:5],
             )
         )
     return hits

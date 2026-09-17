@@ -152,3 +152,41 @@ def test_ai_failure_falls_back_to_rules(tmp_path):
     assert result.record.verdict == Verdict.SUSPICIOUS
     assert result.record.ai_failed is True
     assert "provider down" in result.report.ai_error
+
+
+class FakeAuditor:
+    model_id = "coordinator-model"
+
+    def __init__(self):
+        self.calls = 0
+
+    def audit(self, files_dir, report):
+        from pkgguard_analyzer.schema import AIReview
+
+        self.calls += 1
+        return AIReview(verdict="SAFE", confidence="HIGH", summary="audited everything", reasoning="r", model=self.model_id, mode="full_audit", duration_seconds=1.0), None
+
+
+def test_full_audit_replaces_quick_review(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": "module.exports = 1"})
+    auditor, reviewer = FakeAuditor(), FakeReviewer()
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW, reviewer=reviewer, ai_mode=AIMode.ALWAYS, auditor=auditor)
+    assert auditor.calls == 1 and reviewer.modes == []
+    assert result.report.ai_review.mode == ReviewMode.FULL_AUDIT
+    assert result.record.model == "coordinator-model"
+
+
+def test_report_stores_behavior_hashes_settings_timings_and_flags(tmp_path):
+    tarball = make_tgz({"package/package.json": manifest_json(), "package/index.js": EXFIL_CODE})
+    result = analyze("demo-pkg", out_dir=tmp_path, client=mock_client(tarball, sri(tarball)), now=NOW)
+    report, record = result.report, result.record
+
+    assert report.behavior.reads_all_env and report.behavior.network_modules == ["https"]
+    assert [h.path for h in report.file_hashes] == ["index.js", "package.json"]
+    assert report.settings.ai == {"mode": "off"} and report.settings.rules_hash
+    assert report.timings.total_seconds >= report.timings.code_scan_seconds >= 0
+    assert report.review_flags.needs_human_review  # SUSPICIOUS verdict
+    assert record.needs_review and record.settings_hash == report.settings.settings_hash
+    assert record.ioc_count == len(report.iocs)
+    top = report.code_issues[0]
+    assert top.file == "index.js" and top.line_start == 1 and top.excerpt.lines[0].highlighted

@@ -4,7 +4,10 @@ Everything returned is wrapped in <package_content> tags: it is attacker-control
 """
 
 import re
+import time
 from pathlib import Path, PurePosixPath
+
+from pkgguard_analyzer.schema import ToolCall
 
 MAX_LINES_PER_READ = 300
 MAX_LINE_CHARS = 400
@@ -31,6 +34,27 @@ class PackageWorkspace:
         self.labels = labels or {}
         self.tool_calls = 0
         self.files_read: list[str] = []
+        self.trace: list[ToolCall] = []
+
+    def _traced(self, tool: str, arguments: dict[str, str | int], run) -> str:
+        started = time.monotonic()
+        if not self._charge():
+            output, outcome = BUDGET_EXHAUSTED, "budget_exhausted"
+        else:
+            output = run()
+            if output.startswith("File not found"):
+                outcome = "not_found"
+            elif "binary file" in output[:200]:
+                outcome = "binary"
+            elif output.startswith(("No matches", "No files found")) or " has only " in output[:200]:
+                outcome = "empty"
+            else:
+                outcome = "ok"
+            output = self._with_budget(output)
+        self.trace.append(
+            ToolCall(step=len(self.trace) + 1, tool=tool, arguments=arguments, outcome=outcome, result_chars=len(output), seconds=round(time.monotonic() - started, 3))
+        )
+        return output
 
     def _charge(self) -> bool:
         """Count a tool call if budget remains. Refused calls aren't counted."""
@@ -65,9 +89,7 @@ class PackageWorkspace:
         return sorted(p for p in base.rglob("*") if p.is_file())
 
     def list_files(self, directory: str = "") -> str:
-        if not self._charge():
-            return BUDGET_EXHAUSTED
-        return self._with_budget(self._list_files(directory))
+        return self._traced("list_files", {"directory": directory}, lambda: self._list_files(directory))
 
     def _list_files(self, directory: str) -> str:
         files = self._files_under(directory)
@@ -83,9 +105,8 @@ class PackageWorkspace:
         return wrap_untrusted("\n".join(lines), source="list_files", directory=directory or ".")
 
     def read_file(self, path: str, start_line: int = 1, end_line: int = 0) -> str:
-        if not self._charge():
-            return BUDGET_EXHAUSTED
-        return self._with_budget(self._read_file(path, start_line, end_line))
+        arguments = {"path": path, "start_line": start_line, "end_line": end_line}
+        return self._traced("read_file", arguments, lambda: self._read_file(path, start_line, end_line))
 
     def _read_file(self, path: str, start_line: int, end_line: int) -> str:
         target = self.resolve(path)
@@ -113,9 +134,7 @@ class PackageWorkspace:
         return wrap_untrusted("\n".join(numbered), source="read_file", path=relative, lines=f"{start}-{end}", total_lines=len(lines))
 
     def search(self, pattern: str, directory: str = "") -> str:
-        if not self._charge():
-            return BUDGET_EXHAUSTED
-        return self._with_budget(self._search(pattern, directory))
+        return self._traced("search", {"pattern": pattern[:200], "directory": directory}, lambda: self._search(pattern, directory))
 
     def _search(self, pattern: str, directory: str) -> str:
         try:
