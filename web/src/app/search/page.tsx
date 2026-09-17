@@ -64,7 +64,7 @@ export default async function SearchPage({ searchParams }: Props) {
           </div>
 
           {!exactMatch && (
-            <div className="mt-2 flex flex-col items-start gap-3 rounded-2xl border border-dashed border-border bg-card/40 p-6">
+            <div className="mt-2 flex flex-col items-start gap-3 rounded-lg border border-dashed border-border bg-card/40 p-6">
               <span className="flex size-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
                 <PackageSearch className="size-4.5" />
               </span>
@@ -72,7 +72,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 Not finding <span className="font-mono text-foreground">{q}</span>? If that&apos;s an exact npm
                 package name, PkgGuard can scan it right now.
               </p>
-              <Button render={<Link href={packageHref(q)} />}>
+              <Button render={<Link href={packageHref(q)} />} nativeButton={false}>
                 <ScanSearch className="size-4" />
                 Scan &quot;{q}&quot; now
               </Button>

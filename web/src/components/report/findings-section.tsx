@@ -14,7 +14,7 @@ const LAYER_ORDER: FindingLayer[] = ["intel", "metadata", "static"];
 export async function FindingsSection({ findings }: { findings: Finding[] }) {
   if (findings.length === 0) {
     return (
-      <section className="flex items-center gap-3 rounded-2xl border border-dashed border-border bg-card/40 p-6 text-sm text-muted-foreground">
+      <section className="flex items-center gap-3 rounded-lg border border-dashed border-border bg-card/40 p-6 text-sm text-muted-foreground">
         <ShieldCheck className="size-5 text-safe" />
         No findings from threat intelligence, package info or code scanning.
       </section>
@@ -30,7 +30,7 @@ export async function FindingsSection({ findings }: { findings: Finding[] }) {
 
   return (
     <section className="flex flex-col gap-6">
-      <h2 className="text-lg font-semibold tracking-tight">Findings</h2>
+      <h2 className="font-display text-lg font-semibold tracking-tight">Findings</h2>
       {LAYER_ORDER.filter((l) => byLayer.has(l)).map((layer) => {
         const items = [...byLayer.get(layer)!].sort(
           (a, b) => SEVERITY_ORDER[a.severity] - SEVERITY_ORDER[b.severity]

@@ -8,7 +8,7 @@ export function ScanFailedState({ record }: { record: VerdictRecord }) {
   return (
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 px-4 py-24 text-center">
       <Icon className={skipped ? "size-10 text-muted-foreground" : "size-10 text-malicious"} />
-      <h1 className="text-xl font-semibold tracking-tight">
+      <h1 className="font-display text-xl font-semibold tracking-tight">
         {skipped ? "Scan skipped" : "Scan failed"}
       </h1>
       <p className="font-mono text-sm">

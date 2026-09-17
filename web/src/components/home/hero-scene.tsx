@@ -70,13 +70,18 @@ function Scene() {
       <directionalLight position={[3, 4, 2]} intensity={1.2} />
       <pointLight position={[-3, -2, -2]} intensity={0.6} color="#4fd6ff" />
 
-      <CoreShield />
-      <OrbitNode radius={2.6} speed={0.5} size={0.16} color="#3ecf7a" offset={0} />
-      <OrbitNode radius={2.9} speed={0.35} size={0.13} color="#f2b84b" offset={2.1} />
-      <OrbitNode radius={2.3} speed={0.62} size={0.14} color="#3ecf7a" offset={4.2} />
-      <OrbitNode radius={3.2} speed={0.28} size={0.1} color="#ff5c5c" offset={1.1} />
+      {/* Offset well away from center: the headline sits dead-center over
+          the canvas, so anything at the origin renders directly behind the
+          text with no room to separate it for contrast. */}
+      <group position={[2.6, -1.5, -1.5]}>
+        <CoreShield />
+        <OrbitNode radius={1.3} speed={0.5} size={0.14} color="#3ecf7a" offset={0} />
+        <OrbitNode radius={1.5} speed={0.35} size={0.11} color="#f2b84b" offset={2.1} />
+        <OrbitNode radius={1.15} speed={0.62} size={0.12} color="#3ecf7a" offset={4.2} />
+        <OrbitNode radius={1.7} speed={0.28} size={0.09} color="#ff5c5c" offset={1.1} />
+      </group>
 
-      <Sparkles count={60} scale={5.5} size={2} speed={0.3} color="#8b7bff" opacity={0.5} />
+      <Sparkles count={40} scale={5.5} size={2} speed={0.3} color="#8b7bff" opacity={0.35} />
       <Environment preset={dark ? "city" : "apartment"} environmentIntensity={0.5} />
     </>
   );
@@ -101,7 +106,7 @@ export function HeroScene() {
       dpr={[1, 1.75]}
       camera={{ position: [0, 0, 6.5], fov: 42 }}
       gl={{ antialias: true, alpha: true }}
-      className="!absolute inset-0"
+      className="!absolute inset-0 opacity-80 dark:opacity-100"
     >
       <React.Suspense fallback={null}>
         <Scene />

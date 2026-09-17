@@ -85,6 +85,83 @@ That fixture's AI read the code as harmless (`aiReview.verdict: "SAFE"`) while t
 
 ---
 
+## Visual redesign pass (2026-09-17, after the AI-review sync)
+
+User asked for a much stronger, "2026 startup" visual bar for the hackathon's Best UI track, referencing
+`wspx.vercel.app` (repo: `github.com/zingzy/wsp`, `apps/www`), `traycer.ai`, `era0.com`, `maritime.sh`. I cloned
+the `wsp` repo to `/tmp` (read-only, not vendored — deleted after) to study its actual code rather than guess
+from screenshots. It turned out to already use the same shadcn `base-nova`/`@base-ui/react` foundation this
+site is built on, which confirmed the architecture and made adapting its craft straightforward.
+
+**Adapted (not copied) into PkgGuard's own identity:**
+- Sharper design language: `--radius` dropped 0.75rem → 0.5rem (cascades to every card/button/badge since
+  they're all `calc(var(--radius) * n)`); several cards additionally pinned to `rounded-lg` for a uniform,
+  less-soft feel across the whole site (search/feed/scan/docs included, not just home).
+- New display font (Space Grotesk, `.font-display` utility / `--font-display`) for all headings, kept
+  separate from the body font (Geist Sans) and code/meta font (Geist Mono).
+- Dark mode is now the default theme (`providers.tsx`), background pushed toward near-black for a more
+  premium feel.
+- CSS-only scroll-driven animations in `globals.css` (`.rise`, `.hero-out`, both gated behind
+  `@supports (animation-timeline: view())` with `prefers-reduced-motion` fallbacks) — no JS scroll listener
+  needed for these. Plus `.dots` texture, `.grain` (inline SVG noise overlay), `.kicker` (uppercase mono
+  micro-label used everywhere: section eyebrows, finding severity tags, badges), and `.threat-box` (a slow
+  breathing red glow for HIGH-severity findings and the malicious hero).
+
+**Home page**: bigger hero with a scroll-exit fade (`.hero-out`), and the static 4-card "pipeline" grid was
+replaced with a sticky-scroll storytelling section (`components/home/pipeline-story.tsx` +
+`pipeline-terminal.tsx`) — a scroll-tracked list of 5 narrative beats beside a sticky fake terminal window
+that reveals lines as you scroll, playing out the real `ai-cleared-esbuild` story (rules flag two things, AI
+clears them, verdict lands SAFE). Also added `components/home/compare-table.tsx`, a sharp-bordered comparison
+table ("installing blind" vs "reading the code yourself" vs PkgGuard) for extra credibility.
+
+**Package report page — the specific ask ("malicious lines in special boxes")**:
+- `FindingCard` now renders differently per severity, not just a different badge color: HIGH gets a hard red
+  left edge, a breathing glow (`.threat-box`), an uppercase "Threat detected" kicker, and a connected
+  annotation line below the code explaining why it's flagged (and that it runs on install, when relevant).
+  MEDIUM gets the same shape in amber ("Warning"), no glow. LOW stays fully neutral on purpose, so severity
+  reads before you've parsed any text.
+- `CodeEvidence` grew a `tone` prop (`threat`/`warn`/`neutral`): the code box itself gets a colored border and
+  header tint, plus a `→` pointer glyph in the line-number gutter next to the flagged line.
+- `VerdictHero`: MALICIOUS gets a hazard-stripe top bar, a pulsing red dot next to the badge, and an explicit
+  "Do not install this package" banner. SAFE gets a large, very faint watermark shield-check in the corner.
+  Both are new — previously every verdict shared one calm treatment.
+
+Verified after each change: `tsc --noEmit`, `eslint .`, and `next build` all clean; spot-checked
+`/npm/safedep-test-pkg` (malicious), `/npm/esbuild` (AI-cleared, mixed warnings), and `/` for the new sections
+against the production build.
+
+### Bugs found and fixed right after ("the UI is messed up")
+
+Since the redesign shipped without a screenshot tool, real bugs got through. Fixed by installing Playwright
+in the scratchpad (not a project dependency) and actually looking at the rendered pages:
+
+1. **Stale server serving a mismatched build.** A `next start` process from an earlier build was still
+   running on port 3000 while a later `next build` overwrote `.next/`, so the browser loaded an HTML shell
+   referencing JS chunk files that no longer existed — 500s and failed chunk loads, which looks like a fully
+   broken page. Not a code bug; a leftover process. Fix: always `lsof -ti :3000 | xargs kill -9` before a
+   fresh `next start`, never assume `pkill -f "next start"` catches it (the process shows up as
+   `next-server`, not `next start`, once running).
+2. **`.rise`/`.hero-out` scroll-driven CSS animations (`animation-timeline: view()`) left whole sections
+   stuck at `opacity: 0`** — the pipeline-story intro, compare table, install snippets and recent-threats
+   sections were in the DOM but invisible. This is a real browser-timing gap with this still-new API (not
+   just a Playwright full-page-screenshot artifact — confirmed by scrolling incrementally with real `scroll`
+   events, where it was intermittent). Removed the scroll-timeline dependency entirely; `.rise`/`.hero-out`
+   are now harmless no-ops (`opacity: 1`) so nothing can hide content this way again. The `PipelineStory`
+   section's own active/inactive state (plain React state + a scroll listener, not CSS scroll-timelines) was
+   verified working correctly with real scroll events.
+3. **`PipelineStory` had too much dead space per step** (`min-h-[60vh]` × 5 beats) and inactive beats were
+   dimmed too far (`opacity-35`) to read comfortably against the near-black background. Tightened to
+   `min-h-[46vh]` / `opacity-60`.
+4. **Hero 3D scene overlapped the headline with no contrast separation, especially in light mode** — the
+   sphere sat at the scene origin, directly behind the centered text. Moved the whole decorative group off
+   to one side (`position={[2.6, -1.5, -1.5]}`), reduced its opacity a bit in light mode, and added a radial
+   gradient scrim behind the text as a second line of defense so this can't reoccur even if the 3D scene
+   changes again.
+
+Re-verified all 5 pages (home, malicious report, AI-cleared esbuild report, feed, scan) with zero console
+errors via Playwright, plus an actual incremental-scroll pass (not just `fullPage` screenshots, which don't
+fire real scroll events) confirming the pipeline story's active-step tracking behaves correctly.
+
 ## Commit
 
 ```bash

@@ -5,8 +5,8 @@ export function IntelSection({ intel }: { intel?: IntelResult }) {
   if (!intel || (!intel.osv && !intel.safedep)) return null;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-border bg-card/60 p-6">
-      <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card/60 p-6">
+      <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
         <Radar className="size-4.5" />
         Threat intelligence
       </h2>

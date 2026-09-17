@@ -42,7 +42,7 @@ export function SearchBar({
         autoFocus={autoFocus}
         className={cn(
           variant === "hero"
-            ? "h-14 rounded-2xl border-border/80 bg-card/80 pl-12 pr-4 text-base shadow-lg shadow-black/[0.03] backdrop-blur-sm focus-visible:ring-4 focus-visible:ring-brand/15 dark:shadow-black/20"
+            ? "h-14 rounded-lg border-border/80 bg-card/80 pl-12 pr-4 text-base shadow-lg shadow-black/[0.03] backdrop-blur-sm focus-visible:ring-4 focus-visible:ring-brand/15 dark:shadow-black/20"
             : "h-9 rounded-full pl-9 text-sm"
         )}
       />

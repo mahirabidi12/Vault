@@ -9,7 +9,8 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-heading: var(--font-space-grotesk);
+  --font-display: var(--font-space-grotesk);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
   --color-brand-2: var(--brand-2);
@@ -92,7 +93,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -124,9 +125,9 @@
 }
 
 .dark {
-  --background: oklch(0.15 0.014 275);
+  --background: oklch(0.125 0.012 275);
   --foreground: oklch(0.96 0.005 285);
-  --card: oklch(0.19 0.016 275);
+  --card: oklch(0.175 0.015 275);
   --card-foreground: oklch(0.96 0.005 285);
   --popover: oklch(0.19 0.016 275);
   --popover-foreground: oklch(0.96 0.005 285);
@@ -275,4 +276,103 @@
 .dark .evidence-code .shiki,
 .dark .evidence-code .shiki span {
   color: var(--shiki-dark);
+}
+
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+/* Uppercase, tracked, monospace micro-label — used for section kickers,
+   finding severity tags, and terminal-style meta rows throughout. */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* One-bit dot screen for section texture; the page background shows through
+   the holes. Cheaper and calmer than a gradient mesh. */
+.dots {
+  background-image: radial-gradient(circle at 1px 1px, color-mix(in oklch, var(--foreground), transparent 88%) 1px, transparent 1.4px);
+  background-size: 20px 20px;
+}
+
+/* Subtle film-grain overlay for hero/dark sections — a single inline noise
+   filter, no image request. */
+.grain {
+  position: relative;
+  isolation: isolate;
+}
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* Edges of an element dissolve into the page instead of ending in a hard
+   rectangle — used on the hero canvas and the AI review's code excerpts. */
+.submerge-b {
+  mask-image: linear-gradient(to bottom, black 70%, transparent 100%);
+}
+.submerge-x {
+  mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+}
+
+/* Scroll-driven reveals (CSS-only, no JS observer). Falls back to fully
+   visible content in browsers without it — see the `Reveal` component
+   instead, which uses IntersectionObserver for the same effect without the
+   risk: `animation-timeline: view()` was tried here first and dropped after
+   it left whole sections stuck at opacity:0 (a Chromium recalculation gap
+   after the hero's layout shifts on load, not something we can fix from
+   CSS alone). `.rise` and `.hero-out` are kept as harmless no-ops so any
+   stray usage never hides content. */
+.rise,
+.hero-out {
+  opacity: 1;
+}
+
+/* A lit edge in a diagram carries moving dashes, so the reader sees which
+   way data flows through the pipeline. */
+@keyframes flow {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+.flow {
+  stroke-dasharray: 4 8;
+  animation: flow 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .flow {
+    animation: none;
+  }
+}
+
+/* Threat evidence box: a hard left edge in the severity color plus a slow
+   breathing glow, so a HIGH finding visually reads as "look here" before
+   you've read a word of it. */
+@keyframes threat-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--malicious), transparent 78%);
+  }
+  50% {
+    box-shadow: 0 0 22px 2px color-mix(in oklch, var(--malicious), transparent 65%);
+  }
+}
+.threat-box {
+  animation: threat-pulse 2.8s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .threat-box {
+    animation: none;
+  }
 }

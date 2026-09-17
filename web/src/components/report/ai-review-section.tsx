@@ -30,7 +30,7 @@ export function AiReviewSection({
   if (!aiReview) {
     if (aiFailed || aiError) {
       return (
-        <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card/40 p-6">
+        <section className="flex flex-col gap-2 rounded-lg border border-border bg-card/40 p-6">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Sparkles className="size-4 text-brand" />
             AI review
@@ -53,7 +53,7 @@ export function AiReviewSection({
   const finalStyle = overridden ? verdictStyle(finalVerdict) : null;
 
   return (
-    <section className="flex flex-col gap-4 rounded-2xl border border-brand/20 bg-gradient-to-br from-accent/40 to-transparent p-6">
+    <section className="flex flex-col gap-4 rounded-lg border border-brand/20 bg-gradient-to-br from-accent/40 to-transparent p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm font-semibold">
           <Sparkles className="size-4 text-brand" />

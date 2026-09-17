@@ -19,7 +19,7 @@ export function LiveStats() {
       {items.map((item) => (
         <div
           key={item.label}
-          className="flex flex-col items-center gap-1.5 rounded-2xl border border-border/70 bg-card/50 px-4 py-5 text-center backdrop-blur-sm"
+          className="flex flex-col items-center gap-1.5 rounded-lg border border-border/70 bg-card/50 px-4 py-5 text-center backdrop-blur-sm"
         >
           <item.icon className={`size-5 ${item.tone}`} />
           {isLoading ? (

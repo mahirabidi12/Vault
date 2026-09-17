@@ -69,7 +69,7 @@ export function LockfileScanner() {
             const file = e.dataTransfer.files?.[0];
             if (file) onFile(file);
           }}
-          className={`flex flex-col items-center gap-4 rounded-2xl border-2 border-dashed p-10 text-center transition-colors ${
+          className={`flex flex-col items-center gap-4 rounded-lg border-2 border-dashed p-10 text-center transition-colors ${
             dragOver ? "border-brand bg-brand/5" : "border-border bg-card/40"
           }`}
         >

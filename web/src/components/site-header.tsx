@@ -13,16 +13,26 @@ const NAV = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border/70 bg-background/80 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/75 backdrop-blur-lg">
       <div className="mx-auto flex h-14 max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold tracking-tight">
+        <Link href="/" className="flex shrink-0 items-center gap-2 font-display text-[17px] font-semibold tracking-tight">
           <Logo />
-          <span>PkgGuard</span>
+          <span className="flex items-baseline gap-0.5">
+            <span className="font-mono text-brand">$</span>
+            <span>pkgguard</span>
+          </span>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
           {NAV.map((item) => (
-            <Button key={item.href} variant="ghost" size="sm" render={<Link href={item.href} />}>
+            <Button
+              key={item.href}
+              variant="ghost"
+              size="sm"
+              className="rounded-md text-[13px] text-muted-foreground hover:text-foreground"
+              render={<Link href={item.href} />}
+              nativeButton={false}
+            >
               {item.label}
             </Button>
           ))}
@@ -33,6 +43,7 @@ export function SiteHeader() {
           <Button
             variant="ghost"
             size="icon"
+            nativeButton={false}
             render={
               <a
                 href="https://github.com"

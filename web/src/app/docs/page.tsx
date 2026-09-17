@@ -9,13 +9,13 @@ export default function DocsPage() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-12 px-4 py-10 sm:px-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Docs</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Docs</h1>
         <p className="text-sm text-muted-foreground">
           Everything you need to check packages from the command line, from an AI agent, or over the API.
         </p>
       </div>
 
-      <div className="flex items-start gap-3 rounded-2xl border border-safe/25 bg-safe-bg/60 p-5">
+      <div className="flex items-start gap-3 rounded-lg border border-safe/25 bg-safe-bg/60 p-5">
         <Lock className="mt-0.5 size-5 shrink-0 text-safe" />
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold text-safe">Privacy</p>
