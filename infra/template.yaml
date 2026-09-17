@@ -7,6 +7,10 @@ Parameters:
     Type: String
     Default: pkgguard/openai-api-key
     Description: Secrets Manager secret holding the OpenAI API key (plain string).
+  ApiKeySecretName:
+    Type: String
+    Default: pkgguard/api-shared-key
+    Description: Secrets Manager secret holding the shared API key. Empty means no auth (open API).
   OpenAIModel:
     Type: String
     Default: gpt-5-mini
@@ -201,10 +205,15 @@ Resources:
           STATE_MACHINE_ARN: !Ref ScanStateMachine
           MAX_NEW_SCANS_PER_DAY: !Ref MaxNewScansPerDay
           MAX_NEW_SCANS_PER_CLIENT_PER_DAY: !Ref MaxNewScansPerClientPerDay
+          API_KEY_SECRET_NAME: !Ref ApiKeySecretName
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
         - S3ReadPolicy: { BucketName: !Ref ReportsBucket }
         - StepFunctionsExecutionPolicy: { StateMachineName: !GetAtt ScanStateMachine.Name }
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${ApiKeySecretName}-*
       Events:
         GetRoutes:
           Type: HttpApi

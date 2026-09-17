@@ -100,11 +100,14 @@ def record(name="express", version="4.18.2", status=ScanStatus.COMPLETE, verdict
     return VerdictRecord.model_validate(data)
 
 
-def http_event(method: str, path: str, query: dict | None = None, body: dict | None = None, ip: str = "1.2.3.4") -> dict:
+def http_event(
+    method: str, path: str, query: dict | None = None, body: dict | None = None, ip: str = "1.2.3.4", headers: dict | None = None
+) -> dict:
     return {
         "rawPath": path,
         "queryStringParameters": query,
         "body": json.dumps(body) if body is not None else None,
         "isBase64Encoded": False,
         "requestContext": {"http": {"method": method, "sourceIp": ip}},
+        "headers": headers or {},
     }

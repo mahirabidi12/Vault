@@ -96,6 +96,29 @@ def test_report_and_scan_lookup(cloud):
     assert status == 200 and body["scanId"] == done.scan_id
 
 
+def test_no_api_key_configured_allows_any_request(cloud):
+    seed_complete(cloud)
+    status, _ = call(cloud.services(api_key=None), "GET", "/v1/package", {"name": "express", "version": "4.18.2"})
+    assert status == 200
+
+
+def test_wrong_or_missing_api_key_is_rejected(cloud):
+    seed_complete(cloud)
+    services = cloud.services(api_key="the-real-key")
+    status, body = call(services, "GET", "/v1/package", {"name": "express", "version": "4.18.2"})
+    assert status == 401 and "API key" in body["error"]
+
+    status, _ = call(services, "GET", "/v1/package", {"name": "express", "version": "4.18.2"}, headers={"x-api-key": "wrong"})
+    assert status == 401
+
+
+def test_correct_api_key_is_accepted(cloud):
+    seed_complete(cloud)
+    services = cloud.services(api_key="the-real-key")
+    status, _ = call(services, "GET", "/v1/package", {"name": "express", "version": "4.18.2"}, headers={"x-api-key": "the-real-key"})
+    assert status == 200
+
+
 def test_feed_stats_and_versions(cloud):
     seed_complete(cloud, name="bad-pkg", verdict="MALICIOUS")
     seed_complete(cloud)

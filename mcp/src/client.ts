@@ -2,6 +2,7 @@ import type { VerdictRecord } from "./types.js";
 
 export interface PkgGuardConfig {
   apiUrl: string;
+  apiKey?: string;
   webUrl?: string;
   pollIntervalMs: number;
   maxWaitMs: number;
@@ -20,6 +21,7 @@ function stripTrailingSlash(url: string): string {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PkgGuardConfig {
   return {
     apiUrl: stripTrailingSlash(env.PKGGUARD_API_URL ?? ""),
+    apiKey: env.PKGGUARD_API_KEY || undefined,
     webUrl: env.PKGGUARD_WEB_URL ? stripTrailingSlash(env.PKGGUARD_WEB_URL) : undefined,
     pollIntervalMs: positiveInt(env.PKGGUARD_POLL_INTERVAL_MS, 1500),
     maxWaitMs: positiveInt(env.PKGGUARD_MAX_WAIT_MS, 45_000),
@@ -92,7 +94,10 @@ export class PkgGuardClient {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.config.requestTimeoutMs);
     try {
-      return await this.fetchImpl(url, { signal: controller.signal });
+      return await this.fetchImpl(url, {
+        signal: controller.signal,
+        headers: this.config.apiKey ? { "x-api-key": this.config.apiKey } : undefined,
+      });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {
         throw new PkgGuardError(`PkgGuard API did not respond within ${this.config.requestTimeoutMs}ms (${url}).`);

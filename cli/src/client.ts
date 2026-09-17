@@ -4,6 +4,7 @@ export const MAX_CHECK_PACKAGES = 200; // must match analyzer/src/pkgguard_analy
 
 export interface PkgGuardConfig {
   apiUrl: string;
+  apiKey?: string;
   webUrl?: string;
   pollIntervalMs: number;
   maxWaitMs: number;
@@ -22,6 +23,7 @@ function stripTrailingSlash(url: string): string {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PkgGuardConfig {
   return {
     apiUrl: stripTrailingSlash(env.PKGGUARD_API_URL ?? ""),
+    apiKey: env.PKGGUARD_API_KEY || undefined,
     webUrl: env.PKGGUARD_WEB_URL ? stripTrailingSlash(env.PKGGUARD_WEB_URL) : undefined,
     pollIntervalMs: positiveInt(env.PKGGUARD_POLL_INTERVAL_MS, 1500),
     maxWaitMs: positiveInt(env.PKGGUARD_MAX_WAIT_MS, 60_000),
@@ -149,7 +151,11 @@ export class PkgGuardClient {
       return await this.fetchImpl(url, {
         ...init,
         signal: controller.signal,
-        headers: { "content-type": "application/json", ...init?.headers },
+        headers: {
+          "content-type": "application/json",
+          ...(this.config.apiKey ? { "x-api-key": this.config.apiKey } : {}),
+          ...init?.headers,
+        },
       });
     } catch (error) {
       if (error instanceof Error && error.name === "AbortError") {

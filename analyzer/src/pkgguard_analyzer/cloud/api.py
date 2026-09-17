@@ -53,6 +53,28 @@ class Services:
     max_new_scans_per_client_per_day: int = 30
     stale_after: timedelta = timedelta(minutes=15)
     clock: Callable[[], datetime] = lambda: datetime.now(UTC)
+    api_key: str | None = None
+
+
+def _load_api_key() -> str | None:
+    """None means auth is off (no API_KEY_SECRET_NAME configured, e.g. local dev)."""
+    secret_name = os.environ.get("API_KEY_SECRET_NAME")
+    if not secret_name:
+        return None
+    try:
+        value = boto3.client("secretsmanager").get_secret_value(SecretId=secret_name)["SecretString"].strip()
+        return value or None
+    except ClientError:
+        log.exception("could not read API key secret %s; rejecting all requests", secret_name)
+        return ""  # fail closed: no real header value will ever equal ""
+
+
+def _check_api_key(event: dict, services: Services) -> None:
+    if services.api_key is None:
+        return
+    headers = {k.lower(): v for k, v in (event.get("headers") or {}).items()}
+    if headers.get("x-api-key", "") != services.api_key:
+        raise ApiError(401, "Missing or invalid API key.")
 
 
 @cache
@@ -66,6 +88,7 @@ def default_services() -> Services:
         state_machine_arn=os.environ["STATE_MACHINE_ARN"],
         max_new_scans_per_day=int(os.environ.get("MAX_NEW_SCANS_PER_DAY", "300")),
         max_new_scans_per_client_per_day=int(os.environ.get("MAX_NEW_SCANS_PER_CLIENT_PER_DAY", "30")),
+        api_key=_load_api_key(),
     )
 
 
@@ -104,6 +127,7 @@ def handler(event: dict, context: object, services: Services | None = None) -> d
     services = services or default_services()
     request = Request.from_event(event)
     try:
+        _check_api_key(event, services)
         status, body = _route(request, services)
     except ApiError as error:
         status, body = error.status, {"error": error.message}
