@@ -5,7 +5,7 @@
     "version": "0.28.2"
   },
   "analyzerVersion": "0.1.0",
-  "generatedAt": "2026-09-16T19:56:43.762286Z",
+  "generatedAt": "2026-09-17T21:17:59.011976Z",
   "findings": [
     {
       "ruleId": "metadata.install_script",
@@ -70,8 +70,7 @@
   ],
   "intel": {
     "osv": {
-      "maliciousIds": [],
-      "vulnerabilityIds": []
+      "error": "[Errno 8] nodename nor servname provided, or not known"
     },
     "safedep": {
       "found": false
@@ -115,94 +114,658 @@
   "aiReview": {
     "verdict": "SAFE",
     "confidence": "HIGH",
-    "summary": "esbuild@0.28.2 runs a postinstall script that fetches or installs a platform-specific native esbuild binary and validates it; it does not attempt to steal data or run untrusted remote code beyond downloading from the npm registry and checking SHA-256 hashes.",
-    "reasoning": "I inspected install.js, bin/esbuild, and lib/main.js. The postinstall script (install.js) determines the correct platform package, attempts to resolve or install the platform-specific @esbuild/* package, and falls back to downloading the package tarball from the official npm registry. It validates downloaded binaries using stored SHA-256 hashes before writing them to disk and uses child_process only to run npm or validate the binary with --version. The CLI wrapper (bin/esbuild) and lib/main spawn or exec the platform binary to provide the service; this is expected behavior for a bundler that uses a native executable. There is no network exfiltration, secret collection, or execution of arbitrary remote scripts; network activity targets registry.npmjs.org and uses integrity checks.",
+    "summary": "esbuild is a legitimate JavaScript bundler that downloads and verifies platform-specific binaries during install using SHA256 hashes. All code execution is expected and transparent.",
+    "reasoning": "esbuild is a build tool that needs to ship with native binaries for different platforms. The postinstall script downloads platform-appropriate binaries from the official npm registry and validates each with a hardcoded SHA256 hash stored in package.json. The install.js script reads only the npm_config_user_agent environment variable (to detect Yarn) and safely passes process.env with npm_config_global cleared to child processes. The bin/esbuild and lib/main.js files execute the bundler binary as expected for a CLI tool. All network activity is to registry.npmjs.org, the integrity checks are cryptographic, and there is no obfuscation or suspicious behavior. The package is published via trusted GitHub Actions CI from the official evanw/esbuild repository.",
     "evidence": [
       {
-        "file": "install.js",
-        "line": 244,
-        "explanation": "downloadDirectlyFromNPM constructs URL to registry.npmjs.org and downloads the package tarball."
+        "file": "package.json",
+        "line": 10,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Postinstall script runs install.js to download and verify platform binaries. This is standard for build tools with native components."
       },
       {
         "file": "install.js",
-        "line": 236,
-        "explanation": "maybeOptimizePackage and download/install flow choose binary path and produce toPath; uses require.resolve to find platform package."
+        "line": 245,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Downloads binaries from official npm registry (https://registry.npmjs.org/), not an untrusted source."
       },
       {
         "file": "install.js",
         "line": 237,
-        "explanation": "binaryIntegrityCheck computes SHA-256 and compares to hashes from package.json before accepting the binary."
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "All downloaded binaries are validated against SHA256 hashes hardcoded in package.json binaryHashes. Tampering would be detected."
       },
       {
         "file": "install.js",
-        "line": 99,
-        "explanation": "validateBinaryVersion runs child_process.execFileSync with --version to ensure the binary version matches package.json."
+        "line": 141,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Only reads npm_config_user_agent to detect package manager (Yarn vs npm). No secrets or sensitive data accessed."
       },
       {
         "file": "install.js",
-        "line": 180,
-        "explanation": "installUsingNPM runs `npm install ...` via child_process.execSync to install optional platform package when needed."
+        "line": 181,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Safely spreads process.env while explicitly clearing npm_config_global to prevent config pollution. No exfiltration."
       },
       {
         "file": "bin/esbuild",
-        "line": 217,
-        "explanation": "If ESBUILD_BINARY_PATH override is set, the wrapper writes a small JS shim that execFileSyncs the binary (expected behavior)."
-      },
-      {
-        "file": "bin/esbuild",
-        "line": 218,
-        "explanation": "execFileSync is used to invoke the esbuild native binary for CLI usage."
+        "line": 220,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Spawns the esbuild binary with user arguments. This is normal CLI functionality for a bundler tool."
       },
       {
         "file": "lib/main.js",
-        "line": 2271,
-        "explanation": "ensureServiceIsRunning spawns the platform binary as a long-lived child process to provide build service."
+        "line": 2272,
+        "endLine": null,
+        "title": null,
+        "severity": null,
+        "explanation": "Spawns esbuild service process with --service and --ping flags for the JavaScript API. Normal operation."
       }
     ],
     "findingAssessments": [
       {
         "ruleId": "metadata.install_script",
-        "file": "package.json",
+        "file": null,
         "assessment": "benign",
-        "explanation": "postinstall runs install.js to set up a platform-specific native binary; expected for native modules."
+        "explanation": "Postinstall script is necessary to download platform-specific binaries for this build tool. Transparent and standard practice."
       },
       {
-        "ruleId": "code.exec",
-        "file": "install.js:103",
+        "ruleId": "code.exec_install_103_x3",
+        "file": null,
         "assessment": "benign",
-        "explanation": "execFileSync is used to run the binary with --version to validate version; not used to run untrusted code."
+        "explanation": "execFileSync calls validate the downloaded binary version and execute npm install. This is proper dependency installation, not a security risk."
       },
       {
         "ruleId": "code.install_download_exec",
-        "file": "install.js:244-251",
+        "file": null,
         "assessment": "benign",
-        "explanation": "downloadDirectlyFromNPM downloads a tgz from registry.npmjs.org and performs a SHA-256 integrity check before writing the binary."
+        "explanation": "Downloads from npm registry with cryptographic hash validation. Binaries are only executed after hash verification against package.json."
       },
       {
-        "ruleId": "code.exec",
-        "file": "bin/esbuild:220",
+        "ruleId": "code.exec_bin_esbuild_220",
+        "file": null,
         "assessment": "benign",
-        "explanation": "execFileSync invokes the local esbuild binary to implement the CLI; expected behavior."
+        "explanation": "CLI wrapper that delegates to the bundler binary. Expected for a command-line tool."
       },
       {
-        "ruleId": "code.exec",
-        "file": "lib/main.js:2272",
+        "ruleId": "code.exec_main_js_2272",
+        "file": null,
         "assessment": "benign",
-        "explanation": "child_process.spawn creates a persistent esbuild service process for performance; this is normal for this package."
+        "explanation": "Spawns bundler service process for the JavaScript API. Normal operation pattern for async build tools."
       }
     ],
-    "model": "gpt-5-mini",
+    "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
     "mode": "deep_dive",
     "filesRead": [
+      "lib/main.js",
       "install.js",
       "bin/esbuild",
-      "lib/main.js"
+      "package.json"
     ],
-    "toolCalls": 4,
-    "inputTokens": 29187,
-    "outputTokens": 998,
-    "durationSeconds": 21.63
+    "toolCalls": 11,
+    "inputTokens": 175866,
+    "outputTokens": 2584,
+    "durationSeconds": 32.04,
+    "coverage": null,
+    "trace": [
+      {
+        "step": 1,
+        "tool": "read_file",
+        "arguments": {
+          "path": "lib/main.js",
+          "start_line": 2265,
+          "end_line": 2285
+        },
+        "outcome": "ok",
+        "resultChars": 944,
+        "seconds": 0.024
+      },
+      {
+        "step": 2,
+        "tool": "read_file",
+        "arguments": {
+          "path": "install.js",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 14299,
+        "seconds": 0.048
+      },
+      {
+        "step": 3,
+        "tool": "read_file",
+        "arguments": {
+          "path": "bin/esbuild",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 11270,
+        "seconds": 0.034
+      },
+      {
+        "step": 4,
+        "tool": "read_file",
+        "arguments": {
+          "path": "lib/main.js",
+          "start_line": 1,
+          "end_line": 50
+        },
+        "outcome": "ok",
+        "resultChars": 2539,
+        "seconds": 0.008
+      },
+      {
+        "step": 5,
+        "tool": "search",
+        "arguments": {
+          "pattern": "esbuildCommandAndArgs",
+          "directory": "lib"
+        },
+        "outcome": "ok",
+        "resultChars": 289,
+        "seconds": 0.011
+      },
+      {
+        "step": 6,
+        "tool": "read_file",
+        "arguments": {
+          "path": "lib/main.js",
+          "start_line": 2100,
+          "end_line": 2140
+        },
+        "outcome": "ok",
+        "resultChars": 2124,
+        "seconds": 0.001
+      },
+      {
+        "step": 7,
+        "tool": "read_file",
+        "arguments": {
+          "path": "package.json",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 4706,
+        "seconds": 0.001
+      },
+      {
+        "step": 8,
+        "tool": "list_files",
+        "arguments": {
+          "directory": ""
+        },
+        "outcome": "ok",
+        "resultChars": 333,
+        "seconds": 0.003
+      },
+      {
+        "step": 9,
+        "tool": "search",
+        "arguments": {
+          "pattern": "process\\.env|NPM_TOKEN|AWS|GITHUB|SECRET",
+          "directory": ""
+        },
+        "outcome": "ok",
+        "resultChars": 3562,
+        "seconds": 0.009
+      },
+      {
+        "step": 10,
+        "tool": "read_file",
+        "arguments": {
+          "path": "install.js",
+          "start_line": 140,
+          "end_line": 190
+        },
+        "outcome": "ok",
+        "resultChars": 2498,
+        "seconds": 0.001
+      },
+      {
+        "step": 11,
+        "tool": "read_file",
+        "arguments": {
+          "path": "install.js",
+          "start_line": 240,
+          "end_line": 290
+        },
+        "outcome": "ok",
+        "resultChars": 2818,
+        "seconds": 0.001
+      }
+    ],
+    "workerReports": [],
+    "cost": {
+      "coordinatorInputTokens": 175866,
+      "coordinatorOutputTokens": 2584,
+      "coordinatorSeconds": 32.04,
+      "workerInputTokens": 0,
+      "workerOutputTokens": 0,
+      "workerCalls": 0,
+      "workerSeconds": 0.0
+    }
   },
   "aiError": null,
+  "behavior": {
+    "networkModules": [
+      "child_process",
+      "https"
+    ],
+    "hosts": [
+      "nodejs.org",
+      "registry.npmjs.org",
+      "yarnpkg.com"
+    ],
+    "ipAddresses": [],
+    "envVars": [
+      "ESBUILD_BINARY_PATH",
+      "ESBUILD_MAX_BUFFER",
+      "ESBUILD_WORKER_THREADS",
+      "npm_config_user_agent"
+    ],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": true,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": true,
+      "commands": true,
+      "files": [
+        "install.js"
+      ]
+    },
+    "filesByCapability": {
+      "network": [
+        "install.js"
+      ],
+      "commands": [
+        "install.js",
+        "bin/esbuild",
+        "lib/main.js"
+      ],
+      "env_vars": [
+        "install.js",
+        "bin/esbuild",
+        "lib/main.js"
+      ]
+    }
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "LICENSE.md",
+      "size": 1069,
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+    },
+    {
+      "path": "README.md",
+      "size": 175,
+      "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+    },
+    {
+      "path": "bin/esbuild",
+      "size": 9350,
+      "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+    },
+    {
+      "path": "install.js",
+      "size": 11773,
+      "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+    },
+    {
+      "path": "lib/main.d.ts",
+      "size": 23551,
+      "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+    },
+    {
+      "path": "lib/main.js",
+      "size": 97463,
+      "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+    },
+    {
+      "path": "package.json",
+      "size": 3980,
+      "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "d96a23a6d4b6",
+    "promptHashes": {
+      "reviewer": "dd00faef7062",
+      "worker": "0a482b9726be",
+      "coordinator": "a842e007c6b5"
+    },
+    "ai": {
+      "mode": "always",
+      "provider": "bedrock",
+      "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "reasoning_effort": null,
+      "tool_budget": {
+        "quick_look": 6,
+        "deep_dive": 15,
+        "full_audit": 15
+      }
+    },
+    "settingsHash": "51797c0478d7"
+  },
+  "timings": {
+    "downloadSeconds": 0.203,
+    "unpackSeconds": 0.034,
+    "intelSeconds": 0.617,
+    "metadataSeconds": 0.0,
+    "codeScanSeconds": 0.075,
+    "aiSeconds": 32.047,
+    "totalSeconds": 32.976
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": true,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": true,
+    "reasons": [
+      "Automated rules said SUSPICIOUS, AI said SAFE."
+    ]
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "install.js",
+      "lineStart": 103,
+      "lineEnd": 103,
+      "severity": "MEDIUM",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": "Downloads from npm registry with cryptographic hash validation. Binaries are only executed after hash verification against package.json.",
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec",
+        "code.install_download_exec"
+      ],
+      "aiAssessment": "benign",
+      "installTime": true,
+      "excerpt": {
+        "startLine": 100,
+        "endLine": 106,
+        "highlightStart": 103,
+        "highlightEnd": 103,
+        "lines": [
+          {
+            "number": 100,
+            "text": "  command.push(\"--version\");",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 101,
+            "text": "  let stdout;",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 102,
+            "text": "  try {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 103,
+            "text": "    stdout = child_process.execFileSync(command.shift(), command, {",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 104,
+            "text": "      // Without this, this install script strangely crashes with the error",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 105,
+            "text": "      // \"EACCES: permission denied, write\" but only on Ubuntu Linux when node is",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 106,
+            "text": "      // installed from the Snap Store. This is not a problem when you download",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-2",
+      "file": "package.json",
+      "lineStart": 10,
+      "lineEnd": 10,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": "Postinstall script is necessary to download platform-specific binaries for this build tool. Transparent and standard practice.",
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": "benign",
+      "installTime": false,
+      "excerpt": {
+        "startLine": 7,
+        "endLine": 13,
+        "highlightStart": 10,
+        "highlightEnd": 10,
+        "lines": [
+          {
+            "number": 7,
+            "text": "    \"url\": \"git+https://github.com/evanw/esbuild.git\"",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 8,
+            "text": "  },",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 9,
+            "text": "  \"scripts\": {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 10,
+            "text": "    \"postinstall\": \"node install.js\"",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 11,
+            "text": "  },",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 12,
+            "text": "  \"main\": \"lib/main.js\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 13,
+            "text": "  \"types\": \"lib/main.d.ts\",",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-3",
+      "file": "bin/esbuild",
+      "lineStart": 220,
+      "lineEnd": 220,
+      "severity": "LOW",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 217,
+        "endLine": 223,
+        "highlightStart": 220,
+        "highlightEnd": 220,
+        "lines": [
+          {
+            "number": 217,
+            "text": "// lib/npm/node-shim.ts",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 218,
+            "text": "var { binPath, isWASM } = generateBinPath();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 219,
+            "text": "if (isWASM) {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 220,
+            "text": "  require(\"child_process\").execFileSync(\"node\", [binPath].concat(process.argv.slice(2)), { stdio: \"inherit\" });",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 221,
+            "text": "} else {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 222,
+            "text": "  require(\"child_process\").execFileSync(binPath, process.argv.slice(2), { stdio: \"inherit\" });",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 223,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-4",
+      "file": "lib/main.js",
+      "lineStart": 2272,
+      "lineEnd": 2272,
+      "severity": "LOW",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 2269,
+        "endLine": 2275,
+        "highlightStart": 2272,
+        "highlightEnd": 2272,
+        "lines": [
+          {
+            "number": 2269,
+            "text": "var ensureServiceIsRunning = () => {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2270,
+            "text": "  if (longLivedService) return longLivedService;",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2271,
+            "text": "  let [command, args] = esbuildCommandAndArgs();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2272,
+            "text": "  let child = child_process.spawn(command, args.concat(`--service=${\"0.28.2\"}`, \"--ping\"), {",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 2273,
+            "text": "    windowsHide: true,",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2274,
+            "text": "    stdio: [\"pipe\", \"pipe\", \"inherit\"],",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2275,
+            "text": "    cwd: defaultWD",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
   "humanReview": null
 }

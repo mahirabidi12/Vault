@@ -130,7 +130,7 @@ Scan time: ~2–7 s per package on a laptop, including downloads (`lodash`: 1,04
 
 **Schema additions:** `CodeIssue`, `CodeExcerpt`, `ExcerptLine`, `IssueCategory`, `Indicator`, `IndicatorType`, `FileHash`, `BehaviorProfile`, `InstallTimeBehavior`, `ScanSettings`, `ReviewFlags`, `StageTimings`, plus the full-audit types (`WorkerReport`, `WorkerItem`, `WorkerAssessment`, `WorkerPartReport`, `DataFlow`, `AuditCoverage`, `SkippedFile`, `ToolCall`, `AICost`). `Report` gained `codeIssues`, `behavior`, `iocs`, `reviewFlags`, `scanSettings`. Re-exported to `schema/*.json` — **not yet re-copied by the UI agent's `web/`**, though `web/`'s in-progress components (`code-evidence.tsx`, `finding-card.tsx`, etc.) already look like they're coding against this new shape. Worth confirming with the UI agent before either side commits.
 
-**Not done:** wiring `--full-audit` into the cloud (Step Functions Map, per `FUTURE_SCOPE.md` §2); a formal `eval/` accuracy harness (the "Fake A/Fake B" injection-test packages from Step 5 live testing should become its first fixtures).
+**Not done:** wiring `--full-audit` into the cloud (Step Functions Map, per `FUTURE_SCOPE.md` §2). The eval harness this pointed at is now built — see the `eval/` section below.
 
 ### `cloud/` + `infra/` (Step 3, AWS backend)
 
@@ -303,6 +303,18 @@ A second Claude instance builds the website in `web/` at the same time (decided 
 - It builds against real scan results in `schema/examples/` (express SAFE, lodash SAFE with LOW findings, esbuild SUSPICIOUS, safedep-test-pkg MALICIOUS, plus pending/scanning/failed/skipped records), through a single data module, so switching to the real API later is one file.
 - **Contract the scanner agent must honor:** `schema/*.json` + `schema/examples/`. When changing `schema.py`, re-export the schema, **regenerate the examples**, and tell the user so the UI agent can re-copy them. `web/BRIEF.md` §5.3 holds a **draft `aiReview` shape**: build Step 5 to match it, or update the brief and tell the user.
 - Ownership: the UI agent edits only `web/`; the scanner agent edits everything else.
+
+### Punch list for the UI agent (from a scanner-agent review, 2026-09-17)
+
+The site (commit `406bb0b`) is solid — clean `tsc`/`eslint`, all 6 "must" pages built, good self-documentation, real bugs caught and fixed via actual Playwright checks. Here's what's left, found by reading the real code on both sides:
+
+1. **Run `npm run gen:types`.** `schema/report.schema.json` already has `codeIssues`, `behavior`, `iocs` and `reviewFlags` (added in the "full-audit + report enrichment" commit), but `web/src/lib/types/report.ts` has none of them — it's stale. There's a whole report layer (merged code issues with real excerpts, a behavior profile, IOCs) that isn't rendered anywhere yet.
+   - **Blocked on the scanner agent, not you:** `schema/examples/*.json` are *also* stale — regenerating types alone won't give you real data to build against. The scanner agent owes you fresh examples before this is buildable; ask the user to have it do that.
+2. **Fix a factual bug in `docs/page.tsx`:** it documents `/v1/check`'s body as `[{ecosystem,name,version}]` (a bare array). The real API (`cloud/api.py`, `check_packages`) requires `{"packages": [...]}`.
+3. **Try the real backend — no AWS or credits needed.** `pkgguard-dev-api` now exists (`uv run pkgguard-dev-api --no-ai` in `analyzer/`, serves `http://127.0.0.1:8787`) — the same `cloud/api.py` route code, in-memory instead of DynamoDB. Point the site at it (`NEXT_PUBLIC_API_URL=http://127.0.0.1:8787`, `NEXT_PUBLIC_USE_FIXTURES=false`) and see what breaks in the never-exercised real-API branch of `api.ts`. While there: `checkPackages` currently just `Promise.all`s individual `getPackage` calls; the real endpoint needs a real batched `POST /v1/check`, chunked at 200 packages per request (`MAX_CHECK_PACKAGES` in `cloud/api.py`) — `cli/src/client.ts`'s `checkMany` solves the identical problem if it's useful as a reference.
+4. **Version timeline** (README §11.3) — already self-flagged as missing in `web/PROGRESS.md`. Genuinely in the README spec for the report page; `BRIEF.md`'s distilled checklist dropped it, so that's on the scanner agent's brief-writing, not a miss on your end.
+5. **No automated tests.** Nothing covers `lib/lockfile.ts`, `lib/verdict.ts`, or the §5.4 wording rules (e.g. `SAFE` must render as "No issues found"). Every other part of this repo has tests (analyzer 221, CLI 37, MCP 24) for exactly this kind of pure logic. The redesign's own bug log (`.rise`/`.hero-out` stuck at `opacity: 0`) is precisely the kind of regression a test would catch immediately.
+6. **Minor:** the homepage/docs show `npm install -g pkgguard` and `npx pkgguard-mcp@1.0.0` as if already published to npm. Correct content, just not real yet — worth a mental note before the live demo.
 
 ---
 

@@ -5,7 +5,7 @@
     "version": "0.28.2"
   },
   "status": "COMPLETE",
-  "scanId": "01M2NWPYTDF7R061CZ67GFQVGK",
+  "scanId": "01M2RM22K1R124BX9WQ9FQSG65",
   "verdict": "SUSPICIOUS",
   "confidence": "LOW",
   "decidedBy": "rules",
@@ -19,13 +19,16 @@
   "integrity": "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA==",
   "tarballUrl": "https://registry.npmjs.org/esbuild/-/esbuild-0.28.2.tgz",
   "publishedAt": "2026-08-08T20:00:55.454000Z",
-  "requestedAt": "2026-09-16T19:57:14.283256Z",
-  "analyzedAt": "2026-09-16T19:57:16.132389Z",
+  "requestedAt": "2026-09-17T21:23:44.865496Z",
+  "analyzedAt": "2026-09-17T21:23:46.734906Z",
   "model": null,
   "ranOn": "local",
   "analyzerVersion": "0.1.0",
   "source": "pkgguard",
   "reportS3Key": null,
   "aiFailed": false,
-  "failureReason": null
+  "failureReason": null,
+  "needsReview": true,
+  "iocCount": 0,
+  "settingsHash": "924f17e69252"
 }

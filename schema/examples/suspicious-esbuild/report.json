@@ -5,7 +5,7 @@
     "version": "0.28.2"
   },
   "analyzerVersion": "0.1.0",
-  "generatedAt": "2026-09-16T19:57:16.132389Z",
+  "generatedAt": "2026-09-17T21:23:46.734906Z",
   "findings": [
     {
       "ruleId": "metadata.install_script",
@@ -114,5 +114,399 @@
   },
   "aiReview": null,
   "aiError": null,
+  "behavior": {
+    "networkModules": [
+      "child_process",
+      "https"
+    ],
+    "hosts": [
+      "nodejs.org",
+      "registry.npmjs.org",
+      "yarnpkg.com"
+    ],
+    "ipAddresses": [],
+    "envVars": [
+      "ESBUILD_BINARY_PATH",
+      "ESBUILD_MAX_BUFFER",
+      "ESBUILD_WORKER_THREADS",
+      "npm_config_user_agent"
+    ],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": true,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": true,
+      "commands": true,
+      "files": [
+        "install.js"
+      ]
+    },
+    "filesByCapability": {
+      "network": [
+        "install.js"
+      ],
+      "commands": [
+        "install.js",
+        "bin/esbuild",
+        "lib/main.js"
+      ],
+      "env_vars": [
+        "install.js",
+        "bin/esbuild",
+        "lib/main.js"
+      ]
+    }
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "LICENSE.md",
+      "size": 1069,
+      "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+    },
+    {
+      "path": "README.md",
+      "size": 175,
+      "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+    },
+    {
+      "path": "bin/esbuild",
+      "size": 9350,
+      "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+    },
+    {
+      "path": "install.js",
+      "size": 11773,
+      "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+    },
+    {
+      "path": "lib/main.d.ts",
+      "size": 23551,
+      "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+    },
+    {
+      "path": "lib/main.js",
+      "size": 97463,
+      "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+    },
+    {
+      "path": "package.json",
+      "size": 3980,
+      "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "d96a23a6d4b6",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "924f17e69252"
+  },
+  "timings": {
+    "downloadSeconds": 0.191,
+    "unpackSeconds": 0.011,
+    "intelSeconds": 1.593,
+    "metadataSeconds": 0.002,
+    "codeScanSeconds": 0.07,
+    "aiSeconds": 0.0,
+    "totalSeconds": 1.869
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": true,
+    "reasons": [
+      "The final verdict is SUSPICIOUS."
+    ]
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "install.js",
+      "lineStart": 103,
+      "lineEnd": 103,
+      "severity": "MEDIUM",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec",
+        "code.install_download_exec"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": {
+        "startLine": 100,
+        "endLine": 106,
+        "highlightStart": 103,
+        "highlightEnd": 103,
+        "lines": [
+          {
+            "number": 100,
+            "text": "  command.push(\"--version\");",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 101,
+            "text": "  let stdout;",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 102,
+            "text": "  try {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 103,
+            "text": "    stdout = child_process.execFileSync(command.shift(), command, {",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 104,
+            "text": "      // Without this, this install script strangely crashes with the error",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 105,
+            "text": "      // \"EACCES: permission denied, write\" but only on Ubuntu Linux when node is",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 106,
+            "text": "      // installed from the Snap Store. This is not a problem when you download",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-2",
+      "file": "package.json",
+      "lineStart": 10,
+      "lineEnd": 10,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 7,
+        "endLine": 13,
+        "highlightStart": 10,
+        "highlightEnd": 10,
+        "lines": [
+          {
+            "number": 7,
+            "text": "    \"url\": \"git+https://github.com/evanw/esbuild.git\"",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 8,
+            "text": "  },",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 9,
+            "text": "  \"scripts\": {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 10,
+            "text": "    \"postinstall\": \"node install.js\"",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 11,
+            "text": "  },",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 12,
+            "text": "  \"main\": \"lib/main.js\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 13,
+            "text": "  \"types\": \"lib/main.d.ts\",",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-3",
+      "file": "bin/esbuild",
+      "lineStart": 220,
+      "lineEnd": 220,
+      "severity": "LOW",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 217,
+        "endLine": 223,
+        "highlightStart": 220,
+        "highlightEnd": 220,
+        "lines": [
+          {
+            "number": 217,
+            "text": "// lib/npm/node-shim.ts",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 218,
+            "text": "var { binPath, isWASM } = generateBinPath();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 219,
+            "text": "if (isWASM) {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 220,
+            "text": "  require(\"child_process\").execFileSync(\"node\", [binPath].concat(process.argv.slice(2)), { stdio: \"inherit\" });",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 221,
+            "text": "} else {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 222,
+            "text": "  require(\"child_process\").execFileSync(binPath, process.argv.slice(2), { stdio: \"inherit\" });",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 223,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-4",
+      "file": "lib/main.js",
+      "lineStart": 2272,
+      "lineEnd": 2272,
+      "severity": "LOW",
+      "category": "commands",
+      "title": "Runs system commands (child_process)",
+      "whyItMatters": "Runs system commands, which can do anything your user account can do.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exec"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 2269,
+        "endLine": 2275,
+        "highlightStart": 2272,
+        "highlightEnd": 2272,
+        "lines": [
+          {
+            "number": 2269,
+            "text": "var ensureServiceIsRunning = () => {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2270,
+            "text": "  if (longLivedService) return longLivedService;",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2271,
+            "text": "  let [command, args] = esbuildCommandAndArgs();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2272,
+            "text": "  let child = child_process.spawn(command, args.concat(`--service=${\"0.28.2\"}`, \"--ping\"), {",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 2273,
+            "text": "    windowsHide: true,",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2274,
+            "text": "    stdio: [\"pipe\", \"pipe\", \"inherit\"],",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2275,
+            "text": "    cwd: defaultWD",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
   "humanReview": null
 }

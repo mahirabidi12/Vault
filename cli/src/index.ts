@@ -1,10 +1,30 @@
 #!/usr/bin/env node
+import { readFileSync } from "node:fs";
 import { Command } from "commander";
 
 import { runCheck } from "./commands/check.js";
 import { runInstall } from "./commands/install.js";
 
 const PACKAGE_VERSION = "0.1.0";
+
+/** Loads ../.env (next to package.json) into process.env, without overriding real env vars. No .env file is fine. */
+function loadDotEnv(): void {
+  let text: string;
+  try {
+    text = readFileSync(new URL("../.env", import.meta.url), "utf8");
+  } catch {
+    return;
+  }
+  for (const line of text.split("\n")) {
+    const match = /^\s*([\w.-]+)\s*=\s*(.*?)\s*$/.exec(line);
+    if (!match || line.trim().startsWith("#")) continue;
+    const [, key, rawValue] = match;
+    if (key in process.env) continue;
+    process.env[key] = rawValue.replace(/^(['"])(.*)\1$/, "$2");
+  }
+}
+
+loadDotEnv();
 
 const program = new Command();
 program.name("pkgguard").description("Check npm packages for malware and supply-chain risk before you install them.").version(PACKAGE_VERSION);

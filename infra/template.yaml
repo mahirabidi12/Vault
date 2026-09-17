@@ -38,7 +38,6 @@ Conditions:
 
 Globals:
   Function:
-    PackageType: Image
     Architectures: [arm64]
     Timeout: 30
     MemorySize: 1024
@@ -94,6 +93,7 @@ Resources:
   ScanFunction:
     Type: AWS::Serverless::Function
     Properties:
+      PackageType: Image
       Description: Scans one npm package version (download, intel, metadata, code scan, AI review) and saves the verdict.
       Timeout: 600
       MemorySize: 2048
@@ -103,17 +103,17 @@ Resources:
       Environment:
         Variables:
           AI_MODE: !Ref AIMode
-          MODEL_PROVIDER: openai
-          OPENAI_MODEL: !Ref OpenAIModel
-          OPENAI_REASONING_EFFORT: !Ref OpenAIReasoningEffort
-          OPENAI_SECRET_NAME: !Ref OpenAISecretName
+          MODEL_PROVIDER: bedrock
+          BEDROCK_MODEL_ID: global.anthropic.claude-haiku-4-5-20251001-v1:0
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
         - S3CrudPolicy: { BucketName: !Ref ReportsBucket }
         - Statement:
             - Effect: Allow
-              Action: secretsmanager:GetSecretValue
-              Resource: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${OpenAISecretName}-*
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+              Resource: "*"
     Metadata:
       DockerContext: ../analyzer
       Dockerfile: Dockerfile
@@ -122,6 +122,7 @@ Resources:
   ScanFailedFunction:
     Type: AWS::Serverless::Function
     Properties:
+      PackageType: Image
       Description: Marks a scan FAILED when the scan task errors or times out.
       ImageConfig:
         Command: ["pkgguard_analyzer.cloud.failure_handler.handler"]
@@ -191,6 +192,7 @@ Resources:
   ApiFunction:
     Type: AWS::Serverless::Function
     Properties:
+      PackageType: Image
       Description: PkgGuard HTTP API (verdict lookup, batch check, reports, feed, stats).
       ImageConfig:
         Command: ["pkgguard_analyzer.cloud.api.handler"]

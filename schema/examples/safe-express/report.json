@@ -2,82 +2,77 @@
   "package": {
     "ecosystem": "npm",
     "name": "express",
-    "version": "4.18.2"
+    "version": "5.2.1"
   },
   "analyzerVersion": "0.1.0",
-  "generatedAt": "2026-09-16T19:55:50.419799Z",
+  "generatedAt": "2026-09-17T21:17:05.572464Z",
   "findings": [],
   "intel": {
     "osv": {
-      "maliciousIds": [],
-      "vulnerabilityIds": [
-        "GHSA-qw6h-vgh9-j6wx",
-        "GHSA-rv95-896h-c2vc"
-      ]
+      "error": "[Errno 8] nodename nor servname provided, or not known"
     },
     "safedep": {
       "found": true,
       "isMalware": false,
-      "confidence": "CONFIDENCE_MEDIUM",
+      "confidence": "CONFIDENCE_HIGH",
       "humanVerified": false,
-      "analysisId": "01JHQ441AXE8JCNX0MQ6N4VVT1"
+      "analysisId": "01KC94TCBPAHYDPFZ9NPTP3FQQ"
     }
   },
   "metadata": {
     "description": "Fast, unopinionated, minimalist web framework",
     "license": "MIT",
-    "publisher": "dougwilson",
+    "publisher": "jonchurch",
     "trustedPublishing": false,
     "provenance": false,
     "maintainers": [
-      "mikeal",
-      "dougwilson",
-      "jasnell"
+      "wesleytodd",
+      "jonchurch",
+      "ctcpip",
+      "ulisesgascon",
+      "sheplu"
     ],
-    "publishedAt": "2022-10-08T20:14:32.495000+00:00",
-    "previousVersion": "4.18.1",
+    "publishedAt": "2025-12-01T20:49:43.268000+00:00",
+    "previousVersion": "5.2.0",
     "installScripts": {},
     "repository": "git+https://github.com/expressjs/express.git",
     "dependencies": {
-      "qs": "6.11.0",
-      "depd": "2.0.0",
-      "etag": "~1.8.1",
-      "send": "0.18.0",
-      "vary": "~1.1.2",
-      "debug": "2.6.9",
-      "fresh": "0.5.2",
-      "cookie": "0.5.0",
-      "accepts": "~1.3.8",
-      "methods": "~1.1.2",
-      "type-is": "~1.6.18",
-      "parseurl": "~1.3.3",
-      "statuses": "2.0.1",
-      "encodeurl": "~1.0.2",
-      "proxy-addr": "~2.0.7",
-      "body-parser": "1.20.1",
-      "escape-html": "~1.0.3",
-      "http-errors": "2.0.0",
-      "on-finished": "2.4.1",
-      "safe-buffer": "5.2.1",
-      "utils-merge": "1.0.1",
-      "content-type": "~1.0.4",
-      "finalhandler": "1.2.0",
-      "range-parser": "~1.2.1",
-      "serve-static": "1.15.0",
-      "array-flatten": "1.1.1",
-      "path-to-regexp": "0.1.7",
-      "setprototypeof": "1.2.0",
-      "cookie-signature": "1.0.6",
-      "merge-descriptors": "1.0.1",
-      "content-disposition": "0.5.4"
+      "qs": "^6.14.0",
+      "depd": "^2.0.0",
+      "etag": "^1.8.1",
+      "once": "^1.4.0",
+      "send": "^1.1.0",
+      "vary": "^1.1.2",
+      "debug": "^4.4.0",
+      "fresh": "^2.0.0",
+      "cookie": "^0.7.1",
+      "router": "^2.2.0",
+      "accepts": "^2.0.0",
+      "type-is": "^2.0.1",
+      "parseurl": "^1.3.3",
+      "statuses": "^2.0.1",
+      "encodeurl": "^2.0.0",
+      "mime-types": "^3.0.0",
+      "proxy-addr": "^2.0.7",
+      "body-parser": "^2.2.1",
+      "escape-html": "^1.0.3",
+      "http-errors": "^2.0.0",
+      "on-finished": "^2.4.1",
+      "content-type": "^1.0.5",
+      "finalhandler": "^2.1.0",
+      "range-parser": "^1.2.1",
+      "serve-static": "^2.2.0",
+      "cookie-signature": "^1.2.1",
+      "merge-descriptors": "^2.0.0",
+      "content-disposition": "^1.0.0"
     },
-    "sha256": "8a4a69997fb326bd5966256709dbce2acff6cd53e048fc017c28b8c85f91c37e",
-    "fileCount": 16,
-    "unpackedBytes": 213863
+    "sha256": "1773a16c02b4422653479b9c4d211268f7022bdac0d817b5698535bb485dd005",
+    "fileCount": 10,
+    "unpackedBytes": 75429
   },
   "codeScan": {
-    "filesScanned": 12,
-    "filesParsed": 12,
+    "filesScanned": 7,
+    "filesParsed": 7,
     "filesWithParseErrors": 0,
     "installTimeFiles": [],
     "entryFiles": [
@@ -90,61 +85,252 @@
   "aiReview": {
     "verdict": "SAFE",
     "confidence": "HIGH",
-    "summary": "This express@4.18.2 package contains the standard Express framework code and does not perform any install-time actions, network calls, or secret exfiltration in its entry or install files.",
-    "reasoning": "I inspected the entry point (index.js) and the main module (lib/express.js). index.js simply exports lib/express. lib/express.js constructs the Express application, exposes middleware and constructors, and references common dependencies (body-parser, serve-static) without executing external commands or performing I/O at import time. Searches for suspicious patterns (child_process, exec, process.env usage beyond NODE_ENV) found only a NODE_ENV read in lib/application.js and no spawn/exec/fetch/http request code. No preinstall/install/postinstall scripts were present in the package listing. The behavior matches the package description (web framework) and typical code structure for Express.",
+    "summary": "Express 5.2.1 is the official Express.js web framework with no install-time code, malicious network activity, or obfuscation.",
+    "reasoning": "The package is the legitimate Express.js framework. The entry point (index.js) is minimal, simply re-exporting lib/express.js. The main module creates an application factory by combining EventEmitter with application prototypes and standard middleware bindings (body-parser, serve-static, etc.). All dependencies are well-known, legitimate packages. The package.json matches official Express.js metadata. No suspicious patterns (eval, environment variable theft, network calls, spawning child processes) were found in any code. There are no install-time scripts that could execute arbitrary code.",
     "evidence": [
       {
         "file": "index.js",
         "line": 11,
-        "explanation": "Entry file simply exports lib/express."
+        "endLine": 11,
+        "title": null,
+        "severity": null,
+        "explanation": "Entry point cleanly exports the express module from lib/express.js with no initialization code."
       },
       {
         "file": "lib/express.js",
-        "line": 37,
-        "explanation": "createApplication function builds app and calls app.init(), typical framework behavior; no network or shell calls."
+        "line": 27,
+        "endLine": 56,
+        "title": null,
+        "severity": null,
+        "explanation": "Main export is a factory function that creates app instances by mixing EventEmitter and application prototypes; standard Express.js pattern."
       },
       {
-        "file": "lib/express.js",
-        "line": 78,
-        "explanation": "Exposes middleware and references body-parser and serve-static, benign dependencies."
-      },
-      {
-        "file": "lib/application.js",
-        "line": 78,
-        "explanation": "Only reads process.env.NODE_ENV, normal for config."
+        "file": "package.json",
+        "line": 91,
+        "endLine": 98,
+        "title": null,
+        "severity": null,
+        "explanation": "Scripts are only for development (lint, test); no install or postinstall hooks."
       }
     ],
     "findingAssessments": [
       {
-        "ruleId": "install-time files",
+        "ruleId": "automated_checks_none",
         "file": null,
         "assessment": "benign",
-        "explanation": "Package listing shows no install-time (pre/post install) scripts or files that run at install."
-      },
-      {
-        "ruleId": "entry file execution",
-        "file": "index.js",
-        "assessment": "benign",
-        "explanation": "index.js only exports lib/express; import has no side-effects beyond typical module initialization."
-      },
-      {
-        "ruleId": "suspicious APIs",
-        "file": "lib",
-        "assessment": "benign",
-        "explanation": "Searches for child_process, exec, and network calls found none; code uses standard Express constructs."
+        "explanation": "Automated checks found nothing concerning; manual inspection of entry files confirms legitimate framework code with no malicious patterns."
       }
     ],
-    "model": "gpt-5-mini",
+    "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
     "mode": "quick_look",
     "filesRead": [
       "index.js",
-      "lib/express.js"
+      "lib/express.js",
+      "package.json"
     ],
-    "toolCalls": 6,
-    "inputTokens": 16003,
-    "outputTokens": 590,
-    "durationSeconds": 14.54
+    "toolCalls": 5,
+    "inputTokens": 21414,
+    "outputTokens": 1028,
+    "durationSeconds": 18.83,
+    "coverage": null,
+    "trace": [
+      {
+        "step": 1,
+        "tool": "read_file",
+        "arguments": {
+          "path": "index.js",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 442,
+        "seconds": 0.134
+      },
+      {
+        "step": 2,
+        "tool": "list_files",
+        "arguments": {
+          "directory": ""
+        },
+        "outcome": "ok",
+        "resultChars": 380,
+        "seconds": 0.144
+      },
+      {
+        "step": 3,
+        "tool": "read_file",
+        "arguments": {
+          "path": "lib/express.js",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 2420,
+        "seconds": 0.046
+      },
+      {
+        "step": 4,
+        "tool": "read_file",
+        "arguments": {
+          "path": "package.json",
+          "start_line": 1,
+          "end_line": 0
+        },
+        "outcome": "ok",
+        "resultChars": 3659,
+        "seconds": 0.057
+      },
+      {
+        "step": 5,
+        "tool": "search",
+        "arguments": {
+          "pattern": "(http|fetch|spawn|exec|eval|Function|require.*eval|process\\.env|child_process)",
+          "directory": ""
+        },
+        "outcome": "ok",
+        "resultChars": 3847,
+        "seconds": 0.02
+      }
+    ],
+    "workerReports": [],
+    "cost": {
+      "coordinatorInputTokens": 21414,
+      "coordinatorOutputTokens": 1028,
+      "coordinatorSeconds": 18.83,
+      "workerInputTokens": 0,
+      "workerOutputTokens": 0,
+      "workerCalls": 0,
+      "workerSeconds": 0.0
+    }
   },
   "aiError": null,
+  "behavior": {
+    "networkModules": [
+      "http",
+      "net"
+    ],
+    "hosts": [],
+    "ipAddresses": [],
+    "envVars": [
+      "NODE_ENV"
+    ],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": false,
+      "commands": false,
+      "files": []
+    },
+    "filesByCapability": {
+      "network": [
+        "lib/application.js",
+        "lib/request.js",
+        "lib/response.js",
+        "lib/utils.js"
+      ],
+      "env_vars": [
+        "lib/application.js"
+      ]
+    }
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "LICENSE",
+      "size": 1249,
+      "sha256": "95a5762890e5c1c9808921cef095661fc482c5e1f0bba31446ac85595df6237c"
+    },
+    {
+      "path": "Readme.md",
+      "size": 9952,
+      "sha256": "b64824e537697508d0bc7bc65a0897283bb1d8b5f72ede4ff8c1ffb3363aec39"
+    },
+    {
+      "path": "index.js",
+      "size": 224,
+      "sha256": "4d2f5afc192178c5b0dc418d2da5826d52a8b6998771b011aede7fdba9118140"
+    },
+    {
+      "path": "lib/application.js",
+      "size": 13971,
+      "sha256": "93933d053fb70337594e0826536acfe0e9787007e199878dbd357b99f026e5c7"
+    },
+    {
+      "path": "lib/express.js",
+      "size": 1636,
+      "sha256": "4f35e8273a5e78c35e778d14e4a8c80a81ca3e1fc8047dc87d2077b860404572"
+    },
+    {
+      "path": "lib/request.js",
+      "size": 11688,
+      "sha256": "c6915039cdb51527eb70c14f13a8a481e87500bdcb187e9895645c002417b887"
+    },
+    {
+      "path": "lib/response.js",
+      "size": 24876,
+      "sha256": "2be00bc1c458a975bc7526d77092db4bd5e55208f5a541c2db51536913775754"
+    },
+    {
+      "path": "lib/utils.js",
+      "size": 5293,
+      "sha256": "4bd3bf9c911e086d1911954708de7a6c384ed924360e3fd1d4a43c98bd68b112"
+    },
+    {
+      "path": "lib/view.js",
+      "size": 3809,
+      "sha256": "74f4171b66263e22481820bc5975708f7dd8a61484f570aac7c5b4ab77ecbd79"
+    },
+    {
+      "path": "package.json",
+      "size": 2731,
+      "sha256": "2980b885bad92f757a2d44674e905cf875867d5685111d8ab8f285635b11367d"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "d96a23a6d4b6",
+    "promptHashes": {
+      "reviewer": "dd00faef7062",
+      "worker": "0a482b9726be",
+      "coordinator": "a842e007c6b5"
+    },
+    "ai": {
+      "mode": "always",
+      "provider": "bedrock",
+      "model": "global.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "reasoning_effort": null,
+      "tool_budget": {
+        "quick_look": 6,
+        "deep_dive": 15,
+        "full_audit": 15
+      }
+    },
+    "settingsHash": "51797c0478d7"
+  },
+  "timings": {
+    "downloadSeconds": 0.415,
+    "unpackSeconds": 0.01,
+    "intelSeconds": 19.169,
+    "metadataSeconds": 0.01,
+    "codeScanSeconds": 0.062,
+    "aiSeconds": 19.006,
+    "totalSeconds": 38.671
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": false,
+    "reasons": []
+  },
+  "codeIssues": [],
   "humanReview": null
 }
