@@ -5,6 +5,7 @@ import { AiReviewSection } from "@/components/report/ai-review-section";
 import { PackageInfoCard } from "@/components/report/package-info-card";
 import { IntelSection } from "@/components/report/intel-section";
 import { ScanMetaCard } from "@/components/report/scan-meta-card";
+import { VersionHistory } from "@/components/report/version-history";
 import type { Report, VerdictRecord } from "@/lib/types/domain";
 
 export async function ReportDetail({
@@ -17,6 +18,7 @@ export async function ReportDetail({
   return (
     <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6">
       <VerdictHero record={record} />
+      <VersionHistory name={record.package.name} currentVersion={record.package.version} />
       <SignalsRow signals={record.signals} />
       <FindingsSection findings={report.findings ?? []} />
       <AiReviewSection

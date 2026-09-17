@@ -66,7 +66,7 @@ export default function DocsPage() {
         </p>
         <div className="flex flex-col gap-2 font-mono text-xs">
           <ApiRow method="GET" path="/v1/package?ecosystem=npm&name=&version=" desc="Verdict, or 202 + scanId if not scanned yet" />
-          <ApiRow method="POST" path="/v1/check" desc="Batch check — body: [{ecosystem,name,version}]" />
+          <ApiRow method="POST" path="/v1/check" desc='Batch check — body: {"packages": [{ecosystem,name,version}]}, max 200 per request' />
           <ApiRow method="GET" path="/v1/scans/{scanId}" desc="Poll a scan in progress" />
           <ApiRow method="GET" path="/v1/package/versions?ecosystem=npm&name=" desc="All scanned versions of a package" />
           <ApiRow method="GET" path="/v1/feed" desc="Recent malicious / suspicious verdicts" />

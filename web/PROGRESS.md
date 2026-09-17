@@ -24,9 +24,18 @@ Last updated: 2026-09-17.
 ```bash
 cd web
 npm install
-npm run dev       # http://localhost:3000
+npm run dev       # http://localhost:3000, fixtures by default
 npm run build     # production build (verified passing)
+npm run test      # vitest: lib/lockfile.ts, lib/verdict.ts, BRIEF §5.4 wording rules
 npm run gen:types # regenerate src/lib/types/*.ts from ../schema/*.json
+```
+
+To run it against the **real backend** instead of fixtures:
+
+```bash
+cd analyzer && uv run pkgguard-dev-api --no-ai   # serves http://127.0.0.1:8787
+cd web && cp .env.local.example .env.local       # NEXT_PUBLIC_API_URL + USE_FIXTURES=false
+npm run dev
 ```
 
 Runs entirely on fixtures right now (`NEXT_PUBLIC_USE_FIXTURES` defaults to true; there's no backend yet).
@@ -162,11 +171,69 @@ Re-verified all 5 pages (home, malicious report, AI-cleared esbuild report, feed
 errors via Playwright, plus an actual incremental-scroll pass (not just `fullPage` screenshots, which don't
 fire real scroll events) confirming the pipeline story's active-step tracking behaves correctly.
 
+## Scanner agent's punch list, worked through (2026-09-17)
+
+The scanner agent left a review of `web/` in the root `PROGRESS.md` ("Punch list for the UI agent"). Went
+through it item by item. **No visual/design changes** — this was all data-layer, correctness and test work.
+
+1. **`npm run gen:types`** — re-run. `report.ts` now has `codeIssues`, `behavior`, `iocs`, `reviewFlags`.
+   Still can't render any of it: `schema/examples/*.json` haven't been regenerated to match, so there's no
+   real data shaped like the new fields yet. That part is genuinely blocked on the scanner agent, as they
+   said themselves.
+2. **Fixed the `/v1/check` body bug in `docs/page.tsx`** — it showed a bare array; the real endpoint
+   (`cloud/api.py`) requires `{"packages": [...]}`. Also now notes the 200-per-request cap.
+3. **Wired up the real backend and actually ran the site against it** — this was the big one:
+   - `lib/api.ts`: every function now has a working real-mode branch (`getPackage`, `getReport`, `getScan`,
+     `getVersions`, `getFeed`, `getStats`, `checkPackages`, `search`), not just the two that existed before.
+     Shared `apiFetch`/`apiFetchOrNull` helpers parse `{"error": msg}` responses the way `cli/src/client.ts`
+     does. `checkPackages` now sends a real batched `POST /v1/check` (`{"packages": [...]}`), chunked at
+     `MAX_CHECK_PACKAGES` (200), with the same chunk/errorRecord pattern as the CLI's `checkMany`.
+   - `getFeed`'s real branch returns `{record, report: null}` — the real `/v1/feed` only ever returns
+     summaries, never full reports, and nothing in the UI reads `.report` (checked first). `FeedItem.report`
+     is now `Report | null` to match reality instead of a shape the endpoint can't produce.
+   - `getStats`'s real branch maps the store's actual shape (`{scansCompleted, safe, suspicious, malicious}`)
+     to the UI's `Stats` type. `avgScanSeconds` isn't tracked server-side; kept as the same illustrative
+     constant fixtures use.
+   - `search` has no real endpoint yet (README §10 marks it TBD) — the real branch calls `getVersions`
+     instead of inventing one. Deliberately a read, not a scan trigger: typing in the search box shouldn't
+     start scanning packages as a side effect. The search page's own "scan it now" button is still the one
+     intentional way to start a scan from that page.
+   - **Actually ran it**: started `uv run pkgguard-dev-api --no-ai`, pointed the site at it
+     (`NEXT_PUBLIC_API_URL` + `NEXT_PUBLIC_USE_FIXTURES=false`), and drove it with Playwright — home page
+     stats, a live scan of a real package (`is-odd`), the lockfile scan page's batch check, the feed, and
+     search all worked against real, freshly-scanned data with zero console errors. Added
+     `.env.local.example` (committed) documenting how; `.env.local` itself stays gitignored and unset by
+     default so `npm run dev` keeps working with fixtures out of the box.
+   - Found a real (expected) failure while testing this: `EXAMPLE_LOCKFILE`'s three filler dependencies
+     (`@acme/fetch-helper`, `left-pad-pro`, `some-fresh-dependency`) don't exist on the real npm registry —
+     they're fixture-only demo names. Swapped them for real, tiny, harmless packages (`chalk`, `picocolors`,
+     `zod`) so the "Try an example" button produces a clean result in both fixtures and real-backend mode.
+4. **Version history** — genuinely missing (README §11.3, dropped from BRIEF's checklist). Added
+   `components/report/version-history.tsx`: calls the now-real `getVersions`, renders a row of version chips
+   (verdict-colored dot, current version highlighted) using the exact same card style as the rest of the
+   report page. Only renders when there's more than one scanned version — verified this both ways: hidden on
+   every current fixture (each has exactly one version) and correctly populated by scanning the same real
+   package at two versions through the dev API.
+5. **Tests** — there were none. Added `vitest` (matching `cli`/`mcp`'s existing choice) plus
+   `vitest.config.mts` (path-aliases `@/*` to `src/`). `lib/lockfile.test.ts` (18 cases: v1/v2/v3 lockfile
+   parsing, scoped names, dedup, nested `node_modules`, malformed input) and `lib/verdict.test.ts` (9 cases,
+   including one asserting BRIEF §5.4's wording rule by name — SAFE must render as "No issues found", never
+   "Safe"). 27/27 passing, `npm run test`.
+6. **Noted, not changed**: the homepage/docs show `npm install -g pkgguard` and `npx pkgguard-mcp@1.0.0` as
+   if already published. Accurate to the plan, just not live yet — a demo reminder, not a bug.
+
+Also fixed in passing: `<html>` used `scroll-behavior: smooth` without the `data-scroll-behavior="smooth"`
+attribute Next.js 16 wants for it, which printed a console warning on every client-side navigation. One
+attribute, `layout.tsx`, no visual change.
+
+Verified: `tsc --noEmit`, `eslint .`, `npm run test` (27/27), `next build`, and a full Playwright pass over
+both fixtures mode and real-backend mode with zero console errors in either.
+
 ## Commit
 
 ```bash
 cd ~/Vault
 git add web
-git commit -m "Web: full site v1 — all 6 must-have pages" -m "Next.js + Tailwind + shadcn/ui site: package report page (verdict, findings, AI review, code evidence), home with 3D hero, search, project (lockfile) scan, threat feed, and docs. Backed by real schema/examples fixtures + a live-scan simulator until the cloud backend exists."
+git commit -m "Web: wire up the real backend, add tests, version history" -m "Works through the scanner agent's punch list: every api.ts function now has a real backend branch (verified live against pkgguard-dev-api, not just written), batched /v1/check chunked at 200, fixed the docs page's check-body bug, added a version history component, and added the first tests (vitest: lockfile parsing, verdict wording rules incl. BRIEF §5.4). No visual changes."
 git push
 ```

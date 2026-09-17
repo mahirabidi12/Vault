@@ -26,6 +26,9 @@ export type RecordSource = "pkgguard" | "osv-import";
 export type Reports3Key = string | null;
 export type Aifailed = boolean;
 export type Failurereason = string | null;
+export type Needsreview = boolean;
+export type Ioccount = number;
+export type Settingshash = string | null;
 
 /**
  * Summary stored in DynamoDB and returned by the API.
@@ -52,6 +55,9 @@ export interface VerdictRecord {
   reportS3Key?: Reports3Key;
   aiFailed?: Aifailed;
   failureReason?: Failurereason;
+  needsReview?: Needsreview;
+  iocCount?: Ioccount;
+  settingsHash?: Settingshash;
 }
 export interface PackageRef {
   ecosystem: Ecosystem;

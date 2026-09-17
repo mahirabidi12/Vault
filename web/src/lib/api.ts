@@ -284,17 +284,105 @@ function delay(ms: number): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Real backend (cloud/api.py, or `pkgguard-dev-api` for local development —
+// analyzer/src/pkgguard_analyzer/local_api.py serves the identical contract
+// in-memory at http://127.0.0.1:8787). Used when NEXT_PUBLIC_USE_FIXTURES is
+// exactly "false"; NEXT_PUBLIC_API_URL must point at that server.
+//
+//   cd analyzer && uv run pkgguard-dev-api --no-ai
+//   # web/.env.local: NEXT_PUBLIC_API_URL=http://127.0.0.1:8787
+//   #                 NEXT_PUBLIC_USE_FIXTURES=false
+// ---------------------------------------------------------------------------
+
+export const MAX_CHECK_PACKAGES = 200; // must match analyzer's cloud/api.py
+
+class ApiClientError extends Error {}
+
+/** Every route (cloud/api.py `handler`) returns JSON, {"error": msg} on 4xx/5xx. */
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  if (!API_URL) {
+    throw new ApiClientError(
+      "NEXT_PUBLIC_API_URL is not set. Run `uv run pkgguard-dev-api` in analyzer/ and point NEXT_PUBLIC_API_URL at it."
+    );
+  }
+  let res: Response;
+  try {
+    res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers: { "content-type": "application/json", ...init?.headers },
+    });
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new ApiClientError(`Could not reach the PkgGuard API at ${API_URL}: ${detail}`);
+  }
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new ApiClientError(`PkgGuard API returned a non-JSON response (HTTP ${res.status}) for ${path}.`);
+  }
+  if (res.status >= 400) {
+    const message = (body as { error?: string } | null)?.error ?? `HTTP ${res.status}`;
+    throw new ApiClientError(`PkgGuard API error: ${message}`);
+  }
+  return body as T;
+}
+
+/** Like apiFetch, but a 404 resolves to null instead of throwing (report not ready / scan not found). */
+async function apiFetchOrNull<T>(path: string): Promise<T | null> {
+  if (!API_URL) return apiFetch<T>(path); // let the missing-URL error surface normally
+  const res = await fetch(`${API_URL}${path}`);
+  if (res.status === 404) return null;
+  let body: unknown;
+  try {
+    body = await res.json();
+  } catch {
+    throw new ApiClientError(`PkgGuard API returned a non-JSON response (HTTP ${res.status}) for ${path}.`);
+  }
+  if (res.status >= 400) {
+    const message = (body as { error?: string } | null)?.error ?? `HTTP ${res.status}`;
+    throw new ApiClientError(`PkgGuard API error: ${message}`);
+  }
+  return body as T;
+}
+
+function chunk<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+  return chunks;
+}
+
+function errorRecord(pkg: PackageRef, reason: string): VerdictRecord {
+  return {
+    package: pkg,
+    status: "FAILED",
+    scanId: "",
+    requestedAt: new Date().toISOString(),
+    failureReason: reason,
+    signals: [],
+    ranOn: "cloud",
+    analyzerVersion: "unknown",
+  };
+}
+
+function packageKey(pkg: PackageRef): string {
+  return `${pkg.ecosystem}:${pkg.name}@${pkg.version}`;
+}
+
+interface CheckResponse {
+  results: VerdictRecord[];
+  errors: { package: Partial<PackageRef>; error: string }[];
+}
+
+// ---------------------------------------------------------------------------
 // Public API — every page/component calls through these
 // ---------------------------------------------------------------------------
 
 export async function getPackage(name: string, version?: string): Promise<VerdictRecord> {
   if (!USE_FIXTURES) {
-    const res = await fetch(
-      `${API_URL}/v1/package?ecosystem=npm&name=${encodeURIComponent(name)}${
-        version ? `&version=${encodeURIComponent(version)}` : ""
-      }`
-    );
-    return res.json();
+    const params = new URLSearchParams({ ecosystem: "npm", name });
+    if (version) params.set("version", version);
+    return apiFetch<VerdictRecord>(`/v1/package?${params.toString()}`);
   }
 
   await delay(120);
@@ -310,8 +398,8 @@ export async function getPackage(name: string, version?: string): Promise<Verdic
 
 export async function getReport(name: string, version: string): Promise<Report | null> {
   if (!USE_FIXTURES) {
-    const res = await fetch(`${API_URL}/v1/report?ecosystem=npm&name=${encodeURIComponent(name)}&version=${encodeURIComponent(version)}`);
-    return res.json();
+    const params = new URLSearchParams({ ecosystem: "npm", name, version });
+    return apiFetchOrNull<Report>(`/v1/report?${params.toString()}`);
   }
 
   await delay(120);
@@ -324,6 +412,10 @@ export async function getReport(name: string, version: string): Promise<Report |
 }
 
 export async function getScan(scanId: string): Promise<VerdictRecord | null> {
+  if (!USE_FIXTURES) {
+    return apiFetchOrNull<VerdictRecord>(`/v1/scans/${encodeURIComponent(scanId)}`);
+  }
+
   await delay(80);
   const fromLive = [...liveScans.values()].find((s) => s.scanId === scanId);
   if (fromLive) return materializeLiveScan(fromLive);
@@ -331,20 +423,55 @@ export async function getScan(scanId: string): Promise<VerdictRecord | null> {
 }
 
 export async function getVersions(name: string): Promise<VerdictRecord[]> {
+  if (!USE_FIXTURES) {
+    const params = new URLSearchParams({ ecosystem: "npm", name });
+    const { items } = await apiFetch<{ items: VerdictRecord[] }>(`/v1/package/versions?${params.toString()}`);
+    return items;
+  }
+
   await delay(100);
   return FIXTURES.filter((e) => e.record.package.name.toLowerCase() === name.toLowerCase()).map((e) => e.record);
 }
 
 export async function checkPackages(list: PackageRef[]): Promise<VerdictRecord[]> {
+  if (!USE_FIXTURES) {
+    if (list.length === 0) return [];
+    const byKey = new Map<string, PackageRef>();
+    for (const pkg of list) byKey.set(packageKey(pkg), pkg);
+    const unique = [...byKey.values()];
+
+    const results = new Map<string, VerdictRecord>();
+    for (const batch of chunk(unique, MAX_CHECK_PACKAGES)) {
+      const response = await apiFetch<CheckResponse>("/v1/check", {
+        method: "POST",
+        body: JSON.stringify({ packages: batch }),
+      });
+      for (const record of response.results) results.set(packageKey(record.package), record);
+      for (const failure of response.errors) {
+        const pkg = failure.package as PackageRef;
+        results.set(packageKey(pkg), errorRecord(pkg, failure.error));
+      }
+    }
+    return unique.map((pkg) => results.get(packageKey(pkg)) ?? errorRecord(pkg, "No result returned by the API."));
+  }
+
   return Promise.all(list.map((p) => getPackage(p.name, p.version)));
 }
 
 export interface FeedItem {
   record: VerdictRecord;
-  report: Report;
+  // The real /v1/feed only returns summaries (VerdictRecord), never the full
+  // report — nothing in the UI reads .report today, so this stays nullable
+  // rather than firing N extra report fetches just to satisfy a type.
+  report: Report | null;
 }
 
 export async function getFeed(limit = 20): Promise<FeedItem[]> {
+  if (!USE_FIXTURES) {
+    const { items } = await apiFetch<{ items: VerdictRecord[] }>(`/v1/feed`);
+    return items.slice(0, limit).map((record) => ({ record, report: null }));
+  }
+
   await delay(150);
   const items = FIXTURES.filter(
     (e) => e.record.status === "COMPLETE" && e.record.verdict !== "SAFE"
@@ -366,6 +493,21 @@ export interface Stats {
 }
 
 export async function getStats(): Promise<Stats> {
+  if (!USE_FIXTURES) {
+    // cloud/api.py's store.stats() shape: {scansCompleted, safe, suspicious, malicious, skipped}.
+    // avgScanSeconds isn't tracked server-side; PROGRESS.md's own measured range (~2-7s) stands in.
+    const raw = await apiFetch<{ scansCompleted?: number; safe?: number; suspicious?: number; malicious?: number }>(
+      "/v1/stats"
+    );
+    return {
+      totalScanned: raw.scansCompleted ?? 0,
+      safeCount: raw.safe ?? 0,
+      suspiciousCount: raw.suspicious ?? 0,
+      maliciousCount: raw.malicious ?? 0,
+      avgScanSeconds: 3.4,
+    };
+  }
+
   await delay(80);
   const complete = FIXTURES.filter((e) => e.record.status === "COMPLETE");
   const live = [...liveScans.values()]
@@ -382,16 +524,26 @@ export async function getStats(): Promise<Stats> {
 }
 
 export async function search(query: string): Promise<VerdictRecord[]> {
-  await delay(150);
-  const q = query.trim().toLowerCase();
+  const q = query.trim();
   if (!q) return [];
-  return FIXTURES.filter((e) => e.record.package.name.toLowerCase().includes(q))
+
+  if (!USE_FIXTURES) {
+    // There's no real search endpoint yet (README §10 lists it as TBD). Reuse
+    // "all known versions of this exact name" as the closest honest stand-in —
+    // it's a read, so it never kicks off a scan just because someone typed a
+    // name. The search page's own "scan it now" button is the deliberate
+    // entry point for that.
+    return getVersions(q);
+  }
+
+  const ql = q.toLowerCase();
+  return FIXTURES.filter((e) => e.record.package.name.toLowerCase().includes(ql))
     .map((e) => e.record)
     .sort((a, b) => {
       const an = a.package.name.toLowerCase();
       const bn = b.package.name.toLowerCase();
-      if (an === q) return -1;
-      if (bn === q) return 1;
+      if (an === ql) return -1;
+      if (bn === ql) return 1;
       return an.localeCompare(bn);
     });
 }
