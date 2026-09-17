@@ -4,7 +4,7 @@
 > README = what we *planned*. This file = what is *actually built*, how to run it, and where the build differs from the plan.
 > **Update this file at the end of every step.**
 
-Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then, uncommitted: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), and the MCP agent tool (Step 9, `mcp/`) — verified live end to end against the local dev API. See the sections below.
+Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), the MCP agent tool (Step 9, `mcp/`), and the CLI (Step 8, `cli/`) — both clients verified live end to end against the local dev API. See the sections below.
 
 ---
 
@@ -20,7 +20,7 @@ Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deplo
 | 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low). Extra `--full-audit` mode (parallel worker sub-agents read all code, coordinator merges) built and working locally, not yet run in the cloud |
 | 6 | Final verdict + full report | ✅ Scoring rules done since Step 5. Report now also carries a UI-ready layer: merged `codeIssues` (rule + AI findings + real code excerpts), `behavior` profile, file hashes, IOCs, `reviewFlags` — built, uncommitted |
 | 7 | Eval, tuning, seed 50 packages, OSV import | 🟡 `pkgguard-seed` script built (scan 50 packages locally + upload to the deployed stack), package list picked, but not fully run yet (cloud isn't deployed, nothing uploaded). **Not built:** formal `eval/` fixtures + accuracy script, OSV bulk import script |
-| 8 | CLI installer | ⏳ Not started (`cli/` doesn't exist) |
+| 8 | CLI installer | ✅ Built: `cli/` (`pkgguard`), `check` + `install`, TypeScript + Commander. Verified live end to end: `install safedep-test-pkg` blocked (nothing written), `install is-odd` really installed the exact checked versions |
 | 9 | MCP agent tool | ✅ Built: `mcp/`, one tool (`check_package`), TypeScript + official MCP SDK, stdio. Verified live: real JSON-RPC handshake + tool call against `pkgguard-dev-api`, `express` → allow, `safedep-test-pkg` → block |
 | 10 | Website | ⏳ |
 | 11 | Login + dashboard | ⏳ |
@@ -49,6 +49,11 @@ sam deploy --stack-name pkgguard --region ap-south-1 --capabilities CAPABILITY_I
 
 # MCP tool (from the repo root; point PKGGUARD_API_URL at pkgguard-dev-api or the deployed cloud API)
 cd mcp && npm install && npm run build && npm test
+
+# CLI (same API; from the repo root)
+cd cli && npm install && npm run build && npm test
+PKGGUARD_API_URL=http://127.0.0.1:8787 node dist/index.js check express@4.18.2
+PKGGUARD_API_URL=http://127.0.0.1:8787 node dist/index.js install safedep-test-pkg   # blocked
 ```
 
 Scan output goes to `analyzer/tmp/scans/<name>/<version>/` (gitignored): `record.json`, `report.json`, `files/` (unpacked package).
@@ -157,7 +162,7 @@ The CLI, MCP tool and website all need something to talk to *today*, and AWS isn
 
 **Verified live (2026-09-17):** started the server, requested `express@4.18.2` cold (`202 PENDING`), polled to `200 COMPLETE` with a real verdict in ~6s, fetched the full report from `/v1/report`, checked `/v1/stats`, and scanned `safedep-test-pkg@0.1.3` to `MALICIOUS` (intel). Not for production — no auth beyond what `cloud/api.py` already does, single process, state lost on restart.
 
-### `mcp/` (Step 9, MCP agent tool — uncommitted)
+### `mcp/` (Step 9, MCP agent tool — commit `bde8018`)
 
 TypeScript, official `@modelcontextprotocol/sdk` (v1.30.0), stdio transport, published as `pkgguard-mcp`. One tool, matching README §11.2:
 
@@ -173,6 +178,26 @@ Tests: `npm test` (vitest, 24 passing) — `format.ts` decision table + text, `c
 **Verified live (2026-09-17), no mocks:** built `dist/`, spawned the real server as a subprocess, drove it through the actual JSON-RPC handshake (`initialize` → `notifications/initialized` → `tools/list` → `tools/call`) against `pkgguard-dev-api`. `express@4.18.2` → `allow`; `safedep-test-pkg@0.1.3` → `block` with "Refuse to install this package and tell the user why" — the exact demo in README's Step 9 "Done when" check, working end to end without any AWS deployed.
 
 **Not done:** publishing to npm; a `ping`/connectivity tool (SafeDep has one; skipped for now since `check_package`'s own errors already say clearly when the API can't be reached — add if it turns out to matter); testing against a real Claude Code/Cursor session (only the raw protocol was exercised above, not a live agent's tool-choice behavior).
+
+### `cli/` (Step 8, CLI installer — uncommitted)
+
+TypeScript, Commander, published as `pkgguard`. Two commands, matching README §11.1:
+
+| File | Responsibility |
+|---|---|
+| `src/client.ts` | `PkgGuardClient`, extended from the MCP tool's version: `getPackage`/`checkPackage` (single, polling) **plus** `checkMany` — batches `POST /v1/check` at `MAX_CHECK_PACKAGES` (200, mirrors the API constant), dedupes by name+version, and re-polls only the still-`PENDING`/`SCANNING` subset each round instead of the whole batch |
+| `src/lockfile.ts` | Parses `package-lock.json` into every resolved `{name, version}`: npm lockfile v2/v3 (`packages`, keyed by `node_modules` path — name is everything after the last `node_modules/`, which also handles scoped names and nesting correctly) with a fallback to the legacy v1 nested `dependencies` tree |
+| `src/resolve-tree.ts` | The TOCTOU-safe core: copies `package.json` (+ lockfile if present) into a temp dir, runs `npm install --package-lock-only --ignore-scripts --save-exact <specs>` (resolves the *full* tree — no install, no scripts), reads back the resulting lockfile (→ `all`, every transitive package) and the exact versions npm pinned for the top-level specs (→ `requested`, used for the real install later). Cleans up the temp dir on any failure. `Runner` is injected so tests never shell out to real npm |
+| `src/decide.ts` | Same decision table as the MCP tool's `format.ts` (block/warn/allow/wait, `needsReview` downgrade), plus `summarize()` (worst case across a batch — one `MALICIOUS` blocks the lot) and CLI exit codes (`0` allow, `1` warn, `2` block, `3` wait/error) |
+| `src/commands/check.ts` | `pkgguard check [package]`: one package (like the MCP tool), or every package in `package-lock.json` if none is given |
+| `src/commands/install.ts` | `pkgguard install <packages...>`: resolve → batch-check → **block** on any `MALICIOUS` (nothing written) → **confirm** on `SUSPICIOUS`/failed scans (`-y` skips, never bypasses a block) → copy the resolved `package.json`/`package-lock.json` into the project → real `npm install` (scripts allowed now that it's checked) |
+| `src/spinner.ts`, `src/prompt.ts` | A minimal hand-rolled polling spinner (falls back to plain lines when stdout isn't a TTY) and a yes/no prompt (always answers "no" when stdin isn't interactive, so it never hangs in CI) — no extra dependencies |
+
+Tests: `npm test` (vitest, 37 passing) — lockfile parsing (v2/v3 + legacy, scoped names, dedup), spec parsing, the decision table + `summarize`/exit codes, the batch client against a mocked `fetch` (chunking, partial re-polling, per-item error handling), and `resolveTree` against a fake npm `Runner` (no real npm or network in tests). `npm run typecheck` clean.
+
+**Verified live (2026-09-17), no mocks, real npm:** against `pkgguard-dev-api` — `pkgguard check express@4.18.2` → allow, with a live pending → scanning → complete spinner. `pkgguard install safedep-test-pkg` → resolved the tree, checked it, printed `🛑 Blocked`, exit code `2`, **wrote nothing** to the test directory. `pkgguard install is-odd` → resolved `is-odd` + its transitive dep `is-number`, checked both, then ran a real `npm install` that produced a real `node_modules/` with the exact pinned versions — the precise "Done when" check from README's Step 8.
+
+**Not done:** publishing to npm; `pkgguard check`'s output could use a compact table for large lockfiles (currently prints every flagged package as its own block, fine up to dozens); no `pnpm`/`yarn` lockfile support (npm only, matching the README's stated scope).
 
 ### Step 5 live results (`gpt-5-mini`, `OPENAI_REASONING_EFFORT=low`, 2026-09-17)
 
