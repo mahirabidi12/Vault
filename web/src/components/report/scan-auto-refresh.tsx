@@ -2,33 +2,27 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LIVE_SCAN_TOTAL_MS } from "@/lib/api";
 import type { ScanStatus } from "@/lib/types/domain";
 
+const POLL_INTERVAL_MS = 2000;
+
 /**
- * Live-scan pages are server-rendered from a single in-memory simulator
- * (see lib/api.ts). Rather than duplicating that simulation client-side,
- * this component just schedules one `router.refresh()` timed to land after
- * the simulated pipeline finishes, so the server re-renders with the
- * now-COMPLETE (or FAILED/SKIPPED) record. Renders nothing.
+ * Live-scan pages are server-rendered. A real scan's duration varies (a quick
+ * rules-only check vs. a slower AI deep-dive), so this keeps calling
+ * `router.refresh()` on a fixed interval for as long as the scan is still
+ * running, instead of guessing a single fixed delay. The server re-fetches
+ * the record each time; once it's COMPLETE (or FAILED/SKIPPED), the parent
+ * page stops rendering this component, which unmounts it and clears the
+ * interval. Renders nothing.
  */
-export function ScanAutoRefresh({
-  status,
-  requestedAt,
-}: {
-  status: ScanStatus;
-  requestedAt: string;
-}) {
+export function ScanAutoRefresh({ status }: { status: ScanStatus }) {
   const router = useRouter();
 
   React.useEffect(() => {
     if (status !== "PENDING" && status !== "SCANNING") return;
-    const startedAt = new Date(requestedAt).getTime();
-    const elapsed = Date.now() - startedAt;
-    const remaining = Math.max(350, LIVE_SCAN_TOTAL_MS - elapsed + 150);
-    const id = setTimeout(() => router.refresh(), remaining);
-    return () => clearTimeout(id);
-  }, [status, requestedAt, router]);
+    const id = setInterval(() => router.refresh(), POLL_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [status, router]);
 
   return null;
 }

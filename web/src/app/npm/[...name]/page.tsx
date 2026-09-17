@@ -38,7 +38,7 @@ export default async function PackageReportPage({ params, searchParams }: Props)
   if (record.status === "PENDING" || record.status === "SCANNING") {
     return (
       <>
-        <ScanAutoRefresh status={record.status} requestedAt={record.requestedAt} />
+        <ScanAutoRefresh status={record.status} />
         <LiveScanProgress record={record} />
       </>
     );

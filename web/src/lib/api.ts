@@ -25,6 +25,7 @@ import { FEED_SEED } from "@/fixtures/feed-seed";
 
 const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURES !== "false";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
 // ---------------------------------------------------------------------------
 // Fixture registry
@@ -309,7 +310,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(`${API_URL}${path}`, {
       ...init,
-      headers: { "content-type": "application/json", ...init?.headers },
+      headers: {
+        "content-type": "application/json",
+        ...(API_KEY ? { "x-api-key": API_KEY } : {}),
+        ...init?.headers,
+      },
     });
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -331,7 +336,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 /** Like apiFetch, but a 404 resolves to null instead of throwing (report not ready / scan not found). */
 async function apiFetchOrNull<T>(path: string): Promise<T | null> {
   if (!API_URL) return apiFetch<T>(path); // let the missing-URL error surface normally
-  const res = await fetch(`${API_URL}${path}`);
+  const res = await fetch(`${API_URL}${path}`, { headers: API_KEY ? { "x-api-key": API_KEY } : undefined });
   if (res.status === 404) return null;
   let body: unknown;
   try {
