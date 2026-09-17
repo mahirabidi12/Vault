@@ -18,6 +18,7 @@ dependencies = [
 analyze = "pkgguard_analyzer.cli:main"
 pkgguard-seed = "pkgguard_analyzer.seed:main"
 pkgguard-export-schema = "pkgguard_analyzer.export_schema:main"
+pkgguard-dev-api = "pkgguard_analyzer.local_api:main"
 
 [dependency-groups]
 dev = [
