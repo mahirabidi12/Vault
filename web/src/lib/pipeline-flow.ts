@@ -176,11 +176,3 @@ export const DECIDED_BY = [
   { id: "ai", label: "AI review", note: "judgment, with confidence" },
   { id: "rules", label: "Rules", note: "fallback if AI is unavailable" },
 ] as const;
-
-export const SANDBOX_LIMITS = [
-  "Windows- or macOS-only code",
-  "Browser-only code",
-  "Code that only runs when a specific function is called",
-  "Second-stage downloads (no internet, so we see the URL and intent, not the payload)",
-  "Malware that detects the sandbox",
-];

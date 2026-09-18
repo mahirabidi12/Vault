@@ -5,7 +5,6 @@ import { BrainCircuit, Eye, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   RAIL,
-  SANDBOX_LIMITS,
   SANDBOX_LIVE,
   STAGES,
   clamp01,
@@ -125,7 +124,7 @@ export function ScanJourney() {
           Nothing is labeled safe on a guess.
         </h2>
         <p className="mt-4 text-muted-foreground">
-          Scroll to watch one package go through everything we do to it, from the first download to the final verdict.
+          Scroll to watch one package go through everything we do to it, from the first download to the final verdict. It is the same whether you ask from the CLI or the website, or your agent asks through the MCP tool.
         </p>
       </div>
 
@@ -184,7 +183,6 @@ export function ScanJourney() {
         </div>
       </section>
 
-      <SandboxLimits />
     </div>
   );
 }
@@ -314,24 +312,5 @@ function ThreeWays() {
         </li>
       ))}
     </ul>
-  );
-}
-
-function SandboxLimits() {
-  return (
-    <div className="mx-auto max-w-4xl px-4 pb-24 sm:px-6">
-      <div className="rounded-xl border border-white/10 bg-white/[0.02] p-5">
-        <p className="text-sm font-semibold text-foreground">What the sandbox can&apos;t see</p>
-        <ul className="mt-2 grid gap-x-8 gap-y-1 text-[13px] text-muted-foreground sm:grid-cols-2">
-          {SANDBOX_LIMITS.map((l) => (
-            <li key={l} className="flex gap-2">
-              <span aria-hidden className="mt-2 size-1 shrink-0 rounded-full bg-zinc-600" />
-              {l}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-3 text-[13px] text-zinc-400">Static analysis and AI review still cover these.</p>
-      </div>
-    </div>
   );
 }

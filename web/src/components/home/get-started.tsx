@@ -25,9 +25,9 @@ const MCP_DEMO: DemoLine[] = [
 const CARDS = [
   {
     icon: Terminal,
-    badge: "For you",
+    badge: "For developers",
     title: "CLI",
-    tagline: "Checks your dependencies before npm installs them.",
+    tagline: "For developers: checks the whole dependency tree in your terminal before npm installs anything.",
     command: "npx pkgguard-cli install express",
     label: "$",
     steps: [
@@ -59,11 +59,11 @@ const CARDS = [
 
 export function GetStarted() {
   return (
-    <section className="mx-auto w-full max-w-5xl px-4 py-16 sm:px-6 sm:py-24">
+    <section id="get-started" className="mx-auto w-full max-w-5xl scroll-mt-20 px-4 py-16 sm:px-6 sm:py-24">
       <Reveal className="mx-auto mb-10 max-w-2xl text-center">
         <p className="kicker text-brand">Get started in one line</p>
         <h2 className="mt-3 text-[clamp(1.9rem,4.2vw,3rem)] font-semibold leading-[1.05] tracking-[-0.04em]">
-          Guard every install. Yours and your agent&apos;s.
+          Guard every install, from your terminal or your agent.
         </h2>
       </Reveal>
 
