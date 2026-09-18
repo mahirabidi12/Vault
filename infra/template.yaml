@@ -36,9 +36,25 @@ Parameters:
   MonthlyBudgetUSD:
     Type: Number
     Default: 10
+  SandboxEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >
+      Create the dynamic-analysis sandbox (isolated VPC, Fargate task, VPC endpoints) and let the scan run it.
+      About $20-30/month while enabled (VPC endpoints). See SANDBOX.md.
+  SandboxImageTag:
+    Type: String
+    Default: v1
+    Description: Tag of the sandbox image in the pkgguard-sandbox ECR repository (push it with sandbox/push.sh).
+  S3PrefixListId:
+    Type: String
+    Default: pl-78a54011
+    Description: AWS-managed prefix list for S3 in this region (ap-south-1). Look it up with aws ec2 describe-managed-prefix-lists.
 
 Conditions:
   HasAlertEmail: !Not [!Equals [!Ref AlertEmail, ""]]
+  SandboxOn: !Equals [!Ref SandboxEnabled, "true"]
 
 Globals:
   Function:
@@ -93,6 +109,10 @@ Resources:
       OwnershipControls:
         Rules:
           - ObjectOwnership: BucketOwnerEnforced
+      LifecycleConfiguration:
+        Rules:
+          - { Id: expire-sandbox-inputs, Status: Enabled, Prefix: sandbox-in/, ExpirationInDays: 1 }
+          - { Id: expire-sandbox-traces, Status: Enabled, Prefix: sandbox-traces/, ExpirationInDays: 30 }
 
   ScanFunction:
     Type: AWS::Serverless::Function
@@ -109,9 +129,31 @@ Resources:
           AI_MODE: !Ref AIMode
           MODEL_PROVIDER: bedrock
           BEDROCK_MODEL_ID: global.anthropic.claude-haiku-4-5-20251001-v1:0
+          SANDBOX_ENABLED: !If [SandboxOn, "true", "false"]
+          SANDBOX_CLUSTER: !If [SandboxOn, !Ref SandboxCluster, ""]
+          SANDBOX_TASK_DEFINITION: !If [SandboxOn, !Ref SandboxTaskDefinition, ""]
+          SANDBOX_SUBNETS: !If [SandboxOn, !Join [",", [!Ref SandboxSubnetA, !Ref SandboxSubnetB]], ""]
+          SANDBOX_SECURITY_GROUPS: !If [SandboxOn, !Ref SandboxSecurityGroup, ""]
       Policies:
         - DynamoDBCrudPolicy: { TableName: !Ref VerdictsTable }
         - S3CrudPolicy: { BucketName: !Ref ReportsBucket }
+        - !If
+          - SandboxOn
+          - Statement:
+              - Effect: Allow
+                Action: ecs:RunTask
+                Resource: !Sub arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:task-definition/pkgguard-sandbox:*
+                Condition:
+                  ArnEquals: { "ecs:cluster": !GetAtt SandboxCluster.Arn }
+              - Effect: Allow
+                Action: [ecs:DescribeTasks, ecs:StopTask]
+                Resource: !Sub arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:task/${SandboxCluster}/*
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource: [!GetAtt SandboxTaskRole.Arn, !GetAtt SandboxExecutionRole.Arn]
+                Condition:
+                  StringEquals: { "iam:PassedToService": ecs-tasks.amazonaws.com }
+          - !Ref AWS::NoValue
         - Statement:
             - Effect: Allow
               Action:
@@ -242,6 +284,241 @@ Resources:
       LogGroupName: !Sub /aws/lambda/${ScanFailedFunction}
       RetentionInDays: 14
 
+  # ---------------------------------------------------------------------------------------------
+  # Dynamic-analysis sandbox (see SANDBOX.md). Everything below exists only when SandboxEnabled=true.
+  # The package runs in a Fargate task inside a VPC with NO route to the internet: no internet
+  # gateway, no NAT. Only S3 (via a gateway endpoint restricted by policy) and the ECR/Logs endpoints
+  # are reachable, and DNS Firewall blocks every name except those endpoints.
+  # ---------------------------------------------------------------------------------------------
+  SandboxRepository:
+    Type: AWS::ECR::Repository
+    Condition: SandboxOn
+    Properties:
+      RepositoryName: pkgguard-sandbox
+      EmptyOnDelete: true
+      ImageScanningConfiguration: { ScanOnPush: true }
+
+  SandboxVpc:
+    Type: AWS::EC2::VPC
+    Condition: SandboxOn
+    Properties:
+      CidrBlock: 10.42.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags: [{ Key: Name, Value: pkgguard-sandbox }]
+
+  SandboxSubnetA:
+    Type: AWS::EC2::Subnet
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      CidrBlock: 10.42.1.0/24
+      AvailabilityZone: !Select [0, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+  SandboxSubnetB:
+    Type: AWS::EC2::Subnet
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      CidrBlock: 10.42.2.0/24
+      AvailabilityZone: !Select [1, !GetAZs ""]
+      MapPublicIpOnLaunch: false
+
+  SandboxRouteTable:
+    Type: AWS::EC2::RouteTable
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+  SandboxRouteAssocA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: SandboxOn
+    Properties: { SubnetId: !Ref SandboxSubnetA, RouteTableId: !Ref SandboxRouteTable }
+  SandboxRouteAssocB:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Condition: SandboxOn
+    Properties: { SubnetId: !Ref SandboxSubnetB, RouteTableId: !Ref SandboxRouteTable }
+
+  SandboxEndpointSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: SandboxOn
+    Properties:
+      GroupDescription: Interface endpoints for the sandbox (ECR, CloudWatch Logs)
+      VpcId: !Ref SandboxVpc
+      SecurityGroupIngress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, SourceSecurityGroupId: !Ref SandboxSecurityGroup }
+      SecurityGroupEgress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 10.42.0.0/16 }
+
+  SandboxSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: SandboxOn
+    Properties:
+      GroupDescription: The sandbox task. No inbound traffic. Outbound only to the VPC endpoints and S3.
+      VpcId: !Ref SandboxVpc
+      SecurityGroupEgress:
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, CidrIp: 10.42.0.0/16, Description: ECR and Logs interface endpoints }
+        - { IpProtocol: tcp, FromPort: 443, ToPort: 443, DestinationPrefixListId: !Ref S3PrefixListId, Description: S3 gateway endpoint }
+
+  SandboxS3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      VpcEndpointType: Gateway
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      RouteTableIds: [!Ref SandboxRouteTable]
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: SandboxInputsAndOutputs
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-in/*
+          - Effect: Allow
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-traces/*
+          - Sid: EcrImageLayers
+            Effect: Allow
+            Principal: "*"
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::prod-${AWS::Region}-starport-layer-bucket/*
+
+  SandboxEcrApiEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.api
+      SubnetIds: [!Ref SandboxSubnetA]  # one AZ keeps the hourly endpoint charge low; other AZs reach it inside the VPC
+      SecurityGroupIds: [!Ref SandboxEndpointSecurityGroup]
+      PrivateDnsEnabled: true
+  SandboxEcrDkrEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.ecr.dkr
+      SubnetIds: [!Ref SandboxSubnetA]  # one AZ keeps the hourly endpoint charge low; other AZs reach it inside the VPC
+      SecurityGroupIds: [!Ref SandboxEndpointSecurityGroup]
+      PrivateDnsEnabled: true
+  SandboxLogsEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Condition: SandboxOn
+    Properties:
+      VpcId: !Ref SandboxVpc
+      VpcEndpointType: Interface
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.logs
+      SubnetIds: [!Ref SandboxSubnetA]  # one AZ keeps the hourly endpoint charge low; other AZs reach it inside the VPC
+      SecurityGroupIds: [!Ref SandboxEndpointSecurityGroup]
+      PrivateDnsEnabled: true
+
+  # DNS Firewall: the VPC resolver would otherwise recurse to the real internet, which lets malware
+  # leak data or beacon over DNS. Allow only the AWS endpoint names; block (NODATA) everything else.
+  SandboxAllowedDomains:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Condition: SandboxOn
+    Properties:
+      Name: pkgguard-sandbox-allowed
+      Domains:
+        - !Sub api.ecr.${AWS::Region}.amazonaws.com
+        - !Sub "*.dkr.ecr.${AWS::Region}.amazonaws.com"
+        - !Sub logs.${AWS::Region}.amazonaws.com
+        - !Sub s3.${AWS::Region}.amazonaws.com
+        - !Sub "*.s3.${AWS::Region}.amazonaws.com"
+  SandboxBlockAllDomains:
+    Type: AWS::Route53Resolver::FirewallDomainList
+    Condition: SandboxOn
+    Properties:
+      Name: pkgguard-sandbox-block-all
+      Domains: ["*"]
+  SandboxDnsRuleGroup:
+    Type: AWS::Route53Resolver::FirewallRuleGroup
+    Condition: SandboxOn
+    Properties:
+      Name: pkgguard-sandbox-dns
+      FirewallRules:
+        - { FirewallDomainListId: !Ref SandboxAllowedDomains, Priority: 100, Action: ALLOW }
+        - { FirewallDomainListId: !Ref SandboxBlockAllDomains, Priority: 200, Action: BLOCK, BlockResponse: NODATA }
+  SandboxDnsRuleGroupAssociation:
+    Type: AWS::Route53Resolver::FirewallRuleGroupAssociation
+    Condition: SandboxOn
+    Properties:
+      Name: pkgguard-sandbox-dns
+      FirewallRuleGroupId: !Ref SandboxDnsRuleGroup
+      VpcId: !Ref SandboxVpc
+      Priority: 101
+
+  SandboxCluster:
+    Type: AWS::ECS::Cluster
+    Condition: SandboxOn
+
+  SandboxLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: SandboxOn
+    Properties:
+      LogGroupName: /pkgguard/sandbox
+      RetentionInDays: 14
+
+  SandboxExecutionRole:
+    Type: AWS::IAM::Role
+    Condition: SandboxOn
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - { Effect: Allow, Principal: { Service: ecs-tasks.amazonaws.com }, Action: sts:AssumeRole }
+      ManagedPolicyArns:
+        - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  SandboxTaskRole:
+    Type: AWS::IAM::Role
+    Condition: SandboxOn
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - { Effect: Allow, Principal: { Service: ecs-tasks.amazonaws.com }, Action: sts:AssumeRole }
+      Policies:
+        - PolicyName: sandbox-io
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - { Effect: Allow, Action: s3:GetObject, Resource: !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-in/*" }
+              - { Effect: Allow, Action: s3:PutObject, Resource: !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-traces/*" }
+
+  SandboxTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Condition: SandboxOn
+    Properties:
+      Family: pkgguard-sandbox
+      RequiresCompatibilities: [FARGATE]
+      NetworkMode: awsvpc
+      Cpu: "512"
+      Memory: "1024"
+      RuntimePlatform: { CpuArchitecture: ARM64, OperatingSystemFamily: LINUX }
+      EphemeralStorage: { SizeInGiB: 21 }
+      ExecutionRoleArn: !GetAtt SandboxExecutionRole.Arn
+      TaskRoleArn: !GetAtt SandboxTaskRole.Arn
+      ContainerDefinitions:
+        - Name: sandbox
+          Image: !Sub ${SandboxRepository.RepositoryUri}:${SandboxImageTag}
+          Essential: true
+          LinuxParameters:
+            InitProcessEnabled: true
+            Capabilities:
+              Add: [SYS_PTRACE]
+              Drop: [FSETID, MKNOD, NET_RAW, SETFCAP, SYS_CHROOT, AUDIT_WRITE]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref SandboxLogGroup
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: sandbox
+
   MonthlyBudget:
     Type: AWS::Budgets::Budget
     Condition: HasAlertEmail
@@ -279,3 +556,18 @@ Outputs:
     Value: !Ref ReportsBucket
   StateMachineArn:
     Value: !Ref ScanStateMachine
+  SandboxRepositoryUri:
+    Condition: SandboxOn
+    Value: !GetAtt SandboxRepository.RepositoryUri
+  SandboxCluster:
+    Condition: SandboxOn
+    Value: !Ref SandboxCluster
+  SandboxTaskDefinition:
+    Condition: SandboxOn
+    Value: !Ref SandboxTaskDefinition
+  SandboxSubnets:
+    Condition: SandboxOn
+    Value: !Join [",", [!Ref SandboxSubnetA, !Ref SandboxSubnetB]]
+  SandboxSecurityGroup:
+    Condition: SandboxOn
+    Value: !Ref SandboxSecurityGroup

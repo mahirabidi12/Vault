@@ -4,7 +4,7 @@
 > README = what we *planned*. This file = what is *actually built*, how to run it, and where the build differs from the plan.
 > **Update this file at the end of every step.**
 
-Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deployment pending SAM CLI + Docker. Since then: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), the MCP agent tool (Step 9, `mcp/`), the CLI (Step 8, `cli/`) — both clients verified live end to end against the local dev API — and an eval harness (Step 7, `eval/` + `pkgguard-eval`), 14/15 fixtures correct rules-only. See the sections below.
+Last updated: 2026-09-19. **Backend and website are deployed on AWS** (see "Live deployment" below). Earlier notes on this line say deployment was pending; that is out of date. Since then: a full-audit AI mode, the seed script, a UI-ready report layer (file hashes, behavior profile, merged code issues), a local dev API (`pkgguard-dev-api`, no AWS needed), the MCP agent tool (Step 9, `mcp/`), the CLI (Step 8, `cli/`) — both clients verified live end to end against the local dev API — and an eval harness (Step 7, `eval/` + `pkgguard-eval`), 14/15 fixtures correct rules-only. See the sections below.
 
 ---
 
@@ -15,17 +15,30 @@ Last updated: 2026-09-17. Step 3 (cloud backend) built and tested offline; deplo
 | 0 | Setup (accounts, tools) | 🟡 Partly done: Node, Docker, AWS CLI, uv installed. **SAM CLI not installed.** AWS region not chosen |
 | 1 | Project setup + verdict format | ✅ Done (commit `b0cdc24`) |
 | 2 | Scanner: download, safe unpack, threat intel, metadata red flags, verdict | ✅ Done (commit `5b47f13`) |
-| 3 | Cloud backend (SAM: HTTP API, Step Functions, Lambda images, DynamoDB, S3, Secrets Manager) | 🟡 Built + tested offline with moto. **Not deployed yet:** needs `brew install aws-sam-cli`, Docker Desktop running, and the OpenAI key stored in Secrets Manager. A **local dev API** (`pkgguard-dev-api`) now stands in for it — same `cloud/api.py` + `cloud/scan_handler.py` code, in-memory store instead of AWS — so the CLI/MCP/website can be built against the real `/v1/*` contract today |
+| 3 | Cloud backend (SAM: HTTP API, Step Functions, Lambda images, DynamoDB, S3, Secrets Manager) | ✅ **Deployed** (stack `pkgguard`, `ap-south-1`, UPDATE_COMPLETE). API key required (`x-api-key`). AI runs on Bedrock (`claude-haiku-4.5`), `AI_MODE=always`. Verified live 2026-09-19 with a fresh scan |
 | 4 | Code scanning (tree-sitter JS analysis + YARA patterns + combined-risk rules) | ✅ Done (commit `a841eeb`) |
 | 5 | AI agent (Strands; quick look on every package + deep dive when flagged) | ✅ Built + verified live with `gpt-5-mini` (reasoning effort low). Extra `--full-audit` mode (parallel worker sub-agents read all code, coordinator merges) built and working locally, not yet run in the cloud |
 | 6 | Final verdict + full report | ✅ Scoring rules done since Step 5. Report now also carries a UI-ready layer: merged `codeIssues` (rule + AI findings + real code excerpts), `behavior` profile, file hashes, IOCs, `reviewFlags` — built, uncommitted |
 | 7 | Eval, tuning, seed 50 packages, OSV import | 🟡 **Eval harness done:** `eval/fixtures/` (15 fixtures) + `pkgguard-eval`, 14/15 passing rules-only (1 correctly flagged as AI-dependent), 0 false positives on a small real benign run. `pkgguard-seed` script built (scan 50 packages locally + upload to the deployed stack), package list picked, but not fully run yet — only 3/50 scanned so far as a smoke test. **Not built:** OSV bulk import script |
 | 8 | CLI installer | ✅ Built: `cli/` (`pkgguard`), `check` + `install`, TypeScript + Commander. Verified live end to end: `install safedep-test-pkg` blocked (nothing written), `install is-odd` really installed the exact checked versions |
 | 9 | MCP agent tool | ✅ Built: `mcp/`, one tool (`check_package`), TypeScript + official MCP SDK, stdio. Verified live: real JSON-RPC handshake + tool call against `pkgguard-dev-api`, `express` → allow, `safedep-test-pkg` → block |
-| 10 | Website | ⏳ |
+| 10 | Website | ✅ Built (`web/`) and **deployed on AWS Amplify** (app `Vault`, branch `main`, real API, not fixtures). Branch-level basic auth is on, so the public URL returns 401 until it is disabled or the password is reset |
+| 10b | **Sandbox (dynamic analysis)** | 🟡 **Built and verified locally** (18/18 harmless fixtures correct in live Docker runs, 275 tests). AWS infra **deployed** (`SandboxEnabled=true`, image pushed) but idle: no package run in it yet. Real-malware testing not started (AWS only). Details and deploy steps in [`SANDBOX.md`](SANDBOX.md) §0 |
 | 11 | Login + dashboard | ⏳ |
 | 12 | Admin review (if time) | ⏳ |
 | 13 | Demo + submit | ⏳ |
+
+---
+
+## Live deployment (verified 2026-09-19)
+
+- **API:** `https://632dcqt3l3.execute-api.ap-south-1.amazonaws.com` (stack `pkgguard`). `x-api-key` required (401 without it). Key is in Secrets Manager `pkgguard/api-shared-key`.
+- **Data:** DynamoDB about 56 verdicts (55 AI-reviewed), S3 about 55 reports. Stats: 51 safe / 3 suspicious / 1 malicious.
+- **Website:** Amplify app `Vault` (`d37i3n9ev8lsz3`), URL `https://main.d37i3n9ev8lsz3.amplifyapp.com/`, env `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_API_KEY`, `NEXT_PUBLIC_USE_FIXTURES=false`. Note `NEXT_PUBLIC_*` values are visible in the browser bundle. Branch `main` has basic auth enabled (username `pkgguard`); the password is not recoverable via the API.
+- **Published:** `pkgguard-cli@0.1.0` and `pkgguard-mcp@0.1.0` on npm.
+- **Budget alarms:** $5 and $10 monthly; spend so far about $0.10.
+- **Tests (2026-09-19):** analyzer 224, CLI 37, MCP 24 passing; eval 14/14 (+1 AI-dependent). `web` tests currently fail to start locally (rolldown native binding issue, fix by reinstalling `node_modules`).
+- **Sandbox:** deployed to AWS 2026-09-19 (idle, about $1/day). Next: deploy with `SandboxEnabled=true`, push the image, run the isolation probe on AWS, then real samples (see [`SANDBOX.md`](SANDBOX.md) §0).
 
 ---
 
