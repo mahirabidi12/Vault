@@ -55,9 +55,11 @@ npm link                # optional: makes `pkgguard` available globally while de
 - **Local, no AWS**: run `uv run pkgguard-dev-api` from `analyzer/` (serves `http://127.0.0.1:8787`,
   the `.env.example` default) — the real scan pipeline, no DynamoDB/S3/Step Functions needed.
 
-Once published, this becomes `npx pkgguard@0.1.0 install <pkg>` — pin the version for the same
-reason the MCP tool's README gives: an unpinned `npx -y pkgguard` trusts whatever that package
-currently resolves to.
+Published as `pkgguard-cli` (plain `pkgguard` was blocked by npm as too similar to an unrelated
+existing package, `pkg-guard`). Once installed (`npm install -g pkgguard-cli`), the command is still
+just `pkgguard` — only the package name on npm differs from the command name. Use
+`npx pkgguard-cli@0.1.0 install <pkg>` with the version pinned, for the same reason the MCP tool's
+README gives: an unpinned `npx -y pkgguard-cli` trusts whatever that package currently resolves to.
 
 ## Development
 

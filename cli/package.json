@@ -1,5 +1,5 @@
 {
-  "name": "pkgguard",
+  "name": "pkgguard-cli",
   "version": "0.1.0",
   "description": "Check npm packages for malware, typosquats and supply-chain risk before you install them.",
   "license": "MIT",
