@@ -1,0 +1,5 @@
+{
+  "name": "sbx-dns-canary",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node dns.js"}
+}

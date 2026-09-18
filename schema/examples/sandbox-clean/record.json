@@ -1,0 +1,31 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "pkgguard-fixture-clean-control",
+    "version": "1.0.0"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2V3ZCRCZF5J2C4XZ43PTF6W",
+  "verdict": "SAFE",
+  "confidence": "MEDIUM",
+  "decidedBy": "rules",
+  "summary": "No issues found in threat intelligence, package metadata or code.",
+  "signals": [],
+  "sha256": "de0599d34c31ec5febe191b8cdd5aa4b401a1264b621c20fd3df7b46f9908719",
+  "integrity": "sha512-2O7vC3uZFCuOyp9m5NRxniJ2YhiiiE6WACE9mwwAkYpbkIpHGYzIP102HbpzvxTZttpr7F0DZW2hxzZWhYQYCA==",
+  "tarballUrl": "https://registry.npmjs.org/pkgguard-fixture-clean-control/-/pkgguard-fixture-clean-control-1.0.0.tgz",
+  "publishedAt": "2026-03-02T20:40:23.051039Z",
+  "requestedAt": "2026-09-18T20:40:23.052715Z",
+  "analyzedAt": "2026-09-18T20:40:23.104033Z",
+  "model": null,
+  "ranOn": "cloud",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null,
+  "needsReview": false,
+  "iocCount": 0,
+  "settingsHash": "c9edcfb6b502",
+  "sandboxStatus": "COMPLETE"
+}

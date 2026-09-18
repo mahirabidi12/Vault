@@ -1,4 +1,4 @@
-"""Turns findings and the AI review into a final verdict. v3: intel + metadata + static code + AI."""
+"""Turns findings and the AI review into a final verdict. v4: intel + sandbox proof + metadata + static code + AI."""
 
 from dataclasses import dataclass
 
@@ -7,6 +7,8 @@ from pkgguard_analyzer.schema import AIReview, Confidence, DecidedBy, Finding, F
 MAX_SIGNALS = 5
 # Findings the AI can never clear on its own: a "SAFE" from the AI still ends as SUSPICIOUS.
 AI_CANNOT_CLEAR_RULES = frozenset({"code.pattern.llm_prompt_injection"})
+# Observed in the sandbox, not inferred: a planted fake credential left the box, or a remote shell opened.
+SANDBOX_PROOF_RULES = frozenset({"sandbox.canary_exfil", "sandbox.reverse_shell"})
 
 
 @dataclass(frozen=True)
@@ -24,6 +26,11 @@ def decide(findings: list[Finding], ai: AIReview | None = None) -> Decision:
     safedep = [f for f in findings if f.rule_id == "intel.safedep.malware"]
     if safedep and safedep[0].confidence == Confidence.HIGH:
         return Decision(Verdict.MALICIOUS, Confidence.HIGH, DecidedBy.INTEL, "Flagged as malware by SafeDep threat intelligence.")
+
+    # 1b. Proof from running it: like intel, the AI can't downgrade something we watched happen.
+    proof = [f for f in findings if f.rule_id in SANDBOX_PROOF_RULES and f.confidence == Confidence.HIGH]
+    if proof:
+        return Decision(Verdict.MALICIOUS, Confidence.HIGH, DecidedBy.SANDBOX, f"Confirmed by running it in the sandbox: {proof[0].title}.")
 
     rules = _rules_decision(findings)
     if ai is None:

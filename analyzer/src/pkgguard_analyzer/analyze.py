@@ -5,6 +5,7 @@ import json
 import shutil
 import tarfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -35,6 +36,8 @@ from pkgguard_analyzer.schema import (
     PackageRef,
     RanOn,
     Report,
+    SandboxReport,
+    SandboxStatus,
     ScanStatus,
     StageTimings,
     VerdictRecord,
@@ -77,8 +80,11 @@ def analyze(
     ai_mode: AIMode = AIMode.OFF,
     scan_id: str | None = None,
     auditor=None,
+    sandbox_runner: Callable[[bytes], SandboxReport] | None = None,
 ) -> ScanResult:
-    """auditor: optional FullAuditor. When given, it replaces the quick look / deep dive with a full-package audit."""
+    """auditor: optional FullAuditor. When given, it replaces the quick look / deep dive with a full-package audit.
+    sandbox_runner: runs the verified tarball in the isolated sandbox and returns its report. Only the AWS
+    sandbox is meant to be plugged in here; real packages are never run on a developer machine."""
     if not NPM_NAME_RE.fullmatch(name):
         raise ValueError(f"invalid npm package name: {name!r}")
     owns_client = client is None
@@ -95,6 +101,7 @@ def analyze(
             ai_mode,
             scan_id or str(ULID()),
             auditor,
+            sandbox_runner,
         )
     finally:
         if owns_client:
@@ -112,6 +119,7 @@ def _analyze(
     ai_mode: AIMode,
     scan_id: str,
     auditor,
+    sandbox_runner: Callable[[bytes], SandboxReport] | None = None,
 ) -> ScanResult:
     started = time.monotonic()
     timings = StageTimings()
@@ -173,7 +181,14 @@ def _analyze(
     # The tarball's package.json is what npm actually runs; fall back to registry metadata if it's missing.
     code = scan_code(files_dir, tarball_manifest or packument["versions"][resolved])
     mark = lap("code_scan_seconds", mark)
-    findings = intel.findings + metadata_findings + code.findings
+    sandbox_report: SandboxReport | None = None
+    if sandbox_runner is not None:
+        try:
+            sandbox_report = sandbox_runner(tarball)
+        except Exception as error:  # a sandbox failure must never fail the whole scan
+            sandbox_report = SandboxReport(version="0", status=SandboxStatus.FAILED, skip_reason=str(error)[:300])
+        mark = lap("sandbox_seconds", mark)
+    findings = intel.findings + metadata_findings + code.findings + (sandbox_report.findings if sandbox_report else [])
     report = Report(
         package=package,
         analyzer_version=ANALYZER_VERSION,
@@ -188,6 +203,7 @@ def _analyze(
         },
         code_scan=code.summary,
         behavior=code.behavior,
+        sandbox=sandbox_report,
         file_hashes=file_hashes,
         file_hashes_truncated=hashes_truncated,
     )
@@ -234,6 +250,7 @@ def _analyze(
         needs_review=flags.needs_human_review,
         ioc_count=len(indicators),
         settings_hash=settings.settings_hash,
+        sandbox_status=sandbox_report.status if sandbox_report else SandboxStatus.NOT_RUN,
     )
     return ScanResult(record, report, scan_dir)
 

@@ -1,0 +1,1 @@
+{"description":"connects to a stratum-style pool port and then burns CPU until killed","expect":["sandbox.resource_abuse","sandbox.suspicious_network"]}

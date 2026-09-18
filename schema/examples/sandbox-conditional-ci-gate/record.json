@@ -1,0 +1,37 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-conditional",
+    "version": "1.0.0"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2V3ZBECNQQXE141Q4JSP3R4",
+  "verdict": "SUSPICIOUS",
+  "confidence": "MEDIUM",
+  "decidedBy": "rules",
+  "summary": "Suspicious: Reads machine details (hostname, username) and can send data over the network during install; Only under CI / a later date: contacts collector.example.invalid; Runs a 'postinstall' script during install.",
+  "signals": [
+    "Runs a 'postinstall' script during install",
+    "Reads machine details (hostname, username) and can send data over the network during install",
+    "Makes network requests during install",
+    "Sends data to a host that is not the npm registry: collector.example.invalid",
+    "Only under CI / a later date: contacts collector.example.invalid"
+  ],
+  "sha256": "efbeba02ed92a3a8ccee195c344977bf378c8069e0487552fa0483c47d3e77bb",
+  "integrity": "sha512-2dGIpxaS+2Z7AGEgyeEzCMMrDCnm3uYCRToSJmM8+xpluIzQKfzO+wVAYTMYeqHl6uWflYwS3/U1R43Kl1zO1w==",
+  "tarballUrl": "https://registry.npmjs.org/sbx-conditional/-/sbx-conditional-1.0.0.tgz",
+  "publishedAt": "2026-03-02T20:40:21.708038Z",
+  "requestedAt": "2026-09-18T20:40:21.708667Z",
+  "analyzedAt": "2026-09-18T20:40:21.776656Z",
+  "model": null,
+  "ranOn": "cloud",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null,
+  "needsReview": true,
+  "iocCount": 0,
+  "settingsHash": "c9edcfb6b502",
+  "sandboxStatus": "COMPLETE"
+}

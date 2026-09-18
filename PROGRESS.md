@@ -23,7 +23,7 @@ Last updated: 2026-09-19. **Backend and website are deployed on AWS** (see "Live
 | 8 | CLI installer | ✅ Built: `cli/` (`pkgguard`), `check` + `install`, TypeScript + Commander. Verified live end to end: `install safedep-test-pkg` blocked (nothing written), `install is-odd` really installed the exact checked versions |
 | 9 | MCP agent tool | ✅ Built: `mcp/`, one tool (`check_package`), TypeScript + official MCP SDK, stdio. Verified live: real JSON-RPC handshake + tool call against `pkgguard-dev-api`, `express` → allow, `safedep-test-pkg` → block |
 | 10 | Website | ✅ Built (`web/`) and **deployed on AWS Amplify** (app `Vault`, branch `main`, real API, not fixtures). Branch-level basic auth is on, so the public URL returns 401 until it is disabled or the password is reset |
-| 10b | **Sandbox (dynamic analysis)** | 🟡 **Built and verified locally** (18/18 harmless fixtures correct in live Docker runs, 275 tests). AWS infra **deployed** (`SandboxEnabled=true`, image pushed) but idle: no package run in it yet. Real-malware testing not started (AWS only). Details and deploy steps in [`SANDBOX.md`](SANDBOX.md) §0 |
+| 10b | **Sandbox (dynamic analysis)** | 🟡 **Built and verified locally** (18/18 harmless fixtures correct in live Docker runs, 275 tests). AWS infra **deployed and verified** (isolation probe 19/19 blocked, 18/18 harmless fixtures correct on Fargate). No regular npm package or real malware run in it yet. Real-malware testing not started (AWS only). Details and deploy steps in [`SANDBOX.md`](SANDBOX.md) §0 |
 | 11 | Login + dashboard | ⏳ |
 | 12 | Admin review (if time) | ⏳ |
 | 13 | Demo + submit | ⏳ |
@@ -38,7 +38,7 @@ Last updated: 2026-09-19. **Backend and website are deployed on AWS** (see "Live
 - **Published:** `pkgguard-cli@0.1.0` and `pkgguard-mcp@0.1.0` on npm.
 - **Budget alarms:** $5 and $10 monthly; spend so far about $0.10.
 - **Tests (2026-09-19):** analyzer 224, CLI 37, MCP 24 passing; eval 14/14 (+1 AI-dependent). `web` tests currently fail to start locally (rolldown native binding issue, fix by reinstalling `node_modules`).
-- **Sandbox:** deployed to AWS 2026-09-19 (idle, about $1/day). Next: deploy with `SandboxEnabled=true`, push the image, run the isolation probe on AWS, then real samples (see [`SANDBOX.md`](SANDBOX.md) §0).
+- **Sandbox:** deployed and verified on AWS 2026-09-19 (about $1/day). Next: deploy with `SandboxEnabled=true`, push the image, run the isolation probe on AWS, then real samples (see [`SANDBOX.md`](SANDBOX.md) §0).
 
 ---
 

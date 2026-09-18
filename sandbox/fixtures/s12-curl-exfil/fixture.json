@@ -1,0 +1,1 @@
+{"description":"POSTs ~/.npmrc with curl (only visible to strace and the fake server, not the Node hook)","expect":["sandbox.canary_exfil"]}

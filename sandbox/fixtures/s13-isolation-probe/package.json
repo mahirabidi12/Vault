@@ -1,0 +1,5 @@
+{
+  "name": "sbx-isolation-probe",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node probe.js"}
+}

@@ -1,0 +1,1 @@
+{"description":"isolation self-test: tries real egress, credential endpoints, privileged writes and escalation; every attempt must be blocked","expect":[],"isolationProbe":true}

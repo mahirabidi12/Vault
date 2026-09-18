@@ -1,0 +1,5 @@
+{
+  "name": "sbx-conditional",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node gate.js"}
+}

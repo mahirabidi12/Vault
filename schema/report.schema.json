@@ -399,6 +399,43 @@
       "title": "BehaviorProfile",
       "type": "object"
     },
+    "CanaryHit": {
+      "additionalProperties": false,
+      "description": "A planted fake credential found leaving the sandbox: proof of exfiltration, not a guess.",
+      "properties": {
+        "canaryId": {
+          "title": "Canaryid",
+          "type": "string"
+        },
+        "decoyPath": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decoypath"
+        },
+        "sink": {
+          "title": "Sink",
+          "type": "string"
+        },
+        "run": {
+          "title": "Run",
+          "type": "string"
+        }
+      },
+      "required": [
+        "canaryId",
+        "sink",
+        "run"
+      ],
+      "title": "CanaryHit",
+      "type": "object"
+    },
     "CodeExcerpt": {
       "additionalProperties": false,
       "description": "Real lines copied from the package file (never from model output), with context around the issue.",
@@ -557,6 +594,25 @@
         "title"
       ],
       "title": "CodeIssue",
+      "type": "object"
+    },
+    "ConditionalBehavior": {
+      "additionalProperties": false,
+      "properties": {
+        "description": {
+          "title": "Description",
+          "type": "string"
+        },
+        "onlyInRun": {
+          "title": "Onlyinrun",
+          "type": "string"
+        }
+      },
+      "required": [
+        "description",
+        "onlyInRun"
+      ],
+      "title": "ConditionalBehavior",
       "type": "object"
     },
     "Confidence": {
@@ -789,7 +845,8 @@
       "enum": [
         "intel",
         "metadata",
-        "static"
+        "static",
+        "sandbox"
       ],
       "title": "FindingLayer",
       "type": "string"
@@ -894,6 +951,32 @@
       "title": "IssueCategory",
       "type": "string"
     },
+    "NetworkClass": {
+      "enum": [
+        "expected",
+        "unexpected",
+        "oast",
+        "webhook",
+        "paste",
+        "tunnel",
+        "metadata",
+        "stratum",
+        "raw_ip"
+      ],
+      "title": "NetworkClass",
+      "type": "string"
+    },
+    "NetworkKind": {
+      "enum": [
+        "dns",
+        "connect",
+        "http",
+        "tcp",
+        "udp"
+      ],
+      "title": "NetworkKind",
+      "type": "string"
+    },
     "PackageRef": {
       "additionalProperties": false,
       "properties": {
@@ -970,6 +1053,599 @@
         "full_audit"
       ],
       "title": "ReviewMode",
+      "type": "string"
+    },
+    "SandboxCoverage": {
+      "additionalProperties": false,
+      "description": "What was actually observed. A quiet sandbox result means little if nothing loaded.",
+      "properties": {
+        "installed": {
+          "default": false,
+          "title": "Installed",
+          "type": "boolean"
+        },
+        "installScriptsRan": {
+          "default": false,
+          "title": "Installscriptsran",
+          "type": "boolean"
+        },
+        "entryLoaded": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entryloaded"
+        },
+        "entryError": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Entryerror"
+        },
+        "binsRun": {
+          "default": 0,
+          "title": "Binsrun",
+          "type": "integer"
+        },
+        "timedOut": {
+          "default": false,
+          "title": "Timedout",
+          "type": "boolean"
+        },
+        "dependenciesStripped": {
+          "default": true,
+          "title": "Dependenciesstripped",
+          "type": "boolean"
+        }
+      },
+      "title": "SandboxCoverage",
+      "type": "object"
+    },
+    "SandboxEval": {
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "title": "Run",
+          "type": "string"
+        },
+        "api": {
+          "title": "Api",
+          "type": "string"
+        },
+        "length": {
+          "title": "Length",
+          "type": "integer"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        },
+        "preview": {
+          "maxLength": 4000,
+          "title": "Preview",
+          "type": "string"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        }
+      },
+      "required": [
+        "run",
+        "api",
+        "length",
+        "sha256",
+        "preview"
+      ],
+      "title": "SandboxEval",
+      "type": "object"
+    },
+    "SandboxFileEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "title": "Run",
+          "type": "string"
+        },
+        "op": {
+          "title": "Op",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "decoy": {
+          "default": false,
+          "title": "Decoy",
+          "type": "boolean"
+        },
+        "category": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Category"
+        },
+        "executable": {
+          "default": false,
+          "title": "Executable",
+          "type": "boolean"
+        },
+        "sha256": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sha256"
+        },
+        "preview": {
+          "anyOf": [
+            {
+              "maxLength": 600,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Preview"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        }
+      },
+      "required": [
+        "run",
+        "op",
+        "path"
+      ],
+      "title": "SandboxFileEvent",
+      "type": "object"
+    },
+    "SandboxNetworkEvent": {
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "title": "Run",
+          "type": "string"
+        },
+        "kind": {
+          "$ref": "#/$defs/NetworkKind"
+        },
+        "classification": {
+          "$ref": "#/$defs/NetworkClass"
+        },
+        "host": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Host"
+        },
+        "ip": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ip"
+        },
+        "port": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Port"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "bodyPreview": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bodypreview"
+        },
+        "canaryHit": {
+          "default": false,
+          "title": "Canaryhit",
+          "type": "boolean"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        },
+        "count": {
+          "default": 1,
+          "title": "Count",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "run",
+        "kind",
+        "classification"
+      ],
+      "title": "SandboxNetworkEvent",
+      "type": "object"
+    },
+    "SandboxPhaseResult": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "exitCode": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Exitcode"
+        },
+        "timedOut": {
+          "default": false,
+          "title": "Timedout",
+          "type": "boolean"
+        },
+        "seconds": {
+          "default": 0.0,
+          "title": "Seconds",
+          "type": "number"
+        },
+        "cpuSeconds": {
+          "default": 0.0,
+          "title": "Cpuseconds",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SandboxPhaseResult",
+      "type": "object"
+    },
+    "SandboxProcess": {
+      "additionalProperties": false,
+      "properties": {
+        "run": {
+          "title": "Run",
+          "type": "string"
+        },
+        "pid": {
+          "title": "Pid",
+          "type": "integer"
+        },
+        "ppid": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ppid"
+        },
+        "exe": {
+          "title": "Exe",
+          "type": "string"
+        },
+        "argv": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Argv",
+          "type": "array"
+        },
+        "phase": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Phase"
+        }
+      },
+      "required": [
+        "run",
+        "pid",
+        "exe"
+      ],
+      "title": "SandboxProcess",
+      "type": "object"
+    },
+    "SandboxReport": {
+      "additionalProperties": false,
+      "description": "What the package did when it was actually run in the locked-down sandbox (see SANDBOX.md).",
+      "properties": {
+        "version": {
+          "title": "Version",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/SandboxStatus"
+        },
+        "skipReason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Skipreason"
+        },
+        "durationSeconds": {
+          "default": 0.0,
+          "title": "Durationseconds",
+          "type": "number"
+        },
+        "rawTraceS3Key": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rawtraces3Key"
+        },
+        "coverage": {
+          "$ref": "#/$defs/SandboxCoverage"
+        },
+        "runs": {
+          "items": {
+            "$ref": "#/$defs/SandboxRunSummary"
+          },
+          "title": "Runs",
+          "type": "array"
+        },
+        "network": {
+          "items": {
+            "$ref": "#/$defs/SandboxNetworkEvent"
+          },
+          "title": "Network",
+          "type": "array"
+        },
+        "processes": {
+          "items": {
+            "$ref": "#/$defs/SandboxProcess"
+          },
+          "title": "Processes",
+          "type": "array"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/SandboxFileEvent"
+          },
+          "title": "Files",
+          "type": "array"
+        },
+        "evalPayloads": {
+          "items": {
+            "$ref": "#/$defs/SandboxEval"
+          },
+          "title": "Evalpayloads",
+          "type": "array"
+        },
+        "canaryHits": {
+          "items": {
+            "$ref": "#/$defs/CanaryHit"
+          },
+          "title": "Canaryhits",
+          "type": "array"
+        },
+        "conditional": {
+          "items": {
+            "$ref": "#/$defs/ConditionalBehavior"
+          },
+          "title": "Conditional",
+          "type": "array"
+        },
+        "resources": {
+          "$ref": "#/$defs/SandboxResources"
+        },
+        "findings": {
+          "items": {
+            "$ref": "#/$defs/Finding"
+          },
+          "title": "Findings",
+          "type": "array"
+        }
+      },
+      "required": [
+        "version",
+        "status"
+      ],
+      "title": "SandboxReport",
+      "type": "object"
+    },
+    "SandboxResources": {
+      "additionalProperties": false,
+      "properties": {
+        "peakCpuSeconds": {
+          "default": 0.0,
+          "title": "Peakcpuseconds",
+          "type": "number"
+        },
+        "peakMemoryMb": {
+          "default": 0.0,
+          "title": "Peakmemorymb",
+          "type": "number"
+        },
+        "timedOutPhases": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Timedoutphases",
+          "type": "array"
+        }
+      },
+      "title": "SandboxResources",
+      "type": "object"
+    },
+    "SandboxRunSummary": {
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "ci": {
+          "default": false,
+          "title": "Ci",
+          "type": "boolean"
+        },
+        "clockOffsetDays": {
+          "default": 0,
+          "title": "Clockoffsetdays",
+          "type": "integer"
+        },
+        "hostname": {
+          "default": "",
+          "title": "Hostname",
+          "type": "string"
+        },
+        "user": {
+          "default": "",
+          "title": "User",
+          "type": "string"
+        },
+        "phases": {
+          "items": {
+            "$ref": "#/$defs/SandboxPhaseResult"
+          },
+          "title": "Phases",
+          "type": "array"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Notes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "SandboxRunSummary",
+      "type": "object"
+    },
+    "SandboxStatus": {
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "SKIPPED",
+        "FAILED",
+        "NOT_RUN"
+      ],
+      "title": "SandboxStatus",
       "type": "string"
     },
     "ScanSettings": {
@@ -1063,6 +1739,11 @@
         "codeScanSeconds": {
           "default": 0.0,
           "title": "Codescanseconds",
+          "type": "number"
+        },
+        "sandboxSeconds": {
+          "default": 0.0,
+          "title": "Sandboxseconds",
           "type": "number"
         },
         "aiSeconds": {
@@ -1451,6 +2132,17 @@
       },
       "title": "Codeissues",
       "type": "array"
+    },
+    "sandbox": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SandboxReport"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "humanReview": {
       "anyOf": [

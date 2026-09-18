@@ -1,0 +1,5 @@
+{
+  "name": "sbx-eval-fetch",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node boot.js"}
+}

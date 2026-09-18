@@ -1,0 +1,1 @@
+{"description":"connects out on port 4444 and pipes a /bin/sh to the socket (node-style reverse shell)","expect":["sandbox.reverse_shell"]}

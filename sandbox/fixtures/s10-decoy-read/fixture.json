@@ -1,0 +1,1 @@
+{"description":"reads SSH key, .npmrc and AWS credentials but sends nothing anywhere","expect":["sandbox.decoy_read"],"forbid":["sandbox.canary_exfil"]}

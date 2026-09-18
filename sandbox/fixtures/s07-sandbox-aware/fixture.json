@@ -1,0 +1,1 @@
+{"description":"checks for /.dockerenv and cgroups and behaves only when it thinks it is on a real machine","expect":["sandbox.sandbox_detection"]}

@@ -15,6 +15,7 @@ from botocore.exceptions import ClientError
 from pkgguard_analyzer.ai.config import AIConfig, AIMode, Provider
 from pkgguard_analyzer.ai.reviewer import Reviewer, make_reviewer
 from pkgguard_analyzer.analyze import analyze
+from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig
 from pkgguard_analyzer.cloud.store import VerdictStore
 from pkgguard_analyzer.schema import RanOn
 
@@ -31,6 +32,7 @@ class ScanServices:
     reviewer: Reviewer | None = None
     ai_mode: AIMode = AIMode.OFF
     http: httpx.Client | None = None
+    sandbox: FargateSandbox | None = None
 
 
 def report_key(name: str, version: str, analyzer_version: str) -> str:
@@ -57,9 +59,12 @@ def load_ai(secrets_client: Any = None) -> tuple[Reviewer | None, AIMode]:
 @cache
 def default_services() -> ScanServices:
     reviewer, ai_mode = load_ai()
+    s3 = boto3.client("s3")
+    sandbox_config = SandboxConfig.from_env(dict(os.environ))
     return ScanServices(
         store=VerdictStore(boto3.resource("dynamodb"), os.environ["TABLE_NAME"]),
-        s3=boto3.client("s3"),
+        s3=s3,
+        sandbox=FargateSandbox(sandbox_config, boto3.client("ecs"), s3) if sandbox_config else None,
         bucket=os.environ["BUCKET_NAME"],
         reviewer=reviewer,
         ai_mode=ai_mode,
@@ -87,6 +92,7 @@ def handler(event: dict, context: object, services: ScanServices | None = None) 
             reviewer=services.reviewer,
             ai_mode=services.ai_mode,
             scan_id=scan_id,
+            sandbox_runner=services.sandbox.runner_for(scan_id, name, version) if services.sandbox else None,
         )
         record = result.record
         if result.report is not None:

@@ -1,0 +1,1 @@
+{"description":"downloads a script with curl, marks it executable and runs it","expect":["sandbox.dropper_exec","sandbox.suspicious_process"]}

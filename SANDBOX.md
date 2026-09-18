@@ -1,6 +1,6 @@
 # PkgGuard Sandbox (dynamic analysis): spec and task list
 
-> **Status (2026-09-19): built and verified locally with harmless fixtures (18/18 behave as expected in real Docker runs); AWS infrastructure DEPLOYED (2026-09-19, stack `pkgguard`, `SandboxEnabled=true`, image `v1` pushed) but no package has been run in it yet; the isolation probe on AWS is the next gate.** See "What is built" below. This file is the single source of truth for the feature.
+> **Status (2026-09-19): built and verified locally with harmless fixtures (18/18 behave as expected in real Docker runs); AWS infrastructure DEPLOYED (2026-09-19, stack `pkgguard`, `SandboxEnabled=true`, image `v1` pushed) and VERIFIED on AWS 2026-09-19: isolation probe 19/19 blocked (including DNS through the VPC resolver) and all 18 harmless fixtures behave as expected. No regular npm package or real malware has been run in it yet.** See "What is built" below. This file is the single source of truth for the feature.
 > **For agents:** read `PROGRESS.md` first (what exists), then this file. The scanner agent builds everything except `web/`. The UI agent builds only the "UI agent tasks" (section 13) and only edits `web/`.
 > Update the status line and section 15 as pieces land.
 
@@ -18,7 +18,7 @@
 | AI prompt includes a sandbox section (coverage, hosts, processes, decoded eval payloads, PROOF lines) | `ai/prompts.py` | Done |
 | `analyze(..., sandbox_runner=...)`: runs after the code scan and before the AI; a sandbox failure never fails the scan | `analyze.py` | Done |
 | AWS launcher: stages tarball in S3, starts 2 Fargate tasks, waits, reads traces, always cleans up | `cloud/sandbox_runner.py`, wired into `cloud/scan_handler.py` | Built, tested with moto and a fake ECS |
-| AWS infrastructure (VPC with no internet route, endpoints, DNS Firewall, ECS task, IAM, S3 lifecycle) | `infra/template.yaml`, all behind `SandboxEnabled` (default `false`) | **Deployed** 2026-09-19 (22 resources added, 8 modified in place, nothing replaced). Idle: no task has been run |
+| AWS infrastructure (VPC with no internet route, endpoints, DNS Firewall, ECS task, IAM, S3 lifecycle) | `infra/template.yaml`, all behind `SandboxEnabled` (default `false`) | **Deployed and verified** 2026-09-19 (22 resources added, 8 modified in place, nothing replaced) |
 | Image push script | `sandbox/push.sh` | Ran once: image `v1` (ARM64) is in ECR |
 | Remote runner for real samples and the isolation test on AWS | `pkgguard-sandbox-remote` | Written, not run |
 | Example reports with sandbox data for the UI | `schema/examples/sandbox-*` (5) | Generated from real traces |
@@ -32,6 +32,10 @@
 - **Threads:** strace lists each thread as a pid. npm's own threads read `~/.npmrc` at startup, so events from npm's process (including its threads) are ignored in the install phase.
 - **libfaketime** moves the clock for the package only (`env` after privilege drop), so strace timestamps stay real.
 - **Committed traces are sanitized.** The sandbox's fake credentials look like real tokens on purpose (so stealers take the bait), which could trip GitHub push protection. `analyzer/tests/data/sandbox/` and `schema/examples/sandbox-*` hold sanitized copies (`python -m pkgguard_analyzer.sandbox.sanitize`); re-run it after refreshing traces.
+- **DNS Firewall checks the whole CNAME chain.** S3 bucket names resolve through `s3-r-w.<region>.amazonaws.com` (and `s3-w`, `s3-1-w`), so those had to be allowed or the task could not even pull its image. Found on the first AWS run.
+- **The supervisor restores the real `/etc/resolv.conf` before uploading its result**, otherwise its own S3 upload was answered by the fake DNS server.
+- **On Fargate a task has half a CPU**, so the CPU-hog rule triggers at 35% of wall time, not 70%.
+- **Fargate does not look like Docker** (no `/.dockerenv`, no docker cgroup), so malware that only checks for Docker keeps running and gets caught (fixture s07).
 - **Sinkhole details:** every DNS name gets its own `127.x.y.z` address so a later `connect()` maps back to the name; raw-IP connects fail but are still recorded from strace.
 
 **Commands**
@@ -43,10 +47,11 @@ uv run pytest -q tests/test_sandbox.py tests/test_sandbox_runner.py
 uv run pkgguard-sandbox-examples                                  # regenerate schema/examples/sandbox-*
 # AWS (after deploying with SandboxEnabled=true and running sandbox/push.sh):
 uv run pkgguard-sandbox-remote --fixture ../sandbox/fixtures/s13-isolation-probe --show-probe   # MUST say ALL BLOCKED before any real sample
+uv run pkgguard-sandbox-eval --remote                             # all fixtures in the AWS sandbox
 ```
 **Safety rule for real malware:** the local runner only accepts directories inside `eval/fixtures/` or `sandbox/fixtures/` and `run_tarball` refuses without an explicit fixture flag. Real samples are never downloaded to or executed on a laptop; they go to AWS (`pkgguard-sandbox-remote --tarball`, or fetched inside AWS).
 
-**Deploy steps (steps 1 and 2 DONE 2026-09-19; about $0.94/day while enabled, endpoints in one AZ)**
+**Deploy steps (steps 1 to 3 DONE 2026-09-19; about $0.94/day while enabled, endpoints in one AZ)**
 1. `sam build --template infra/template.yaml && sam deploy ... --parameter-overrides SandboxEnabled=true` (creates the ECR repo, VPC, endpoints, DNS Firewall, ECS task).
 2. `sandbox/push.sh v1` (build ARM64 image, push to ECR).
 3. `uv run pkgguard-sandbox-remote --fixture ../sandbox/fixtures/s13-isolation-probe --show-probe` must print `ALL BLOCKED`. Also confirm from the task logs that a direct query to the VPC resolver returns nothing (DNS Firewall).

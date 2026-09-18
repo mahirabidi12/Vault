@@ -1,0 +1,1 @@
+{"description":"base64 string decoded and eval-ed at runtime; the hidden code fetches a second stage","expect":["sandbox.eval_payload","sandbox.unexpected_network"]}

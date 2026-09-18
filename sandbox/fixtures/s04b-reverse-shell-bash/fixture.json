@@ -1,0 +1,1 @@
+{"description":"classic bash -i >& /dev/tcp reverse shell","expect":["sandbox.reverse_shell"]}

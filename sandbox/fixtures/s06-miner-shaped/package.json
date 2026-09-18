@@ -1,0 +1,5 @@
+{
+  "name": "sbx-miner",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node mine.js"}
+}

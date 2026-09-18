@@ -1,0 +1,1 @@
+{"description":"appends a curl|sh line to ~/.bashrc, drops an autostart entry, and adds an SSH authorized key","expect":["sandbox.persistence"]}

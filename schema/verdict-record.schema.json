@@ -14,7 +14,8 @@
         "intel",
         "rules",
         "ai",
-        "human"
+        "human",
+        "sandbox"
       ],
       "title": "DecidedBy",
       "type": "string"
@@ -64,6 +65,17 @@
         "osv-import"
       ],
       "title": "RecordSource",
+      "type": "string"
+    },
+    "SandboxStatus": {
+      "enum": [
+        "COMPLETE",
+        "PARTIAL",
+        "SKIPPED",
+        "FAILED",
+        "NOT_RUN"
+      ],
+      "title": "SandboxStatus",
       "type": "string"
     },
     "ScanStatus": {
@@ -293,6 +305,17 @@
       ],
       "default": null,
       "title": "Settingshash"
+    },
+    "sandboxStatus": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SandboxStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     }
   },
   "required": [

@@ -1,0 +1,1 @@
+{"description":"hex-encodes NPM_TOKEN into a DNS hostname","expect":["sandbox.canary_exfil"]}

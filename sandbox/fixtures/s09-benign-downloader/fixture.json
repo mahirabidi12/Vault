@@ -1,0 +1,1 @@
+{"description":"legitimate style: downloads its platform binary from the npm registry at install time","expect":[],"forbid":["sandbox.canary_exfil","sandbox.reverse_shell","sandbox.dropper_exec","sandbox.persistence"],"benign":true}

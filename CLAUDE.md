@@ -7,7 +7,7 @@
 | The website / UI / dashboard | **UI agent** | `web/` | `web/BRIEF.md`, then `web/PROGRESS.md` if it exists |
 | Scanner, AI agent, AWS backend, CLI, MCP tool, data format, docs | **Scanner agent** | everything except `web/` | `PROGRESS.md` |
 
-Shared reading for both, in this order: `PROGRESS.md` (what's built) → `README.md` (full plan, architecture, decisions, gotchas) → `FUTURE_SCOPE.md` (postponed ideas).
+Shared reading for both, in this order: `PROGRESS.md` (what's built) → `README.md` (full plan, architecture, decisions, gotchas) → `FUTURE_SCOPE.md` (postponed ideas). For the sandbox / dynamic-analysis feature also read `SANDBOX.md` (spec, data contract, and separate task lists for the scanner agent and the UI agent).
 
 **The data contract** is `schema/*.json` (generated from `analyzer/src/pkgguard_analyzer/schema.py`), with real examples in `schema/examples/`. Only the scanner agent changes it. The UI agent asks the user for changes.
 

@@ -52,6 +52,7 @@ class DecidedBy(StrEnum):
     RULES = "rules"
     AI = "ai"
     HUMAN = "human"
+    SANDBOX = "sandbox"
 
 
 class RanOn(StrEnum):
@@ -68,6 +69,7 @@ class FindingLayer(StrEnum):
     INTEL = "intel"
     METADATA = "metadata"
     STATIC = "static"
+    SANDBOX = "sandbox"
 
 
 class ReviewMode(StrEnum):
@@ -308,6 +310,7 @@ class StageTimings(Model):
     intel_seconds: float = 0.0
     metadata_seconds: float = 0.0
     code_scan_seconds: float = 0.0
+    sandbox_seconds: float = 0.0
     ai_seconds: float = 0.0
     total_seconds: float = 0.0
 
@@ -375,6 +378,149 @@ class CodeIssue(Model):
     excerpt: CodeExcerpt | None = None
 
 
+class SandboxStatus(StrEnum):
+    COMPLETE = "COMPLETE"
+    PARTIAL = "PARTIAL"  # ran, but not everything could be observed (see coverage)
+    SKIPPED = "SKIPPED"
+    FAILED = "FAILED"
+    NOT_RUN = "NOT_RUN"
+
+
+class NetworkKind(StrEnum):
+    DNS = "dns"
+    CONNECT = "connect"
+    HTTP = "http"
+    TCP = "tcp"
+    UDP = "udp"
+
+
+class NetworkClass(StrEnum):
+    EXPECTED = "expected"  # the npm registry and similar hosts an install legitimately talks to
+    UNEXPECTED = "unexpected"
+    OAST = "oast"  # request-capture / out-of-band testing services
+    WEBHOOK = "webhook"  # Discord, Telegram, Slack webhooks
+    PASTE = "paste"
+    TUNNEL = "tunnel"
+    METADATA = "metadata"  # cloud instance metadata endpoints
+    STRATUM = "stratum"  # crypto-mining pool protocol
+    RAW_IP = "raw_ip"
+
+
+class SandboxPhaseResult(Model):
+    name: str
+    exit_code: int | None = None
+    timed_out: bool = False
+    seconds: float = 0.0
+    cpu_seconds: float = 0.0
+
+
+class SandboxRunSummary(Model):
+    name: str  # baseline | hostile
+    ci: bool = False
+    clock_offset_days: int = 0
+    hostname: str = ""
+    user: str = ""
+    phases: list[SandboxPhaseResult] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+class SandboxCoverage(Model):
+    """What was actually observed. A quiet sandbox result means little if nothing loaded."""
+
+    installed: bool = False
+    install_scripts_ran: bool = False
+    entry_loaded: bool | None = None
+    entry_error: str | None = None
+    bins_run: int = 0
+    timed_out: bool = False
+    dependencies_stripped: bool = True
+
+
+class SandboxNetworkEvent(Model):
+    run: str
+    kind: NetworkKind
+    classification: NetworkClass
+    host: str | None = None
+    ip: str | None = None
+    port: int | None = None
+    method: str | None = None
+    url: str | None = None
+    body_preview: str | None = Field(default=None, max_length=2000)
+    canary_hit: bool = False
+    phase: str | None = None
+    count: int = 1
+
+
+class SandboxProcess(Model):
+    run: str
+    pid: int
+    ppid: int | None = None
+    exe: str
+    argv: list[str] = Field(default_factory=list)
+    phase: str | None = None
+
+
+class SandboxFileEvent(Model):
+    run: str
+    op: str  # read | write | delete | added | modified | exec
+    path: str
+    decoy: bool = False
+    category: str | None = None
+    executable: bool = False
+    sha256: str | None = None
+    preview: str | None = Field(default=None, max_length=600)
+    phase: str | None = None
+
+
+class SandboxEval(Model):
+    run: str
+    api: str
+    length: int
+    sha256: str
+    preview: str = Field(max_length=4000)
+    phase: str | None = None
+
+
+class CanaryHit(Model):
+    """A planted fake credential found leaving the sandbox: proof of exfiltration, not a guess."""
+
+    canary_id: str
+    decoy_path: str | None = None
+    sink: str
+    run: str
+
+
+class ConditionalBehavior(Model):
+    description: str
+    only_in_run: str
+
+
+class SandboxResources(Model):
+    peak_cpu_seconds: float = 0.0
+    peak_memory_mb: float = 0.0
+    timed_out_phases: list[str] = Field(default_factory=list)
+
+
+class SandboxReport(Model):
+    """What the package did when it was actually run in the locked-down sandbox (see SANDBOX.md)."""
+
+    version: str
+    status: SandboxStatus
+    skip_reason: str | None = None
+    duration_seconds: float = 0.0
+    raw_trace_s3_key: str | None = None
+    coverage: SandboxCoverage = Field(default_factory=SandboxCoverage)
+    runs: list[SandboxRunSummary] = Field(default_factory=list)
+    network: list[SandboxNetworkEvent] = Field(default_factory=list)
+    processes: list[SandboxProcess] = Field(default_factory=list)
+    files: list[SandboxFileEvent] = Field(default_factory=list)
+    eval_payloads: list[SandboxEval] = Field(default_factory=list)
+    canary_hits: list[CanaryHit] = Field(default_factory=list)
+    conditional: list[ConditionalBehavior] = Field(default_factory=list)
+    resources: SandboxResources = Field(default_factory=SandboxResources)
+    findings: list[Finding] = Field(default_factory=list)
+
+
 class VerdictRecord(Model):
     """Summary stored in DynamoDB and returned by the API."""
 
@@ -402,6 +548,7 @@ class VerdictRecord(Model):
     needs_review: bool = False
     ioc_count: int = 0
     settings_hash: str | None = None
+    sandbox_status: SandboxStatus | None = None
 
     @model_validator(mode="after")
     def fields_match_status(self) -> "VerdictRecord":
@@ -437,4 +584,5 @@ class Report(Model):
     timings: StageTimings | None = None
     review_flags: ReviewFlags | None = None
     code_issues: list[CodeIssue] = Field(default_factory=list)
+    sandbox: SandboxReport | None = None
     human_review: dict[str, Any] | None = None

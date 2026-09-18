@@ -429,6 +429,10 @@ Resources:
         - !Sub logs.${AWS::Region}.amazonaws.com
         - !Sub s3.${AWS::Region}.amazonaws.com
         - !Sub "*.s3.${AWS::Region}.amazonaws.com"
+        # S3 bucket names resolve through these regional alias records, and DNS Firewall checks every name in the chain
+        - !Sub s3-r-w.${AWS::Region}.amazonaws.com
+        - !Sub s3-w.${AWS::Region}.amazonaws.com
+        - !Sub s3-1-w.${AWS::Region}.amazonaws.com
   SandboxBlockAllDomains:
     Type: AWS::Route53Resolver::FirewallDomainList
     Condition: SandboxOn

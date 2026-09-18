@@ -1,0 +1,5 @@
+{
+  "name": "sbx-persistence",
+  "version": "1.0.0",
+  "scripts": {"postinstall": "node persist.js"}
+}

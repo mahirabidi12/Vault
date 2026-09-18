@@ -20,6 +20,10 @@ pkgguard-seed = "pkgguard_analyzer.seed:main"
 pkgguard-export-schema = "pkgguard_analyzer.export_schema:main"
 pkgguard-dev-api = "pkgguard_analyzer.local_api:main"
 pkgguard-eval = "pkgguard_analyzer.eval:main"
+pkgguard-sandbox = "pkgguard_analyzer.sandbox.local_runner:main"
+pkgguard-sandbox-eval = "pkgguard_analyzer.sandbox.check:main"
+pkgguard-sandbox-remote = "pkgguard_analyzer.sandbox.remote:main"
+pkgguard-sandbox-examples = "pkgguard_analyzer.sandbox.examples:main"
 
 [dependency-groups]
 dev = [
