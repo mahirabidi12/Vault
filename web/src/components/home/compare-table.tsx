@@ -22,6 +22,11 @@ const ROWS: { label: string; others: readonly [Cell, Cell]; pkgguard: Cell }[] =
     pkgguard: { text: "Static rules + AI code review", good: true },
   },
   {
+    label: "Runs it in a locked sandbox",
+    others: [{ text: "No" }, { text: "Not safely, not on your laptop" }],
+    pkgguard: { text: "Records network, files and processes", good: true },
+  },
+  {
     label: "Explains itself",
     others: [{ text: "N/A" }, { text: "Only to yourself" }],
     pkgguard: { text: "File, line, rule and reasoning", good: true },

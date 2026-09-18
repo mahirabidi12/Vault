@@ -239,3 +239,53 @@ git add web
 git commit -m "Web: wire up the real backend, add tests, version history" -m "Works through the scanner agent's punch list: every api.ts function now has a real backend branch (verified live against pkgguard-dev-api, not just written), batched /v1/check chunked at 200, fixed the docs page's check-body bug, added a version history component, and added the first tests (vitest: lockfile parsing, verdict wording rules incl. BRIEF §5.4). No visual changes."
 git push
 ```
+
+## Home page redesign, pure black (2026-09-19)
+- Site is now dark-only, true black (`.dark` tokens in `globals.css`; `forcedTheme="dark"`; theme toggle removed from header). Headings use Geist to match the new look.
+- New hero (DebateAi-style): tight-tracked headline with a white→grey second line, white pill + outlined buttons, search box. The 3D scene is gone (`hero-scene*.tsx` deleted).
+- New `components/home/request-flow.tsx`: animated diagram of CLI and MCP agent requests flowing into the PkgGuard API and the shared verdict database, with a live request log. Pure SVG animation, no libraries.
+- Kept: stats, sticky-scroll pipeline + terminal code box, compare table, install snippets, recent threats.
+- Other pages inherit the black theme; not yet reviewed one by one.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: pure black home page redesign with CLI/MCP request-flow diagram"
+```
+
+## Home hero: living dithered background (2026-09-19)
+- Hero is now a rounded framed card (like maritime.sh) with `components/home/dither-field.tsx`: a canvas of animated halftone dots that flow like waves, a scan line sweeping down, and red target boxes blinking where "threats" are caught. Centre stays clear so text is readable; static when the user prefers reduced motion. No video file needed.
+
+## Home: setup boxes moved up, sweep removed (2026-09-19)
+- Removed the white sweeping line from the hero background (`dither-field.tsx`); waves and red threat boxes stay.
+- The CLI / MCP setup boxes now sit right after the hero as `components/home/get-started.tsx`: shadcn Tabs (CLI | Agent tool), a description panel with 3 points, and a window-style code panel with copy buttons (MCP tab includes the copyable `mcp.json`). The old bottom install section is removed from `page.tsx`.
+- Setup section reworked: tabs replaced by two cards side by side (CLI | Agent tool), each with its install command (copy button) and 3 short steps. Stacks on mobile.
+
+## Home: new hero background + motion pass (2026-09-19)
+- Hero background is now `network-field.tsx`: a drifting graph of package nodes with light pulses travelling along links, and red "MALICIOUS" rings appearing on a node and its links. The dither field is deleted. The hero is full-bleed (no card frame) and fades out at the bottom so it blends into the page.
+- New `home/ticker.tsx`: scrolling strip of scanned packages with verdict dots, right under the hero.
+- New `reveal.tsx` (sections fade/slide in on scroll; content stays visible if JS fails) and `spotlight-card.tsx` (cursor-following glow on hover), used on setup cards, stats, flow and compare sections. Stats count up.
+- Note: `.env.local` points at the dev API on :8787; with it stopped, stats show empty and the console logs connection-refused. Delete the file to use fixtures.
+
+## Home: navbar, ticker, setup cards (2026-09-19)
+- `site-header.tsx` is now a floating pill: invisible over the hero, turns into a dark pill with border/shadow after scrolling. Hero slides under it (`-mt-[60px]` in `page.tsx`). Theme toggle already removed; a "Scan" button added.
+- Ticker chips are bigger.
+- CLI/MCP cards: animated border beam (`.border-beam` in `globals.css`, via `SpotlightCard beam`), plus a looping typed terminal demo (`home/terminal-demo.tsx`) showing a block / an agent check. Demo text is illustrative, not real output.
+
+## Home: scroll-driven "how a package gets tested" journey (2026-09-19)
+- New `components/home/scan-journey.tsx` replaces the old `PipelineStory` + `PipelineTerminal` (deleted). A tall sticky section: scrolling scrubs one made-up package (`nodelogger-pro`) through all 7 steps. A progress rail (steps 1-7, clickable) sits on top, the background glow turns amber then red as evidence builds.
+- Scenes are in `journey-scenes.tsx`: fetch + hash check, threat intel (no match, because new malware isn't in any database), package-info flags, then the **parallel fork**: a static-scan window (reads it) beside the big `sandbox-container.tsx` (runs it): planted decoys, live event log with Run A / Run B, fake internet with a blocked real-internet link, a "proof of exfiltration" alert, run timelines and `sandbox.*` finding chips. Then AI review (types out its reasoning) and the verdict (Malicious, decided by sandbox proof, with evidence and the four "decided by" tiers).
+- All copy, timings and demo data live in `lib/pipeline-flow.ts`. `SANDBOX_LIVE = false` shows "In development" badges everywhere the sandbox appears; every demo visual says "Illustrative example". Nothing is presented as a real scan or real sandbox result.
+- Also added: "Read / Run / Reason" strip above, "What the sandbox can't see" strip below, a "Runs it in a locked sandbox" row in the compare table.
+- Tests: `lib/pipeline-flow.test.ts` (stage order, progress mapping, typing helper, SANDBOX_LIVE flag). **Could not run locally**: vitest still hits the rolldown native-binding error (see backlog). `tsc` is clean; checked in a real browser (Playwright) at 1440px and 375px.
+- Known, not from this change: the ticker marquee makes `scrollWidth` exceed the viewport at 375px; `eslint` flags `terminal-demo.tsx` (setState in effect); `next build` fails when `.env.local` points at a dev API that isn't running.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: scroll-driven journey showing every check, with a big sandbox container"
+```
+
+- Follow-up (2026-09-19): removed the "In development" badges (`SANDBOX_LIVE = true` in `lib/pipeline-flow.ts`; the "Illustrative example" labels stay). Scrolling is slower and steadier: 130vh per stage unit (was 62) and the animation eases toward the scroll position instead of jumping with the wheel.
