@@ -92,7 +92,7 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground">
               Checks your whole dependency tree, then runs the real install only if it&apos;s clean.
             </p>
-            <TerminalBlock command="npx pkgguard install express" />
+            <TerminalBlock command="npx pkgguard-cli install express" />
             <Link href="/docs" className="inline-flex w-fit items-center gap-1 text-xs font-medium text-brand hover:underline">
               CLI setup <ArrowRight className="size-3" />
             </Link>
@@ -108,7 +108,7 @@ export default function HomePage() {
             <p className="text-sm text-muted-foreground">
               Give Claude Code, Cursor or any MCP client a <code className="rounded bg-muted px-1 py-0.5 text-xs">check_package</code> tool it must call before installing anything.
             </p>
-            <TerminalBlock command="npx pkgguard-mcp@1.0.0" label="mcp" />
+            <TerminalBlock command="npx pkgguard-mcp@0.1.0" label="mcp" />
             <Link href="/docs" className="inline-flex w-fit items-center gap-1 text-xs font-medium text-brand hover:underline">
               Agent setup <ArrowRight className="size-3" />
             </Link>

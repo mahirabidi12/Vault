@@ -29,7 +29,7 @@ export default function DocsPage() {
 
       <Section icon={Terminal} title="CLI">
         <p className="text-sm text-muted-foreground">Install it, then use it in front of any install.</p>
-        <TerminalBlock command="npm install -g pkgguard" />
+        <TerminalBlock command="npm install -g pkgguard-cli" />
         <TerminalBlock command="pkgguard install express @babel/core" />
         <p className="text-sm text-muted-foreground">
           Resolves your full dependency tree without installing anything, checks every package, then blocks
@@ -47,13 +47,13 @@ export default function DocsPage() {
           it must call before installing anything. Pin the version — don&apos;t let the thing that checks your
           supply chain be an unchecked supply chain itself.
         </p>
-        <TerminalBlock command="npx pkgguard-mcp@1.0.0" />
+        <TerminalBlock command="npx pkgguard-mcp@0.1.0" />
         <pre className="overflow-x-auto rounded-xl border border-border bg-muted/40 p-4 text-xs">
 {`{
   "mcpServers": {
     "pkgguard": {
       "command": "npx",
-      "args": ["-y", "pkgguard-mcp@1.0.0"]
+      "args": ["-y", "pkgguard-mcp@0.1.0"]
     }
   }
 }`}

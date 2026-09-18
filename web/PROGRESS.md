@@ -219,8 +219,10 @@ through it item by item. **No visual/design changes** — this was all data-laye
    parsing, scoped names, dedup, nested `node_modules`, malformed input) and `lib/verdict.test.ts` (9 cases,
    including one asserting BRIEF §5.4's wording rule by name — SAFE must render as "No issues found", never
    "Safe"). 27/27 passing, `npm run test`.
-6. **Noted, not changed**: the homepage/docs show `npm install -g pkgguard` and `npx pkgguard-mcp@1.0.0` as
-   if already published. Accurate to the plan, just not live yet — a demo reminder, not a bug.
+6. **Update, 2026-09-17 (scanner agent): both packages are now actually published**, fixed on homepage +
+   docs. CLI is `pkgguard-cli` (not `pkgguard` — npm blocked that name as too similar to an unrelated
+   existing package, `pkg-guard`); the command itself is still `pkgguard` after install. MCP tool is
+   `pkgguard-mcp@0.1.0` (was showing the wrong version, `1.0.0`, which was never a real release).
 
 Also fixed in passing: `<html>` used `scroll-behavior: smooth` without the `data-scroll-behavior="smooth"`
 attribute Next.js 16 wants for it, which printed a console warning on every client-side navigation. One
