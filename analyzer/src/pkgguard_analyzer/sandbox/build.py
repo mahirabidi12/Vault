@@ -84,6 +84,7 @@ class RunResult:
     recon: set[str] = field(default_factory=set)
     resource_flags: list[str] = field(default_factory=list)
     coverage_notes: list[str] = field(default_factory=list)
+    entry_failed: bool = False
     coverage: SandboxCoverage = field(default_factory=SandboxCoverage)
     cpu: float = 0.0
     memory_mb: float = 0.0
@@ -234,6 +235,8 @@ def analyze_run(trace: dict) -> RunResult:
                 reader = procs.get(strace.group_of(procs, ev.pid))
                 if path in decoy_files and decoy_files[path]["kind"] == "shell_history" and reader and _base(reader.exe) in SHELLS:
                     continue  # an interactive shell reads its own history at startup
+                if path in decoy_files and decoy_files[path]["kind"] == "npmrc" and reader and any(a.endswith(("/npm", "npm-cli.js")) for a in reader.argv[:3]):
+                    continue  # a package's installer running `npm` (esbuild does) reads ~/.npmrc as part of normal npm use
                 if path in decoy_files:
                     d = decoy_files[path]
                     res.files.append(SandboxFileEvent(run=name, op="read", path=path, decoy=True, category=d["kind"], phase=ev.phase))
@@ -307,6 +310,8 @@ def analyze_run(trace: dict) -> RunResult:
         bins_run=sum(1 for p in phases_raw if p["name"].startswith("bin-")),
         timed_out=any(p.get("timedOut") for p in phases_raw),
     )  # fmt: skip
+    pkg_name = trace.get("package", {}).get("name", "")
+    res.entry_failed = res.coverage.entry_loaded is False and not (res.coverage.entry_error or "").startswith(f"Cannot find module '{pkg_name}'")
     res.network = list(book.events.values())
     res.canary_hits = list(book.hits.values())
     return res
@@ -419,6 +424,9 @@ def make_findings(results: list[RunResult]) -> list[Finding]:
             if only_base:
                 out.append(_finding("conditional_behavior", Severity.MEDIUM, Confidence.LOW, f"Stops when it looks like CI or the date moves: {only_base[0]}" + (f" (+{len(only_base) - 1} more)" if len(only_base) > 1 else ""), snippet="; ".join(sorted(only_base))[:300], install=True, n=len(only_base)))
 
+    if any(r.entry_failed for r in results):
+        err = next((r.coverage.entry_error for r in results if r.entry_failed), "") or ""
+        out.append(_finding("coverage_gap", Severity.LOW, Confidence.HIGH, "The package's entry file could not be loaded in the sandbox (its dependencies are not installed), so behavior on import was not observed", snippet=err.splitlines()[0] if err else None))
     for r in results:
         if not r.coverage.installed:
             out.append(_finding("coverage_gap", Severity.LOW, Confidence.HIGH, "The package could not be installed in the sandbox, so its behavior was not observed"))
@@ -432,7 +440,7 @@ def build_report(traces: list[dict], *, raw_trace_key: str | None = None, versio
     results = [analyze_run(t) for t in traces]
     findings = make_findings(results)
     first = results[0]
-    partial = (not first.coverage.installed) or first.coverage.timed_out or any(r.summary.notes for r in results)
+    partial = (not first.coverage.installed) or first.coverage.timed_out or first.entry_failed or any(r.summary.notes for r in results)
     files: list[SandboxFileEvent] = []
     for r in results:
         files += r.files

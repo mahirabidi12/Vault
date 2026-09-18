@@ -209,3 +209,20 @@ def test_cpu_hog_is_caught_even_on_a_half_cpu_task() -> None:
             if phase["timedOut"]:
                 phase["cpuSeconds"] = round(phase["seconds"] * 0.5, 2)  # a Fargate task only has 0.5 vCPU
     assert any(f.rule_id == "sandbox.resource_abuse" for f in build_report(traces).findings)
+
+
+def test_a_child_npm_reading_npmrc_is_not_credential_theft() -> None:
+    report = build_report(load("smoke-esbuild"))  # esbuild's installer runs `npm install` itself
+    assert not any(f.rule_id == "sandbox.decoy_read" for f in report.findings)
+    assert not [f for f in report.findings if f.severity != Severity.LOW]
+
+
+def test_entry_that_fails_on_a_missing_dependency_makes_the_report_partial() -> None:
+    report = build_report(load("smoke-sharp"))  # needs detect-libc, which the sandbox does not install
+    assert report.status == SandboxStatus.PARTIAL
+    assert any(f.rule_id == "sandbox.coverage_gap" and "entry file" in f.title for f in report.findings)
+    assert not [f for f in report.findings if f.severity != Severity.LOW]
+
+
+def test_a_package_with_no_entry_file_is_not_a_coverage_problem() -> None:
+    assert build_report(load("s10-decoy-read")).status == SandboxStatus.COMPLETE  # scripts only, nothing to require

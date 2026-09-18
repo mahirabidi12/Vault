@@ -36,6 +36,8 @@
 - **The supervisor restores the real `/etc/resolv.conf` before uploading its result**, otherwise its own S3 upload was answered by the fake DNS server.
 - **On Fargate a task has half a CPU**, so the CPU-hog rule triggers at 35% of wall time, not 70%.
 - **Fargate does not look like Docker** (no `/.dockerenv`, no docker cgroup), so malware that only checks for Docker keeps running and gets caught (fixture s07).
+- **Smoke test on regular packages (2026-09-19):** `nanoid`, `ms` (through the live API, so the real Lambda -> Fargate path) and `esbuild`, `husky`, `sharp` (laptop reads the package text, sandbox runs on AWS) all came out SAFE with no false alarm. Timing: about 47 to 59 s of sandbox wall clock (mostly Fargate startup; the package itself runs in 2 to 3 s), 57 to 97 s per package in total including the AI. Two rule fixes came out of it: a child `npm` reading `~/.npmrc` (esbuild's installer) is not credential theft, and an entry file that fails to load because a stripped dependency is missing (sharp needs `detect-libc`) makes the report PARTIAL with a `coverage_gap` finding. **These two fixes are in the analyzer code but the deployed scan Lambda still runs the old rules until the next `sam build && sam deploy`.**
+- **Known limit: dependencies are stripped**, so packages whose real work sits in optional platform binaries (esbuild, sharp, swc) are only partly observed. Reported honestly as PARTIAL, never as a clean pass.
 - **Sinkhole details:** every DNS name gets its own `127.x.y.z` address so a later `connect()` maps back to the name; raw-IP connects fail but are still recorded from strace.
 
 **Commands**
