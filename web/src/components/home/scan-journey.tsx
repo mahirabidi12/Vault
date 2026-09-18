@@ -54,9 +54,14 @@ const COPY: Record<StageId, Copy> = {
 export function ScanJourney() {
   const ref = React.useRef<HTMLElement>(null);
   const [progress, setProgress] = React.useState(0);
+  // The scene on screen lags the scroll position: it fades out, swaps, then fades in.
+  const [shownIndex, setShownIndex] = React.useState(0);
+  const [fading, setFading] = React.useState(false);
 
   React.useEffect(() => {
     let raf = 0;
+    let shown = 0;
+    let swapTimer: ReturnType<typeof setTimeout> | null = null;
     let target = 0;
     let current = 0;
     const read = () => {
@@ -74,18 +79,33 @@ export function ScanJourney() {
       const next = reduce || Math.abs(diff) < 0.0003 ? target : current + diff * 0.07;
       if (next !== current) setProgress(next);
       current = next;
+      const live = locate(current).index;
+      if (live !== shown && !swapTimer) {
+        setFading(true);
+        swapTimer = setTimeout(() => {
+          shown = locate(current).index;
+          setShownIndex(shown);
+          setFading(false);
+          swapTimer = null;
+        }, 280);
+      }
       raf = requestAnimationFrame(tick);
     };
     read();
     current = target;
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      if (swapTimer) clearTimeout(swapTimer);
+    };
   }, []);
 
   const { index, t } = locate(progress);
   const stage = STAGES[index];
-  const copy = COPY[stage.id];
-  const isFork = stage.id === "fork";
+  const shownStage = STAGES[shownIndex];
+  const sceneT = shownIndex === index ? t : shownIndex < index ? 1 : 0;
+  const copy = COPY[shownStage.id];
+  const isFork = shownStage.id === "fork";
 
   const jumpTo = (stageId: StageId) => {
     const el = ref.current;
@@ -119,7 +139,12 @@ export function ScanJourney() {
           <Rail stage={stage.id} index={index} t={t} onJump={jumpTo} />
 
           {/* Stage */}
-          <div className="relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 pb-5 pt-3 sm:px-6 sm:pb-8">
+          <div
+            className={cn(
+              "relative mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col px-4 pb-5 pt-3 transition-[opacity,transform] duration-300 ease-out sm:px-6 sm:pb-8",
+              fading ? "translate-y-2 opacity-0" : "translate-y-0 opacity-100"
+            )}
+          >
             {isFork ? (
               <div className="mb-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
                 <div>
@@ -139,7 +164,7 @@ export function ScanJourney() {
 
             <div className={cn("grid min-h-0 flex-1 gap-6", !isFork && "lg:grid-cols-12 lg:gap-10")}>
               {!isFork && (
-                <div key={stage.id} className="animate-fade-up hidden flex-col justify-center lg:col-span-5 lg:flex">
+                <div className="hidden flex-col justify-center lg:col-span-5 lg:flex">
                   <p className="kicker text-brand">{copy.kicker}</p>
                   <h3 className="mt-3 font-display text-[clamp(1.6rem,2.6vw,2.4rem)] font-semibold leading-[1.08] tracking-[-0.03em]">
                     {copy.title}
@@ -148,7 +173,7 @@ export function ScanJourney() {
                 </div>
               )}
               <div className={cn("flex min-h-0 flex-col", !isFork ? "justify-center lg:col-span-7" : "")}>
-                <Scene stage={stage.id} t={t} />
+                <Scene stage={shownStage.id} t={sceneT} />
               </div>
             </div>
 

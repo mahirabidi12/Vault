@@ -289,3 +289,5 @@ git commit -m "Web: scroll-driven journey showing every check, with a big sandbo
 ```
 
 - Follow-up (2026-09-19): removed the "In development" badges (`SANDBOX_LIVE = true` in `lib/pipeline-flow.ts`; the "Illustrative example" labels stay). Scrolling is slower and steadier: 130vh per stage unit (was 62) and the animation eases toward the scroll position instead of jumping with the wheel.
+
+- Follow-up (2026-09-19): reverted the uniform-box-size experiment; box sizes are back to the committed layout. The only change is the transition: when the step changes, the whole stage fades and slides out (about 0.3 s), swaps, and fades back in, instead of snapping. The scene on screen lags the scroll position by that fade.
