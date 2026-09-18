@@ -75,7 +75,7 @@ export default function HomePage() {
             Every install, from your terminal or your agent, hits the same verdicts.
           </h2>
           <p className="mt-4 text-muted-foreground">
-            The CLI and the agent tool both ask one API, backed by one growing database of scanned packages. A package scanned once is instantly known to everyone.
+            The CLI and the agent tool both ask one API. It runs static, dynamic and agent checks once, then remembers the verdict, so a package scanned once is instantly known to everyone.
           </p>
         </Reveal>
         <Reveal delay={100}>

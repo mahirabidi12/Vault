@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { Terminal, Bot, Server, Database } from "lucide-react";
+import { Terminal, Bot, Server, FileSearch, Box, Sparkles, ShieldCheck } from "lucide-react";
 
 type Source = "cli" | "mcp";
 type Outcome = "clean" | "flagged";
@@ -22,52 +22,82 @@ const EVENTS: Event[] = [
   { source: "cli", pkg: "colors-js@2.1.0", outcome: "flagged", detail: "SUSPICIOUS · obfuscated postinstall" },
 ];
 
-const CLI_PATH = "M 190 110 C 290 110, 300 220, 400 220";
-const MCP_PATH = "M 190 330 C 290 330, 300 220, 400 220";
-const DB_PATH = "M 560 220 L 700 220";
+const CLI_PATH = "M 190 110 C 215 110, 205 220, 230 220";
+const MCP_PATH = "M 190 330 C 215 330, 205 220, 230 220";
+const CHECK_Y = [75, 220, 365];
+const FAN_IN = CHECK_Y.map((y) => `M 380 220 C 425 220, 425 ${y}, 470 ${y}`);
+const FAN_OUT = CHECK_Y.map((y) => `M 650 ${y} C 690 ${y}, 690 220, 730 220`);
+
+const CHECKS = [
+  { icon: FileSearch, title: "Static checks", sub: "reads the code, never runs it" },
+  { icon: Box, title: "Dynamic checks", sub: "runs it in a sandbox, no internet" },
+  { icon: Sparkles, title: "Agent checks", sub: "AI reads the code and the recording" },
+];
 
 export function RequestFlow() {
   const [i, setI] = React.useState(0);
+  const [lit, setLit] = React.useState(0);
   React.useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % EVENTS.length), 2600);
     return () => clearInterval(t);
   }, []);
+  React.useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setLit((n) => (n + 1) % 3), 1400);
+    return () => clearInterval(t);
+  }, []);
   const ev = EVENTS[i];
+  const allPaths = [CLI_PATH, MCP_PATH, ...FAN_IN, ...FAN_OUT];
 
   return (
     <div className="mx-auto w-full max-w-5xl">
       <div className="overflow-x-auto rounded-2xl border border-border bg-card/40">
         <div className="relative min-w-[720px]">
           <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black,transparent)]" />
-          <svg viewBox="0 0 900 440" className="relative block w-full" role="img" aria-label="CLI and MCP agent requests flowing into the PkgGuard API and its shared database of verdicts">
-            {/* lanes */}
-            {[CLI_PATH, MCP_PATH, DB_PATH].map((d, k) => (
+          <svg viewBox="0 0 900 440" className="relative block w-full" role="img" aria-label="CLI and MCP agent requests flow into the PkgGuard API, which runs static checks, dynamic checks and agent checks, and combines them into one verdict">
+            {allPaths.map((d, k) => (
               <path key={k} d={d} fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="1.5" />
             ))}
-            {[CLI_PATH, MCP_PATH, DB_PATH].map((d, k) => (
+            {allPaths.map((d, k) => (
               <path key={`f${k}`} d={d} fill="none" stroke="white" strokeOpacity="0.5" strokeWidth="1.5" className="flow" />
             ))}
 
-            {/* request packets */}
             <Packet path={CLI_PATH} dur="3.2s" begin="0s" />
             <Packet path={CLI_PATH} dur="3.2s" begin="1.6s" />
             <Packet path={MCP_PATH} dur="3.2s" begin="0.8s" />
             <Packet path={MCP_PATH} dur="3.2s" begin="2.4s" />
-            <Packet path={DB_PATH} dur="1.6s" begin="0.3s" />
-            <Packet path={DB_PATH} dur="1.6s" begin="1.1s" />
+            {FAN_IN.map((d, k) => (
+              <Packet key={`i${k}`} path={d} dur="2.2s" begin={`${k * 0.5}s`} />
+            ))}
+            {FAN_OUT.map((d, k) => (
+              <Packet key={`o${k}`} path={d} dur="2s" begin={`${0.9 + k * 0.5}s`} />
+            ))}
 
-            {/* nodes */}
             <Node x={20} y={70} w={170} h={80} active={ev.source === "cli"} />
             <Node x={20} y={290} w={170} h={80} active={ev.source === "mcp"} />
-            <Node x={400} y={170} w={160} h={100} active glow />
-            <Node x={700} y={160} w={180} h={120} active />
+            <Node x={230} y={170} w={150} h={100} active glow />
+            {CHECK_Y.map((y, k) => (
+              <Node key={y} x={470} y={y - 45} w={180} h={90} active={lit === k} />
+            ))}
+            <Node x={730} y={170} w={150} h={100} active glow />
           </svg>
 
-          {/* node labels as HTML so text stays crisp */}
           <Label left="2.2%" top="15.9%" w="18.9%" h="18.2%" icon={<Terminal className="size-4" />} title="pkgguard CLI" sub="npm install, checked" />
           <Label left="2.2%" top="65.9%" w="18.9%" h="18.2%" icon={<Bot className="size-4" />} title="MCP agent tool" sub="Claude · Cursor · any agent" />
-          <Label left="44.4%" top="38.6%" w="17.8%" h="22.7%" icon={<Server className="size-4" />} title="PkgGuard API" sub="one verdict per package" center />
-          <Label left="77.8%" top="36.4%" w="20%" h="27.3%" icon={<Database className="size-4" />} title="Verdict database" sub="every scanned package" center />
+          <Label left="25.6%" top="38.6%" w="16.7%" h="22.7%" icon={<Server className="size-4" />} title="PkgGuard API" sub="one verdict per package" center />
+          {CHECKS.map((c, k) => (
+            <Label
+              key={c.title}
+              left="52.2%"
+              top={`${((CHECK_Y[k] - 45) / 440) * 100}%`}
+              w="20%"
+              h="20.5%"
+              icon={<c.icon className="size-4" />}
+              title={c.title}
+              sub={c.sub}
+            />
+          ))}
+          <Label left="81.1%" top="38.6%" w="16.7%" h="22.7%" icon={<ShieldCheck className="size-4" />} title="Verdict" sub="safe · suspicious · malicious" center />
         </div>
       </div>
 

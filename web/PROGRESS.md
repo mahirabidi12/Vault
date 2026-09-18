@@ -321,3 +321,13 @@ cd ~/Vault
 git add web
 git commit -m "Web: remove limits strip, compare table and scan CTA; blend journey edges"
 ```
+
+## Home: request-flow simplified to three checks and a verdict (2026-09-19)
+- `components/home/request-flow.tsx`: CLI and MCP tool feed the API, which fans out to three boxes, **Static checks**, **Dynamic checks** (sandbox) and **Agent checks** (AI), that merge into one **Verdict** box. The three boxes take turns lighting up; packets flow along every line. The earlier full-pipeline list panel was removed. Checked in a 1440px screenshot only.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: request-flow shows static, dynamic and agent checks feeding one verdict"
+```
