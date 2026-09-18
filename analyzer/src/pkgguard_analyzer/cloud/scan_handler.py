@@ -73,6 +73,17 @@ def default_services() -> ScanServices:
 
 def handler(event: dict, context: object, services: ScanServices | None = None) -> dict:
     services = services or default_services()
+    if event.get("action") == "fetch_samples":
+        from pkgguard_analyzer.cloud.sample_handler import fetch_samples
+
+        return fetch_samples(event, services.s3, services.bucket)
+    if event.get("action") == "analyze_sample":
+        from pkgguard_analyzer.cloud.sample_handler import analyze_sample
+
+        try:
+            return analyze_sample(event, services, WORK_ROOT)
+        finally:
+            shutil.rmtree(WORK_ROOT, ignore_errors=True)
     name, version, scan_id = event["name"], event["version"], event["scanId"]
 
     pending = services.store.mark_scanning(name, version, scan_id)

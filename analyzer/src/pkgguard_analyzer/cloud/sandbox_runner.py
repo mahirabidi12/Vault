@@ -123,11 +123,19 @@ class FargateSandbox:
     def _read_traces(self, prefix: str, runs: list[str]) -> list[dict]:
         traces = []
         for run in runs:
-            try:
-                body = self.s3.get_object(Bucket=self.config.bucket, Key=f"{prefix}/{run}.json.gz")["Body"].read()
-                traces.append(json.loads(gzip.decompress(body)))
-            except Exception:
-                log.warning("no trace for run %s", run)
+            for attempt in range(4):
+                try:
+                    body = self.s3.get_object(Bucket=self.config.bucket, Key=f"{prefix}/{run}.json.gz")["Body"].read()
+                    traces.append(json.loads(gzip.decompress(body)))
+                    break
+                except self.s3.exceptions.NoSuchKey:
+                    log.warning("no trace for run %s", run)  # the task really produced nothing
+                    break
+                except Exception:  # a network blip must not look like a missing trace
+                    if attempt == 3:
+                        log.warning("could not read the trace for run %s after 4 tries", run)
+                    else:
+                        self._sleep(2 * (attempt + 1))
         return traces
 
     def _cleanup(self, task_arns: dict[str, str], key_in: str) -> None:

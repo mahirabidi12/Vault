@@ -1,0 +1,93 @@
+"""Drives the malware evaluation on AWS from a laptop. The laptop only sends names and receives short summaries;
+sample contents never leave S3/Lambda/Fargate.
+
+  uv run pkgguard-sandbox-samples fetch ../eval/pilot/malware-50-plan.json
+  uv run pkgguard-sandbox-samples run   ../eval/pilot/malware-50-plan.json --run-id pilot1
+"""
+
+import argparse
+import json
+import sys
+from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+import boto3
+from botocore.config import Config
+
+from pkgguard_analyzer.cloud.sample_handler import sample_key
+
+REGION = "ap-south-1"
+OUT = Path("tmp/pilot-malware")
+
+
+def scan_function_name() -> str:
+    cf = boto3.client("cloudformation", region_name=REGION)
+    return cf.describe_stack_resource(StackName="pkgguard", LogicalResourceId="ScanFunction")["StackResourceDetail"]["PhysicalResourceId"]
+
+
+def invoke(fn: str, payload: dict) -> dict:
+    client = boto3.client("lambda", region_name=REGION, config=Config(read_timeout=900, retries={"max_attempts": 1}))
+    resp = client.invoke(FunctionName=fn, Payload=json.dumps(payload).encode())
+    body = json.loads(resp["Payload"].read())
+    if resp.get("FunctionError"):
+        raise RuntimeError(f"{body.get('errorType')}: {body.get('errorMessage')}"[:300])
+    return body
+
+
+def cmd_fetch(plan: list[dict], batch: int) -> None:
+    fn = scan_function_name()
+    OUT.mkdir(parents=True, exist_ok=True)
+    results = []
+    for i in range(0, len(plan), batch):
+        chunk = plan[i : i + batch]
+        results += invoke(fn, {"action": "fetch_samples", "samples": chunk})["results"]
+        print(f"fetched {min(i + batch, len(plan))}/{len(plan)}", flush=True)
+    (OUT / "fetched.json").write_text(json.dumps(results, indent=1))
+    ok = [r for r in results if r["ok"]]
+    print(f"{len(ok)} stored in S3, {len(results) - len(ok)} failed")
+    for r in results:
+        if not r["ok"]:
+            print("  FAILED", r["name"], r.get("error"))
+
+
+def cmd_run(plan: list[dict], run_id: str, workers: int) -> None:
+    fn = scan_function_name()
+    fetched = {r["dirName"]: r for r in json.loads((OUT / "fetched.json").read_text()) if r["ok"]}
+    todo = [p for p in plan if p["dirName"] in fetched]
+    results_dir = OUT / run_id
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    def run(p: dict) -> dict:
+        target = results_dir / (p["name"].replace("/", "__") + ".json")
+        if target.exists():
+            return json.loads(target.read_text())
+        label = "compromised" if p["category"] == "compromised_lib" else "malicious"
+        try:
+            out = invoke(fn, {"action": "analyze_sample", "run": run_id, "sample": {"name": p["name"], "version": p["version"], "label": label, "s3Key": sample_key(p["dirName"], p["version"])}})
+            summary = out["summary"]
+        except Exception as error:
+            summary = {"name": p["name"], "label": label, "error": f"{type(error).__name__}: {error}"[:300]}
+        target.write_text(json.dumps(summary))
+        print(f"[{summary.get('verdict') or 'ERROR':10}] {p['name']:38} by={summary.get('decidedBy')} sandbox={summary.get('sandboxStatus')} {summary.get('error', '')}", flush=True)
+        return summary
+
+    with ThreadPoolExecutor(workers) as pool:
+        summaries = list(pool.map(run, todo))
+    (OUT / f"{run_id}-summary.json").write_text(json.dumps(summaries, indent=1))
+    print(f"\n{len(summaries)} samples analysed")
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(prog="pkgguard-sandbox-samples")
+    ap.add_argument("action", choices=["fetch", "run"])
+    ap.add_argument("plan", type=Path)
+    ap.add_argument("--run-id", default="pilot1")
+    ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--batch", type=int, default=10)
+    args = ap.parse_args()
+    plan = json.loads(args.plan.read_text())
+    cmd_fetch(plan, args.batch) if args.action == "fetch" else cmd_run(plan, args.run_id, args.workers)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
