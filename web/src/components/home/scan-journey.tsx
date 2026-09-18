@@ -131,7 +131,7 @@ export function ScanJourney() {
       <ThreeWays />
 
       <section ref={ref} aria-label="How a package gets tested, step by step" style={{ height: `${journeyHeightVh}vh` }} className="relative mt-16">
-        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden pt-[68px]">
+        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden pt-6">
           <Glow stage={stage.id} t={t} />
 
           {/* Progress rail */}

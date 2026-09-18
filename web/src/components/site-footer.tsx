@@ -1,20 +1,99 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
+
+const COLUMNS = [
+  {
+    title: "Product",
+    links: [
+      { href: "/scan", label: "Scan a project" },
+      { href: "/feed", label: "Threat feed" },
+      { href: "/docs", label: "Docs" },
+    ],
+  },
+  {
+    title: "Get it",
+    links: [
+      { href: "/docs#cli", label: "CLI for developers" },
+      { href: "/docs#mcp", label: "Agent tool (MCP)" },
+      { href: "/docs#api", label: "API" },
+      { href: "https://github.com/mahirabidi12/Vault", label: "GitHub" },
+    ],
+  },
+];
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-border/70">
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div className="flex items-center gap-2">
-          <Logo className="size-4" />
-          <span>PkgGuard — a security check for npm packages.</span>
+    <footer className="relative isolate z-20 -mt-24 overflow-hidden">
+      {/* melts the page into the footer instead of cutting it off */}
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-gradient-to-b from-transparent via-[#05060a]/70 to-[#05060a]" />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-[radial-gradient(ellipse_60%_100%_at_50%_100%,rgba(90,115,255,0.16),transparent_70%)]"
+      />
+
+      <div className="mx-auto max-w-6xl px-4 pb-10 pt-8 sm:px-6">
+        <div className="mx-auto max-w-2xl pb-24 pt-2 text-center sm:pb-28">
+          <h2 className="text-balance text-[clamp(1.8rem,4vw,2.8rem)] font-semibold leading-[1.05] tracking-[-0.04em]">
+            Know before you <span className="text-fade">npm install.</span>
+          </h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Check any package in seconds, from your terminal, your agent, or the browser.
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <Link
+              href="/scan"
+              className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-foreground px-5 text-sm font-semibold text-background transition-opacity hover:opacity-90"
+            >
+              Scan a project <ArrowRight className="size-4" />
+            </Link>
+            <Link
+              href="/docs"
+              className="inline-flex h-10 items-center rounded-lg border border-border bg-black/40 px-5 text-sm font-medium transition-colors hover:bg-white/5"
+            >
+              Read the docs
+            </Link>
+          </div>
         </div>
-        <nav className="flex flex-wrap items-center gap-x-5 gap-y-2">
-          <Link href="/scan" className="hover:text-foreground">Scan a project</Link>
-          <Link href="/feed" className="hover:text-foreground">Threat feed</Link>
-          <Link href="/docs" className="hover:text-foreground">Docs</Link>
-          <span className="text-muted-foreground/60">Built for the AWS First Commit hackathon</span>
-        </nav>
+
+        <div className="grid gap-10 border-t border-white/[0.07] pt-10 sm:grid-cols-[1.4fr_1fr_1fr]">
+          <div className="flex flex-col gap-3">
+            <span className="flex items-center gap-2 font-display text-base font-semibold">
+              <Logo className="size-5" />
+              pkgguard
+            </span>
+            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
+              A security check for npm packages. Static, dynamic and AI checks, before anything is installed.
+            </p>
+          </div>
+          {COLUMNS.map((col) => (
+            <nav key={col.title} aria-label={col.title} className="flex flex-col gap-2.5 text-sm">
+              <span className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground/70">{col.title}</span>
+              {col.links.map((l) => (
+                <Link
+                  key={l.label}
+                  href={l.href}
+                  {...(l.href.startsWith("http") ? { target: "_blank", rel: "noreferrer" } : {})}
+                  className="w-fit text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  {l.label}
+                </Link>
+              ))}
+            </nav>
+          ))}
+        </div>
+
+        <p className="mt-10 text-center text-xs text-muted-foreground/60">
+          © {new Date().getFullYear()} PkgGuard. A SAFE verdict means &ldquo;no issues found&rdquo;, not a guarantee.
+        </p>
+      </div>
+
+      {/* oversized wordmark that fades out at the very bottom */}
+      <div
+        aria-hidden
+        className="pointer-events-none select-none overflow-hidden text-center font-display text-[clamp(4rem,19vw,17rem)] font-bold leading-[0.8] tracking-[-0.06em] text-white/[0.045] [mask-image:linear-gradient(to_bottom,black_30%,transparent_100%)]"
+      >
+        pkgguard
       </div>
     </footer>
   );

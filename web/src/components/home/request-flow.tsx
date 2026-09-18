@@ -36,16 +36,26 @@ const CHECKS = [
 
 export function RequestFlow() {
   const [i, setI] = React.useState(0);
-  const [lit, setLit] = React.useState(0);
+  // A wave of light travels left to right across the diagram; each box glows by its distance from the wave.
+  const [wave, setWave] = React.useState(450);
   React.useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % EVENTS.length), 2600);
     return () => clearInterval(t);
   }, []);
   React.useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const t = setInterval(() => setLit((n) => (n + 1) % 3), 1400);
-    return () => clearInterval(t);
+    const period = 5200;
+    const start = performance.now();
+    let raf = 0;
+    const loop = (now: number) => {
+      const p = ((now - start) % period) / period;
+      setWave(-160 + p * 1220);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(raf);
   }, []);
+  const glowAt = (cx: number) => Math.exp(-(((cx - wave) / 120) ** 2));
   const ev = EVENTS[i];
   const allPaths = [CLI_PATH, MCP_PATH, ...FAN_IN, ...FAN_OUT];
 
@@ -73,13 +83,13 @@ export function RequestFlow() {
               <Packet key={`o${k}`} path={d} dur="2s" begin={`${0.9 + k * 0.5}s`} />
             ))}
 
-            <Node x={20} y={70} w={170} h={80} active={ev.source === "cli"} />
-            <Node x={20} y={290} w={170} h={80} active={ev.source === "mcp"} />
-            <Node x={230} y={170} w={150} h={100} active glow />
-            {CHECK_Y.map((y, k) => (
-              <Node key={y} x={470} y={y - 45} w={180} h={90} active={lit === k} />
+            <Node x={20} y={70} w={170} h={80} b={glowAt(105)} />
+            <Node x={20} y={290} w={170} h={80} b={glowAt(105)} />
+            <Node x={230} y={170} w={150} h={100} b={glowAt(305)} />
+            {CHECK_Y.map((y) => (
+              <Node key={y} x={470} y={y - 45} w={180} h={90} b={glowAt(560)} />
             ))}
-            <Node x={730} y={170} w={150} h={100} active glow />
+            <Node x={730} y={170} w={150} h={100} b={glowAt(805)} />
           </svg>
 
           <Label left="2.2%" top="15.9%" w="18.9%" h="18.2%" icon={<Terminal className="size-4" />} title="pkgguard CLI" sub="npm install, checked" />
@@ -127,7 +137,7 @@ function Packet({ path, dur, begin }: { path: string; dur: string; begin: string
   );
 }
 
-function Node({ x, y, w, h, active, glow }: { x: number; y: number; w: number; h: number; active?: boolean; glow?: boolean }) {
+function Node({ x, y, w, h, b }: { x: number; y: number; w: number; h: number; b: number }) {
   return (
     <rect
       x={x}
@@ -137,9 +147,8 @@ function Node({ x, y, w, h, active, glow }: { x: number; y: number; w: number; h
       rx="14"
       fill="#050505"
       stroke="white"
-      strokeOpacity={active ? 0.55 : 0.15}
-      strokeWidth="1.5"
-      style={glow ? { filter: "drop-shadow(0 0 18px rgba(255,255,255,0.12))" } : undefined}
+      strokeOpacity={0.16 + 0.84 * b}
+      strokeWidth={1.5 + 1.3 * b}
     />
   );
 }

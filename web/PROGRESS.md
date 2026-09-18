@@ -323,11 +323,37 @@ git commit -m "Web: remove limits strip, compare table and scan CTA; blend journ
 ```
 
 ## Home: request-flow simplified to three checks and a verdict (2026-09-19)
-- `components/home/request-flow.tsx`: CLI and MCP tool feed the API, which fans out to three boxes, **Static checks**, **Dynamic checks** (sandbox) and **Agent checks** (AI), that merge into one **Verdict** box. The three boxes take turns lighting up; packets flow along every line. The earlier full-pipeline list panel was removed. Checked in a 1440px screenshot only.
+- `components/home/request-flow.tsx`: CLI and MCP tool feed the API, which fans out to three boxes, **Static checks**, **Dynamic checks** (sandbox) and **Agent checks** (AI), that merge into one **Verdict** box. A wave travels left to right on a loop (about 5 s, with a pause at the end); only each box's border brightens and thickens as the wave reaches it, with no glow or light band in the background; packets flow along every line. The earlier full-pipeline list panel was removed. Checked in a 1440px screenshot only.
 
 Commit:
 ```bash
 cd ~/Vault
 git add web
 git commit -m "Web: request-flow shows static, dynamic and agent checks feeding one verdict"
+```
+
+## Home: trimmed, new footer, GitHub link (2026-09-19)
+- Removed the hero badge ("Built for the AWS First Commit hackathon"), the "Checked against npm registry · OSV.dev …" line under the hero, and the "Recently caught" section (`recent-threats.tsx` deleted). The header GitHub icon now links to https://github.com/mahirabidi12/Vault.
+- New `site-footer.tsx` (all pages): fades in from the page instead of a hard border, a closing "Know before you npm install." with Scan and Docs buttons, link columns (Product; Get it, including a GitHub link), a copyright/disclaimer line, and a large faded "pkgguard" wordmark that fades out at the very bottom. Docs sections got ids (`#cli`, `#mcp`, `#api`) so the footer links land on them.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: trim home page, add a blended footer, link GitHub icon to the repo"
+```
+
+- Footer spacing fix (2026-09-19): the closing "Know before you npm install." block sat too low, far from the walkthrough and crowding the link columns. The footer now overlaps the walkthrough's empty tail (`-mt-24`) and the block is centered in the gap between the last step and the footer links.
+
+## Navbar: reverted (2026-09-19)
+- Two navbar redesigns (a full-width bar, then shadcn dropdown menus) were tried and dropped. `site-header.tsx` is back to the original floating pill, with only the GitHub icon now linking to the repo. Hero offset (`-mt-[60px]`) and walkthrough top padding (68 px) are back to the pill's sizes. The unused `ui/navigation-menu.tsx` and `ui/sheet.tsx` were removed.
+
+- Navbar tweak (2026-09-19): the pill is slightly bigger (56 px tall, was 48; larger logo, links and Scan button) and the search box placeholder is shortened to "Search packages" so it no longer gets cut off. Hero offset is now `-mt-[68px]` and the walkthrough's top padding 76 px.
+- Navbar no longer follows the scroll (2026-09-19): `site-header.tsx` is `relative` instead of `sticky`, so it scrolls away with the page. The scroll-triggered background change was removed (the pill now always has a soft dark blurred background), and the walkthrough's top padding is back to 24 px since it no longer has to clear a fixed bar.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: navbar scrolls away instead of following the page"
 ```

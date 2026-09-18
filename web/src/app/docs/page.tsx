@@ -27,7 +27,7 @@ export default function DocsPage() {
         </div>
       </div>
 
-      <Section icon={Terminal} title="CLI">
+      <Section id="cli" icon={Terminal} title="CLI">
         <p className="text-sm text-muted-foreground">Install it, then use it in front of any install.</p>
         <TerminalBlock command="npm install -g pkgguard-cli" />
         <TerminalBlock command="pkgguard install express @babel/core" />
@@ -41,7 +41,7 @@ export default function DocsPage() {
         <p className="text-sm text-muted-foreground">Run inside a project to check an existing lockfile.</p>
       </Section>
 
-      <Section icon={Bot} title="Agent tool (MCP)">
+      <Section id="mcp" icon={Bot} title="Agent tool (MCP)">
         <p className="text-sm text-muted-foreground">
           Give any MCP-compatible agent (Claude Code, Cursor, …) a <code className="rounded bg-muted px-1 py-0.5 text-xs">check_package</code> tool
           it must call before installing anything. Pin the version — don&apos;t let the thing that checks your
@@ -60,7 +60,7 @@ export default function DocsPage() {
         </pre>
       </Section>
 
-      <Section icon={Globe} title="API">
+      <Section id="api" icon={Globe} title="API">
         <p className="text-sm text-muted-foreground">
           The CLI, agent tool and website all call the same public API.
         </p>
@@ -86,16 +86,18 @@ export default function DocsPage() {
 }
 
 function Section({
+  id,
   icon: Icon,
   title,
   children,
 }: {
+  id: string;
   icon: typeof Terminal;
   title: string;
   children: ReactNode;
 }) {
   return (
-    <section className="flex flex-col gap-3">
+    <section id={id} className="flex scroll-mt-24 flex-col gap-3">
       <h2 className="flex items-center gap-2 text-lg font-semibold tracking-tight">
         <Icon className="size-4.5 text-brand" />
         {title}

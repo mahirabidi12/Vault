@@ -6,7 +6,6 @@ import { Reveal } from "@/components/reveal";
 import { GetStarted } from "@/components/home/get-started";
 import { RequestFlow } from "@/components/home/request-flow";
 import { LiveStats } from "@/components/home/live-stats";
-import { RecentThreats } from "@/components/home/recent-threats";
 import { ScanJourney } from "@/components/home/scan-journey";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -15,14 +14,10 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative flex -mt-[60px] min-h-screen flex-col items-center justify-center overflow-hidden">
+      <section className="relative flex -mt-[68px] min-h-screen flex-col items-center justify-center overflow-hidden">
         <AuroraField className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,black_65%,transparent_100%)]" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_42%_at_50%_46%,rgba(0,0,0,0.55),transparent_100%)]" />
           <div className="relative flex max-w-4xl flex-col items-center gap-7 px-4 py-24 text-center">
-            <span className="animate-fade-up kicker inline-flex items-center gap-1.5 rounded-full border border-border bg-black/60 px-3 py-1.5 text-muted-foreground">
-              <span className="size-1.5 rounded-full bg-safe" />
-              Built for the AWS First Commit hackathon
-            </span>
             <h1
               className="animate-fade-up text-balance text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[1.02] tracking-[-0.05em]"
               style={{ animationDelay: "80ms" }}
@@ -58,9 +53,6 @@ export default function HomePage() {
               </p>
             </div>
           </div>
-          <p className="kicker absolute inset-x-0 bottom-6 text-center text-muted-foreground/70">
-            Checked against npm registry · OSV.dev · SafeDep · AI code review
-          </p>
       </section>
 
       <Ticker />
@@ -96,19 +88,6 @@ export default function HomePage() {
         </div>
         <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-32 bg-gradient-to-t from-background to-transparent" />
       </div>
-
-      {/* Recent threats */}
-      <section className="mx-auto w-full max-w-5xl px-4 pb-24 sm:px-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold tracking-tight">Recently caught</h2>
-            <Button variant="ghost" size="sm" render={<Link href="/feed" />} nativeButton={false}>
-              View feed <ArrowRight className="size-3.5" />
-            </Button>
-          </div>
-          <Reveal delay={100}><RecentThreats /></Reveal>
-        </div>
-      </section>
     </div>
   );
 }
