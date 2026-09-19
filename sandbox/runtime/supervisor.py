@@ -35,6 +35,10 @@ STATE = "/var/sbx"
 HOOK_DIR = f"{STATE}/hook"
 TMP = "/tmp/sbx"
 MAX_TARBALL = 60 * 1024 * 1024
+MAX_DEPS_DOWNLOAD = 160 * 1024 * 1024
+MAX_DEPS_UNPACKED = 450 * 1024 * 1024
+DEPS_DIR = HOME  # dependencies go in /home/sandbox/node_modules: above the project, so both require() and import find them
+DEPS_NODE_MODULES = f"{HOME}/node_modules"
 MAX_STRACE_LINES = 120_000
 MAX_HOOK_EVENTS = 50_000
 TOTAL_BUDGET = 100
@@ -52,8 +56,23 @@ def log(msg: str) -> None:
     print(f"[sbx] {msg}", file=sys.stderr, flush=True)
 
 
-def read_input(spec: str) -> bytes:
-    if spec == "-":
+def _http(method: str, url: str, body: bytes | None = None, max_bytes: int = MAX_TARBALL) -> bytes:
+    import urllib.request
+
+    req = urllib.request.Request(url, data=body, method=method, headers={"Content-Type": "application/gzip"} if body is not None else {})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        data = resp.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError("download is larger than the size limit")
+    return data
+
+
+def read_input(spec: str, input_url: str | None = None) -> bytes:
+    if spec == "env":
+        # Pre-signed link for exactly one object, handed over privately (environment, not command line) so the
+        # package cannot see it and the task needs no IAM role at all.
+        data = _http("GET", input_url or "")
+    elif spec == "-":
         data = sys.stdin.buffer.read(MAX_TARBALL + 1)
     elif spec.startswith("s3://"):
         import boto3
@@ -68,8 +87,10 @@ def read_input(spec: str) -> bytes:
     return data
 
 
-def write_output(spec: str, data: bytes) -> None:
-    if spec == "-":
+def write_output(spec: str, data: bytes, output_url: str | None = None) -> None:
+    if spec == "env":
+        _http("PUT", output_url or "", data)
+    elif spec == "-":
         sys.stdout.buffer.write(data)
         sys.stdout.buffer.flush()
     elif spec.startswith("s3://"):
@@ -80,6 +101,41 @@ def write_output(spec: str, data: bytes) -> None:
     else:
         with open(spec, "wb") as fh:
             fh.write(data)
+
+
+def extract_deps(blob: bytes, dest: str) -> int:
+    """Unpacks the dependency tarball (everything under node_modules/) into `dest`, refusing anything unsafe: names
+    outside node_modules, absolute or `..` paths, device files, and symlinks that point outside node_modules.
+    Returns the number of top-level packages."""
+    root = os.path.realpath(dest)
+    modules_root = os.path.join(root, "node_modules")
+    os.makedirs(modules_root, exist_ok=True)
+    total = 0
+    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:gz") as tar:
+        for member in tar:
+            name = member.name
+            if name.startswith("/") or ".." in name.split("/") or not (name == "node_modules" or name.startswith("node_modules/")):
+                continue
+            target = os.path.realpath(os.path.join(root, name))
+            if target != modules_root and not target.startswith(modules_root + os.sep):
+                continue
+            if member.isdir():
+                os.makedirs(target, exist_ok=True)
+            elif member.isfile():
+                total += member.size
+                if total > MAX_DEPS_UNPACKED:
+                    raise ValueError("dependencies unpack to more than the size limit")
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with open(target, "wb") as out:
+                    out.write(tar.extractfile(member).read())
+                os.chmod(target, 0o755 if member.mode & 0o111 else 0o644)
+            elif member.issym():
+                link_target = os.path.realpath(os.path.join(os.path.dirname(target), member.linkname))
+                if link_target == modules_root or link_target.startswith(modules_root + os.sep):
+                    os.makedirs(os.path.dirname(target), exist_ok=True)
+                    if not os.path.lexists(target):
+                        os.symlink(member.linkname, target)
+    return sum(1 for e in os.listdir(modules_root) if not e.startswith(".") and os.path.isdir(os.path.join(modules_root, e)))
 
 
 def prepare_tarball(raw: bytes) -> tuple[str, dict, list[str], dict[str, int]]:
@@ -158,7 +214,7 @@ def keep_strace_line(line: str) -> bool:
         if NOISE_OPEN.search(line):
             return False
         m = OPEN_PATH.search(line)
-        if m and m.group(1).startswith((f"{WORK}/node_modules/", f"{HOME}/.npm/")) and "O_WRONLY" not in m.group(2) and "O_RDWR" not in m.group(2) and "O_CREAT" not in m.group(2):
+        if m and m.group(1).startswith((f"{WORK}/node_modules/", f"{HOME}/.npm/", f"{DEPS_NODE_MODULES}/")) and "O_WRONLY" not in m.group(2) and "O_RDWR" not in m.group(2) and "O_CREAT" not in m.group(2):
             return False
     return True
 
@@ -270,7 +326,8 @@ def main() -> None:
     os.chmod(STATE, 0o711)  # the package can traverse but not list or read our files
     os.makedirs(HOOK_DIR, exist_ok=True)
     os.chmod(HOOK_DIR, 0o777)
-    raw = read_input(args.input)
+    input_url, output_url, deps_url = os.environ.pop("SBX_INPUT_URL", None), os.environ.pop("SBX_OUTPUT_URL", None), os.environ.pop("SBX_DEPS_URL", None)
+    raw = read_input(args.input, input_url)
     tarball_sha = hashlib.sha256(raw).hexdigest()
     tgz, manifest, stripped, tar_files = prepare_tarball(raw)
     name = manifest.get("name", "unknown")
@@ -280,6 +337,14 @@ def main() -> None:
         json.dump({"name": "sbx-host", "version": "1.0.0", "private": True}, fh)
     decoy_files, decoy_env = make_decoys(HOME)
     subprocess.run(["chown", "-R", f"{UID}:{UID}", HOME], check=False)
+    deps_provided, deps_count = False, 0
+    if deps_url:
+        try:
+            deps_count = extract_deps(_http("GET", deps_url, max_bytes=MAX_DEPS_DOWNLOAD), DEPS_DIR)
+            subprocess.run(["chown", "-R", f"{UID}:{UID}", DEPS_NODE_MODULES], check=False)
+            deps_provided = deps_count > 0
+        except Exception as exc:
+            notes.append(f"dependencies could not be unpacked: {type(exc).__name__}")
     hook_log = f"{HOOK_DIR}/hook.jsonl"
     open(hook_log, "w").close()
     os.chmod(hook_log, 0o666)
@@ -307,6 +372,10 @@ def main() -> None:
         "npm_config_fund": "false", "npm_config_update_notifier": "false",
         **{d["name"]: d["value"] for d in decoy_env}, **run_env,
     }  # fmt: skip
+    if deps_provided:
+        # Dependencies live above the package under test (/home/sandbox/node_modules), so npm never prunes them
+        # and both require() and ES-module import find them by walking up from the package.
+        env["PATH"] = f"{DEPS_NODE_MODULES}/.bin:" + env["PATH"]
     env_prefix: list[str] = []
     if hostile:
         env["SBX_FAKE_HOSTNAME"], env["SBX_FAKE_USER"] = "ci-runner-04", "runner"
@@ -317,7 +386,7 @@ def main() -> None:
             notes.append("libfaketime not found: clock was not moved forward")
 
     watch = [HOME, "/tmp", "/var/tmp", "/dev/shm"]
-    skip = (f"{HOME}/.npm", f"{HOME}/.cache", WORK, TMP, STATE)
+    skip = (f"{HOME}/.npm", f"{HOME}/.cache", DEPS_NODE_MODULES, WORK, TMP, STATE)
     snap_before = snapshot(watch, skip)
 
     phases = []
@@ -403,7 +472,7 @@ def main() -> None:
             "name": name, "version": manifest.get("version"), "tarballSha256": tarball_sha, "strippedDependencyFields": stripped,
             "bin": manifest.get("bin"), "scripts": manifest.get("scripts") or {}, "main": manifest.get("main"), "files": len(tar_files),
         },
-        "coverage": {"installed": installed, "loader": loader},
+        "coverage": {"installed": installed, "loader": loader, "depsProvided": deps_provided, "depsCount": deps_count},
         "phases": phases,
         "hookEvents": hook_events,
         "sinkhole": {"events": sink.events, "ipToName": sink.ip_to_name},
@@ -420,7 +489,7 @@ def main() -> None:
                 fh.write(original_resolv)
         except OSError:
             pass
-    write_output(args.output, blob)
+    write_output(args.output, blob, output_url)
     log(f"done: {len(blob)} bytes, {sum(len(p['straceLines']) for p in phases)} strace lines, {len(hook_events)} hook events, {len(sink.events)} sinkhole events")
     shutil.rmtree(TMP, ignore_errors=True)
 

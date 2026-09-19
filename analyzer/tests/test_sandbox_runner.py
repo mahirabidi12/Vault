@@ -5,6 +5,7 @@ from pathlib import Path
 
 import boto3
 import pytest
+from botocore.config import Config
 from moto import mock_aws
 
 from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig
@@ -27,8 +28,13 @@ class FakeEcs:
             return {"tasks": [], "failures": [{"reason": "RESOURCE:CPU"}]}
         cmd = kw["overrides"]["containerOverrides"][0]["command"]
         assert kw["networkConfiguration"]["awsvpcConfiguration"]["assignPublicIp"] == "DISABLED"
-        source, target, run = cmd[1], cmd[3], cmd[5]
-        assert self.s3.get_object(Bucket=BUCKET, Key=source.split(f"{BUCKET}/", 1)[1])["Body"].read()  # tarball was staged first
+        run = cmd[5]
+        env = {e["name"]: e["value"] for e in kw["overrides"]["containerOverrides"][0]["environment"]}
+        assert cmd[:4] == ["--input", "env", "--output", "env"] and not any("s3://" in c for c in cmd)  # nothing sensitive on the command line
+        assert env["SBX_INPUT_URL"].startswith("https://") and "sandbox-in/" in env["SBX_INPUT_URL"] and "X-Amz-Expires=900" in env["SBX_INPUT_URL"]
+        target = f"s3://{BUCKET}/" + env["SBX_OUTPUT_URL"].split(".amazonaws.com/", 1)[1].split("?", 1)[0]
+        assert "X-Amz-Signature" in env["SBX_OUTPUT_URL"] and "content-type" in env["SBX_OUTPUT_URL"].lower()
+        assert "sandbox-traces/" in target
         arn = f"arn:task/{run}"
         self.tasks[arn] = run
         if run != self.fail_run:
@@ -46,8 +52,8 @@ class FakeEcs:
 @pytest.fixture
 def s3():
     with mock_aws():
-        client = boto3.client("s3", region_name="us-east-1")
-        client.create_bucket(Bucket=BUCKET)
+        client = boto3.client("s3", region_name="ap-south-1", config=Config(signature_version="s3v4"))
+        client.create_bucket(Bucket=BUCKET, CreateBucketConfiguration={"LocationConstraint": "ap-south-1"})
         yield client
 
 
@@ -151,3 +157,65 @@ def test_analyze_survives_a_crashing_sandbox_runner(tmp_path) -> None:
     assert result.record.status.value == "COMPLETE"
     assert result.record.sandbox_status == SandboxStatus.FAILED
     assert "fargate is down" in (result.report.sandbox.skip_reason or "")
+
+
+def test_presigned_links_use_the_regional_s3_hostname() -> None:
+    from pkgguard_analyzer.cloud.sandbox_runner import make_s3
+
+    url = make_s3("ap-south-1").generate_presigned_url("get_object", Params={"Bucket": "my-bucket", "Key": "sandbox-in/x.tgz"}, ExpiresIn=900)
+    assert url.startswith("https://my-bucket.s3.ap-south-1.amazonaws.com/sandbox-in/x.tgz?")  # the only S3 name the sandbox DNS allows
+    assert "X-Amz-Signature" in url
+
+
+def test_dependencies_are_staged_passed_privately_and_cleaned_up(s3) -> None:
+    import io
+    import tarfile
+
+    from pkgguard_analyzer.cloud.deps import DepsResult
+
+    seen: dict = {}
+
+    class RecordingEcs(FakeEcs):
+        def run_task(self, **kw):
+            seen["env"] = {e["name"]: e["value"] for e in kw["overrides"]["containerOverrides"][0]["environment"]}
+            return super().run_task(**kw)
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        data = b'{"name":"p","version":"1.0.0","dependencies":{"left-pad":"1.3.0"}}'
+        info = tarfile.TarInfo("package/package.json")
+        info.size = len(data)
+        tar.addfile(info, io.BytesIO(data))
+    manifests: list = []
+
+    def fetcher(manifest):
+        manifests.append(manifest)
+        return DepsResult(b"deps-bytes", 1, "one dependency was missing")
+
+    ecs = RecordingEcs(s3, "01-postinstall-env-exfil")
+    sandbox = make(s3, ecs)
+    sandbox.deps_fetcher = fetcher
+    report = sandbox.run(buf.getvalue(), "SCAN7", "pkg", "1.0.0")
+    assert manifests[0]["dependencies"] == {"left-pad": "1.3.0"}
+    assert "sandbox-in/SCAN7.deps.tgz" in seen["env"]["SBX_DEPS_URL"]
+    assert report.coverage.dependencies_note == "one dependency was missing"
+    assert not [k for k in keys(s3) if k.startswith("sandbox-in/")]  # staged tarball and dependencies both deleted
+
+
+def test_a_failing_dependency_fetcher_does_not_stop_the_sandbox(s3) -> None:
+    import io
+    import tarfile
+
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tar:
+        info = tarfile.TarInfo("package/package.json")
+        info.size = 2
+        tar.addfile(info, io.BytesIO(b"{}"))
+
+    def broken(_manifest):
+        raise RuntimeError("npm exploded")
+
+    sandbox = make(s3, FakeEcs(s3, "01-postinstall-env-exfil"))
+    sandbox.deps_fetcher = broken
+    report = sandbox.run(buf.getvalue(), "SCAN8", "pkg", "1.0.0")
+    assert report.status == SandboxStatus.COMPLETE and "dependency fetch failed" in (report.coverage.dependencies_note or "")

@@ -31,9 +31,10 @@ def expectations(fixture: Path) -> dict | None:
     if fixture.parent.name == "fixtures" and fixture.parent.parent.name == "eval":
         return EVAL_EXPECT.get(fixture.name)
     try:
-        return json.loads(meta.read_text())
+        data = json.loads(meta.read_text())
     except (OSError, ValueError):
         return None
+    return None if data.get("diagnostic") else data
 
 
 def check_report(expect: dict, report: SandboxReport) -> list[str]:
@@ -49,7 +50,7 @@ def check_report(expect: dict, report: SandboxReport) -> list[str]:
         if not m:
             problems.append("isolation probe printed no results")
         else:
-            problems += [f"isolation breach: {k}={v}" for k, v in json.loads(m.group(1)).items() if v != "blocked"]
+            problems += [f"isolation breach: {k}={v}" for k, v in json.loads(m.group(1)).items() if v != "blocked" and not k.startswith("info_")]
     return problems
 
 
@@ -81,11 +82,11 @@ def main() -> None:
     if remote:
         import boto3
 
-        from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox
+        from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, make_s3
         from pkgguard_analyzer.sandbox.remote import stack_config
 
         cfg = stack_config("pkgguard", "ap-south-1")
-        runner = FargateSandbox(cfg, boto3.client("ecs", region_name="ap-south-1"), boto3.client("s3", region_name="ap-south-1"))
+        runner = FargateSandbox(cfg, boto3.client("ecs", region_name="ap-south-1"), make_s3("ap-south-1"))
     fixtures = sorted(p for root in (REPO / "sandbox" / "fixtures", REPO / "eval" / "fixtures") for p in root.iterdir() if p.is_dir() and expectations(p) is not None)
     failed = 0
     with ThreadPoolExecutor(max_workers=2 if remote else 3) as pool:

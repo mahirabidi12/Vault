@@ -25,8 +25,14 @@ def scan_function_name() -> str:
     return cf.describe_stack_resource(StackName="pkgguard", LogicalResourceId="ScanFunction")["StackResourceDetail"]["PhysicalResourceId"]
 
 
+def _transient(summary: dict) -> bool:
+    """A network or throttling failure says nothing about the package: never save it as a result, so a rerun retries it."""
+    error = summary.get("error", "")
+    return bool(error) and error != "no result" and any(k in error for k in ("EndpointConnectionError", "ConnectionError", "Throttl", "TooManyRequests", "Timeout", "timed out", "ReadTimeout"))
+
+
 def invoke(fn: str, payload: dict) -> dict:
-    client = boto3.client("lambda", region_name=REGION, config=Config(read_timeout=900, retries={"max_attempts": 1}))
+    client = boto3.client("lambda", region_name=REGION, config=Config(read_timeout=300, connect_timeout=15, retries={"max_attempts": 1}))  # a scan takes ~90s; do not sit on a dead connection
     resp = client.invoke(FunctionName=fn, Payload=json.dumps(payload).encode())
     body = json.loads(resp["Payload"].read())
     if resp.get("FunctionError"):
@@ -50,7 +56,7 @@ def cmd_fetch(plan: list[dict], batch: int) -> None:
             print("  FAILED", r["name"], r.get("error"))
 
 
-def cmd_run(plan: list[dict], run_id: str, workers: int) -> None:
+def cmd_run(plan: list[dict], run_id: str, workers: int, store: bool = False) -> None:
     fn = scan_function_name()
     fetched = {r["dirName"]: r for r in json.loads((OUT / "fetched.json").read_text()) if r["ok"]}
     todo = [p for p in plan if p["dirName"] in fetched]
@@ -63,11 +69,12 @@ def cmd_run(plan: list[dict], run_id: str, workers: int) -> None:
             return json.loads(target.read_text())
         label = "compromised" if p["category"] == "compromised_lib" else "malicious"
         try:
-            out = invoke(fn, {"action": "analyze_sample", "run": run_id, "sample": {"name": p["name"], "version": p["version"], "label": label, "s3Key": sample_key(p["dirName"], p["version"])}})
+            out = invoke(fn, {"action": "analyze_sample", "run": run_id, "store": store, "sample": {"name": p["name"], "version": p["version"], "label": label, "s3Key": sample_key(p["dirName"], p["version"])}})
             summary = out["summary"]
         except Exception as error:
             summary = {"name": p["name"], "label": label, "error": f"{type(error).__name__}: {error}"[:300]}
-        target.write_text(json.dumps(summary))
+        if not _transient(summary):
+            target.write_text(json.dumps(summary))
         print(f"[{summary.get('verdict') or 'ERROR':10}] {p['name']:38} by={summary.get('decidedBy')} sandbox={summary.get('sandboxStatus')} {summary.get('error', '')}", flush=True)
         return summary
 
@@ -77,16 +84,47 @@ def cmd_run(plan: list[dict], run_id: str, workers: int) -> None:
     print(f"\n{len(summaries)} samples analysed")
 
 
+def cmd_run_packages(list_file: Path, run_id: str, workers: int, store: bool) -> None:
+    """Real npm packages (latest version, real threat intel), scanned by the Lambda like a live scan."""
+    from pkgguard_analyzer.sandbox.pilot import parse_list
+
+    fn = scan_function_name()
+    results_dir = OUT / run_id
+    results_dir.mkdir(parents=True, exist_ok=True)
+
+    def run(item: tuple[str, str]) -> dict:
+        name, label = item
+        target = results_dir / (name.replace("/", "__") + ".json")
+        if target.exists():
+            return json.loads(target.read_text())
+        try:
+            summary = invoke(fn, {"action": "analyze_package", "run": run_id, "store": store, "name": name, "label": label})["summary"]
+        except Exception as error:
+            summary = {"name": name, "label": label, "error": f"{type(error).__name__}: {error}"[:300]}
+        if not _transient(summary):
+            target.write_text(json.dumps(summary))
+        print(f"[{summary.get('verdict') or 'ERROR':10}] {name:32} by={summary.get('decidedBy')} sandbox={summary.get('sandboxStatus')} {summary.get('error', '')}", flush=True)
+        return summary
+
+    with ThreadPoolExecutor(workers) as pool:
+        summaries = list(pool.map(run, parse_list(list_file)))
+    (OUT / f"{run_id}-summary.json").write_text(json.dumps(summaries, indent=1))
+    print(f"\n{len(summaries)} packages analysed")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="pkgguard-sandbox-samples")
-    ap.add_argument("action", choices=["fetch", "run"])
+    ap.add_argument("action", choices=["fetch", "run", "run-packages"])
     ap.add_argument("plan", type=Path)
+    ap.add_argument("--store", action="store_true", help="also write each finished verdict + report into the live database")
     ap.add_argument("--run-id", default="pilot1")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--batch", type=int, default=10)
     args = ap.parse_args()
+    if args.action == "run-packages":
+        return cmd_run_packages(args.plan, args.run_id, args.workers, args.store)
     plan = json.loads(args.plan.read_text())
-    cmd_fetch(plan, args.batch) if args.action == "fetch" else cmd_run(plan, args.run_id, args.workers)
+    cmd_fetch(plan, args.batch) if args.action == "fetch" else cmd_run(plan, args.run_id, args.workers, args.store)
 
 
 if __name__ == "__main__":

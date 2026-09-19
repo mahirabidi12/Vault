@@ -1,0 +1,1 @@
+{"description": "diagnostic: what can package code see at the ECS metadata endpoint, and are AWS credentials reachable?", "diagnostic": true}

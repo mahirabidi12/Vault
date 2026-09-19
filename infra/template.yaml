@@ -112,7 +112,7 @@ Resources:
       LifecycleConfiguration:
         Rules:
           - { Id: expire-sandbox-inputs, Status: Enabled, Prefix: sandbox-in/, ExpirationInDays: 1 }
-          - { Id: expire-sandbox-traces, Status: Enabled, Prefix: sandbox-traces/, ExpirationInDays: 30 }
+          - { Id: expire-sandbox-traces, Status: Enabled, Prefix: sandbox-traces/, ExpirationInDays: 180 }
 
   ScanFunction:
     Type: AWS::Serverless::Function
@@ -150,7 +150,7 @@ Resources:
                 Resource: !Sub arn:${AWS::Partition}:ecs:${AWS::Region}:${AWS::AccountId}:task/${SandboxCluster}/*
               - Effect: Allow
                 Action: iam:PassRole
-                Resource: [!GetAtt SandboxTaskRole.Arn, !GetAtt SandboxExecutionRole.Arn]
+                Resource: [!GetAtt SandboxExecutionRole.Arn]
                 Condition:
                   StringEquals: { "iam:PassedToService": ecs-tasks.amazonaws.com }
           - !Ref AWS::NoValue
@@ -478,22 +478,6 @@ Resources:
       ManagedPolicyArns:
         - !Sub arn:${AWS::Partition}:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
 
-  SandboxTaskRole:
-    Type: AWS::IAM::Role
-    Condition: SandboxOn
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - { Effect: Allow, Principal: { Service: ecs-tasks.amazonaws.com }, Action: sts:AssumeRole }
-      Policies:
-        - PolicyName: sandbox-io
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - { Effect: Allow, Action: s3:GetObject, Resource: !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-in/*" }
-              - { Effect: Allow, Action: s3:PutObject, Resource: !Sub "arn:${AWS::Partition}:s3:::${ReportsBucket}/sandbox-traces/*" }
-
   SandboxTaskDefinition:
     Type: AWS::ECS::TaskDefinition
     Condition: SandboxOn
@@ -505,8 +489,8 @@ Resources:
       Memory: "1024"
       RuntimePlatform: { CpuArchitecture: ARM64, OperatingSystemFamily: LINUX }
       EphemeralStorage: { SizeInGiB: 21 }
+      # No TaskRoleArn on purpose: the sandbox gets one pre-signed S3 link in and one out, so there are no AWS credentials to steal.
       ExecutionRoleArn: !GetAtt SandboxExecutionRole.Arn
-      TaskRoleArn: !GetAtt SandboxTaskRole.Arn
       ContainerDefinitions:
         - Name: sandbox
           Image: !Sub ${SandboxRepository.RepositoryUri}:${SandboxImageTag}

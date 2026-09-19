@@ -38,7 +38,7 @@ Last updated: 2026-09-19. **Backend and website are deployed on AWS** (see "Live
 - **Published:** `pkgguard-cli@0.1.0` and `pkgguard-mcp@0.1.0` on npm.
 - **Budget alarms:** $5 and $10 monthly; spend so far about $0.10.
 - **Tests (2026-09-19):** analyzer 224, CLI 37, MCP 24 passing; eval 14/14 (+1 AI-dependent). `web` tests currently fail to start locally (rolldown native binding issue, fix by reinstalling `node_modules`).
-- **Sandbox:** deployed and verified on AWS 2026-09-19 (about $1/day). Next: deploy with `SandboxEnabled=true`, push the image, run the isolation probe on AWS, then real samples (see [`SANDBOX.md`](SANDBOX.md) §0).
+- **Sandbox final evaluation (2026-09-20): 84/100 malicious samples flagged (77 MALICIOUS), 184/198 clean packages SAFE (7% false alarms), 0 false sandbox proofs; all 300 stored in the live database. Details in [`SANDBOX.md`](SANDBOX.md) §0b.** Deployed to AWS 2026-09-19 (about $1/day while on). Previously: deploy with `SandboxEnabled=true`, push the image, run the isolation probe on AWS, then real samples (see [`SANDBOX.md`](SANDBOX.md) §0).
 
 ---
 

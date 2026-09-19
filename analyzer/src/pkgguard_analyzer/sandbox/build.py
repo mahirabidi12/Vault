@@ -309,6 +309,9 @@ def analyze_run(trace: dict) -> RunResult:
         entry_error=(loader.get("error") or "")[:200] or None,
         bins_run=sum(1 for p in phases_raw if p["name"].startswith("bin-")),
         timed_out=any(p.get("timedOut") for p in phases_raw),
+        dependencies_stripped=not trace.get("coverage", {}).get("depsProvided", False),
+        dependencies_provided=bool(trace.get("coverage", {}).get("depsProvided", False)),
+        dependencies_count=int(trace.get("coverage", {}).get("depsCount", 0) or 0),
     )  # fmt: skip
     pkg_name = trace.get("package", {}).get("name", "")
     res.entry_failed = res.coverage.entry_loaded is False and not (res.coverage.entry_error or "").startswith(f"Cannot find module '{pkg_name}'")

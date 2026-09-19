@@ -2,6 +2,9 @@
 # use it with different handler commands (set in infra/template.yaml).
 FROM public.ecr.aws/lambda/python:3.12
 
+# Node + npm: used only to DOWNLOAD a package's dependencies (npm install --ignore-scripts) for the sandbox.
+RUN dnf install -y nodejs20 nodejs20-npm && dnf clean all && rm -rf /var/cache/dnf
+
 COPY --from=ghcr.io/astral-sh/uv:0.9.10 /uv /bin/uv
 ENV UV_PYTHON=/var/lang/bin/python3.12 UV_NO_CACHE=1
 

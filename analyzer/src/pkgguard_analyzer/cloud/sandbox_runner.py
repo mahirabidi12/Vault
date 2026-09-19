@@ -5,11 +5,18 @@ and turns them into a SandboxReport. Anything that goes wrong becomes a FAILED/P
 fails the scan. Tasks are always stopped and the staged tarball deleted, even on errors."""
 
 import gzip
+import io
 import json
 import logging
+import os
+import tarfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
+
+import boto3
+from botocore.config import Config
 
 from pkgguard_analyzer.sandbox.build import build_report
 from pkgguard_analyzer.schema import SandboxReport, SandboxStatus
@@ -20,6 +27,13 @@ RUNS = ("baseline", "hostile")
 WAIT_SECONDS = 150
 POLL_SECONDS = 3
 CONTAINER = "sandbox"
+
+
+def make_s3(region: str | None = None) -> Any:
+    """S3 client that signs with SigV4 and always uses the regional hostname (bucket.s3.<region>.amazonaws.com).
+    The pre-signed links handed to the sandbox must use that name: it is the only S3 name its DNS Firewall allows."""
+    region = region or os.environ.get("AWS_REGION") or os.environ.get("AWS_DEFAULT_REGION") or "ap-south-1"
+    return boto3.client("s3", region_name=region, endpoint_url=f"https://s3.{region}.amazonaws.com", config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}))
 
 
 @dataclass
@@ -44,10 +58,19 @@ class SandboxConfig:
         )
 
 
+def _read_manifest(tarball: bytes) -> dict:
+    with tarfile.open(fileobj=io.BytesIO(tarball), mode="r:*") as tar:
+        names = [m for m in tar.getmembers() if m.isfile() and m.name.endswith("package.json")]
+        member = min(names, key=lambda m: m.name.count("/"))
+        data = json.loads(tar.extractfile(member).read().decode("utf-8", "replace"))
+    return data if isinstance(data, dict) else {}
+
+
 class FargateSandbox:
-    def __init__(self, config: SandboxConfig, ecs: Any, s3: Any, *, sleep=time.sleep, clock=time.monotonic) -> None:
+    def __init__(self, config: SandboxConfig, ecs: Any, s3: Any, *, sleep=time.sleep, clock=time.monotonic, deps_fetcher: Callable[[dict], Any] | None = None) -> None:
         self.config, self.ecs, self.s3 = config, ecs, s3
         self._sleep, self._clock = sleep, clock
+        self.deps_fetcher = deps_fetcher  # fetches the package's dependencies outside the sandbox (see cloud/deps.py)
 
     def runner_for(self, scan_id: str, name: str, version: str):
         return lambda tarball: self.run(tarball, scan_id, name, version)
@@ -57,13 +80,25 @@ class FargateSandbox:
 
     def run(self, tarball: bytes, scan_id: str, name: str, version: str) -> SandboxReport:
         key_in, prefix = self._keys(scan_id, name, version)
+        deps_key = f"sandbox-in/{scan_id}.deps.tgz"
         cfg = self.config
         task_arns: dict[str, str] = {}
+        deps_note: str | None = None
+        deps_sent = False
         try:
             self.s3.put_object(Bucket=cfg.bucket, Key=key_in, Body=tarball, ContentType="application/gzip")
+            if self.deps_fetcher is not None:
+                try:
+                    result = self.deps_fetcher(_read_manifest(tarball))
+                    deps_note = result.note or None
+                    if result.tarball:
+                        self.s3.put_object(Bucket=cfg.bucket, Key=deps_key, Body=result.tarball, ContentType="application/gzip")
+                        deps_sent = True
+                except Exception as error:  # the sandbox still runs without dependencies
+                    deps_note = f"dependency fetch failed: {type(error).__name__}"
             problems: list[str] = []
             for run in RUNS:
-                arn, why = self._start(run, f"s3://{cfg.bucket}/{key_in}", f"s3://{cfg.bucket}/{prefix}/{run}.json.gz")
+                arn, why = self._start(run, key_in, f"{prefix}/{run}.json.gz", deps_key if deps_sent else None)
                 if arn:
                     task_arns[run] = arn
                 else:
@@ -75,6 +110,8 @@ class FargateSandbox:
             if not traces:
                 return SandboxReport(version=SANDBOX_VERSION, status=SandboxStatus.FAILED, skip_reason=("; ".join(problems) or "sandbox produced no trace")[:300])
             report = build_report(traces, raw_trace_key=prefix + "/", version=SANDBOX_VERSION)
+            if deps_note:
+                report = report.model_copy(update={"coverage": report.coverage.model_copy(update={"dependencies_note": deps_note})})
             if problems or len(traces) < len(RUNS):
                 report = report.model_copy(update={"status": SandboxStatus.PARTIAL})
             return report
@@ -82,10 +119,21 @@ class FargateSandbox:
             log.exception("sandbox run failed for %s@%s", name, version)
             return SandboxReport(version=SANDBOX_VERSION, status=SandboxStatus.FAILED, skip_reason=f"{type(error).__name__}: {error}"[:300])
         finally:
-            self._cleanup(task_arns, key_in)
+            self._cleanup(task_arns, key_in, deps_key)
 
-    def _start(self, run: str, source: str, target: str) -> tuple[str | None, str]:
+    def _presign(self, key: str, method: str) -> str:
+        params = {"Bucket": self.config.bucket, "Key": key}
+        if method == "put_object":
+            params["ContentType"] = "application/gzip"
+        return self.s3.generate_presigned_url(method, Params=params, ExpiresIn=900)
+
+    def _start(self, run: str, source_key: str, target_key: str, deps_key: str | None = None) -> tuple[str | None, str]:
         cfg = self.config
+        environment = [{"name": "SBX_INPUT_URL", "value": self._presign(source_key, "get_object")}, {"name": "SBX_OUTPUT_URL", "value": self._presign(target_key, "put_object")}]
+        if deps_key:
+            candidate = [*environment, {"name": "SBX_DEPS_URL", "value": self._presign(deps_key, "get_object")}]
+            if len(json.dumps(candidate)) < 6500:  # ECS limits the size of run-task overrides
+                environment = candidate
         for attempt in range(3):
             resp = self.ecs.run_task(
                 cluster=cfg.cluster,
@@ -93,7 +141,7 @@ class FargateSandbox:
                 launchType="FARGATE",
                 count=1,
                 networkConfiguration={"awsvpcConfiguration": {"subnets": cfg.subnets, "securityGroups": cfg.security_groups, "assignPublicIp": "DISABLED"}},
-                overrides={"containerOverrides": [{"name": CONTAINER, "command": ["--input", source, "--output", target, "--run", run]}]},
+                overrides={"containerOverrides": [{"name": CONTAINER, "command": ["--input", "env", "--output", "env", "--run", run], "environment": environment}]},
             )
             if resp.get("tasks"):
                 return resp["tasks"][0]["taskArn"], ""
@@ -138,13 +186,16 @@ class FargateSandbox:
                         self._sleep(2 * (attempt + 1))
         return traces
 
-    def _cleanup(self, task_arns: dict[str, str], key_in: str) -> None:
+    def _cleanup(self, task_arns: dict[str, str], key_in: str, deps_key: str | None = None) -> None:
         for arn in task_arns.values():
             try:
                 self.ecs.stop_task(cluster=self.config.cluster, task=arn, reason="pkgguard sandbox cleanup")
             except Exception:
                 pass
-        try:
-            self.s3.delete_object(Bucket=self.config.bucket, Key=key_in)
-        except Exception:
-            pass
+        for key in (key_in, deps_key):
+            if not key:
+                continue
+            try:
+                self.s3.delete_object(Bucket=self.config.bucket, Key=key)
+            except Exception:
+                pass

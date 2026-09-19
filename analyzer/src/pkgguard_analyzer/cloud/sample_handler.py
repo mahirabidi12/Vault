@@ -97,9 +97,36 @@ def _mock_registry(name: str, version: str, manifest: dict, tarball: bytes) -> h
     return httpx.Client(transport=_mock_transport(packument, tarball, url))
 
 
-def analyze_sample(event: dict, services: Any, work_root: Path) -> dict:
+def _finish(event: dict, services: Any, result: Any, label: str, *, evaluation_sample: bool) -> dict:
+    """Save the full result under pilot/<run>/, optionally into the live verdict table, and return a short summary."""
+    from pkgguard_analyzer.cloud.scan_handler import report_key
     from pkgguard_analyzer.sandbox.pilot import summarize
 
+    record, report = result.record, result.report
+    if report is not None and evaluation_sample:
+        note = {"evaluationSample": True, "intelLookup": "disabled for this evaluation, to measure our own layers"}
+        report = report.model_copy(update={"metadata": {**report.metadata, **note}})
+        record = record.model_copy(update={"published_at": None, "tarball_url": None})  # the registry data was synthetic
+    summary = summarize(record.package.name, label, record, report, 0.0)
+    name = record.package.name
+    key = f"pilot/{event.get('run', 'run')}/{name.replace('/', '__')}.json"
+    services.s3.put_object(
+        Bucket=services.bucket, Key=key, ContentType="application/json",
+        Body=json.dumps({"summary": summary, "record": record.model_dump(mode="json", by_alias=True), "report": report.model_dump(mode="json", by_alias=True) if report else None}).encode(),
+    )  # fmt: skip
+    stored = False
+    if event.get("store") and report is not None and record.status.value == "COMPLETE":
+        # The final evaluation run: the verdict and full report go where the website and API read them.
+        rkey = report_key(name, record.package.version, report.analyzer_version)
+        services.s3.put_object(Bucket=services.bucket, Key=rkey, Body=report.model_dump_json(by_alias=True).encode(), ContentType="application/json")
+        record = record.model_copy(update={"report_s3_key": rkey})
+        services.store.put_seeded(record)
+        services.store.record_completed(record)
+        stored = True
+    return {"summary": summary, "resultKey": key, "stored": stored}
+
+
+def analyze_sample(event: dict, services: Any, work_root: Path) -> dict:
     sample = event["sample"]
     name, version, label = sample["name"], sample["version"], sample.get("label", "malicious")
     body = services.s3.get_object(Bucket=services.bucket, Key=sample["s3Key"])["Body"].read()
@@ -115,10 +142,15 @@ def analyze_sample(event: dict, services: Any, work_root: Path) -> dict:
         )  # fmt: skip
     finally:
         client.close()
-    summary = summarize(name, label, result.record, result.report, 0.0)
-    key = f"pilot/{event.get('run', 'run')}/{name.replace('/', '__')}.json"
-    services.s3.put_object(
-        Bucket=services.bucket, Key=key, ContentType="application/json",
-        Body=json.dumps({"summary": summary, "record": result.record.model_dump(mode="json", by_alias=True), "report": result.report.model_dump(mode="json", by_alias=True) if result.report else None}).encode(),
+    return _finish(event, services, result, label, evaluation_sample=True)
+
+
+def analyze_package(event: dict, services: Any, work_root: Path) -> dict:
+    """Scan one real npm package (latest version, real threat intel) exactly like a live scan, without the API quota."""
+    name, label = event["name"], event.get("label", "clean")
+    scan_id = f"pkg-{event.get('run', 'run')}-{name.replace('/', '_').replace('@', '')}"[:100]
+    result = analyze(
+        name, event.get("version"), out_dir=work_root / scan_id, ran_on=RanOn.CLOUD, client=services.http, reviewer=services.reviewer, ai_mode=services.ai_mode,
+        scan_id=scan_id, sandbox_runner=services.sandbox.runner_for(scan_id, name, event.get("version") or "latest") if services.sandbox else None,
     )  # fmt: skip
-    return {"summary": summary, "resultKey": key}
+    return _finish(event, services, result, label, evaluation_sample=False)

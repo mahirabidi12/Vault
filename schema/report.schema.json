@@ -1107,6 +1107,28 @@
           "default": true,
           "title": "Dependenciesstripped",
           "type": "boolean"
+        },
+        "dependenciesProvided": {
+          "default": false,
+          "title": "Dependenciesprovided",
+          "type": "boolean"
+        },
+        "dependenciesCount": {
+          "default": 0,
+          "title": "Dependenciescount",
+          "type": "integer"
+        },
+        "dependenciesNote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dependenciesnote"
         }
       },
       "title": "SandboxCoverage",

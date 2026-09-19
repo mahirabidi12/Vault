@@ -53,7 +53,7 @@ def main() -> None:
     from pkgguard_analyzer.ai.config import AIConfig
     from pkgguard_analyzer.ai.reviewer import make_reviewer
     from pkgguard_analyzer.analyze import analyze
-    from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox
+    from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, make_s3
     from pkgguard_analyzer.sandbox.remote import stack_config
     from pkgguard_analyzer.schema import RanOn
 
@@ -69,7 +69,7 @@ def main() -> None:
     if not args.no_ai and cfg.problem():
         sys.exit(f"AI unavailable: {cfg.problem()}")
     reviewer = None if args.no_ai else make_reviewer(cfg)
-    box = FargateSandbox(stack_config("pkgguard", "ap-south-1"), boto3.client("ecs", region_name="ap-south-1"), boto3.client("s3", region_name="ap-south-1"))
+    box = FargateSandbox(stack_config("pkgguard", "ap-south-1"), boto3.client("ecs", region_name="ap-south-1"), make_s3("ap-south-1"))
     args.out.mkdir(parents=True, exist_ok=True)
     results_dir = args.out / "results"
     results_dir.mkdir(exist_ok=True)

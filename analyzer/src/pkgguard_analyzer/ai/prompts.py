@@ -100,7 +100,8 @@ def _sandbox_section(report: Report) -> list[str]:
         "What it did is ground truth about behavior; judge whether it is legitimate for this package's purpose.",
         f"- Coverage: installed={cov.installed}, install scripts ran={cov.install_scripts_ran}, entry file loaded={cov.entry_loaded}"
         + (f" (error: {cov.entry_error})" if cov.entry_error else "")
-        + f", bins run={cov.bins_run}, timed out={cov.timed_out}. Dependencies were not installed.",
+        + f", bins run={cov.bins_run}, timed out={cov.timed_out}. "
+        + (f"Its registry dependencies ({cov.dependencies_count}) were provided." + (f" Note: {cov.dependencies_note}." if cov.dependencies_note else "") if cov.dependencies_provided else "Its dependencies were not installed, so code that needs them may fail to load."),
     ]
     for hit in box.canary_hits[:5]:
         parts.append(f"- PROOF: planted fake credential '{hit.canary_id}' was sent out via {hit.sink}")

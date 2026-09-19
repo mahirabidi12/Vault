@@ -15,7 +15,7 @@ from pathlib import Path
 
 import boto3
 
-from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig
+from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig, make_s3
 from pkgguard_analyzer.sandbox.local_runner import UnsafeInput, ensure_harmless, pack_fixture
 from pkgguard_analyzer.schema import Severity
 
@@ -51,7 +51,7 @@ def main() -> None:
         sys.exit(f"refused: {exc}")
     config = stack_config(args.stack, args.region)
     config.wait_seconds = args.wait
-    s3 = boto3.client("s3", region_name=args.region)
+    s3 = make_s3(args.region)
     scan_id = f"remote-{args.name}".replace("/", "_")[:60]
     report = FargateSandbox(config, boto3.client("ecs", region_name=args.region), s3).run(tarball, scan_id, args.name, "0.0.0")
     print(f"status={report.status} duration={report.duration_seconds}s coverage={report.coverage.model_dump(by_alias=True)}")
@@ -68,7 +68,7 @@ def main() -> None:
             print("no probe output found")
             sys.exit(1)
         results = json.loads(m.group(1))
-        breaches = {k: v for k, v in results.items() if v != "blocked"}
+        breaches = {k: v for k, v in results.items() if v != "blocked" and not k.startswith("info_")}
         print(f"isolation probe: {len(results)} checks, {'ALL BLOCKED' if not breaches else 'BREACHES: ' + str(breaches)}")
         sys.exit(1 if breaches else 0)
 

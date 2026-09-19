@@ -38,6 +38,9 @@
 - **Fargate does not look like Docker** (no `/.dockerenv`, no docker cgroup), so malware that only checks for Docker keeps running and gets caught (fixture s07).
 - **Smoke test on regular packages (2026-09-19):** `nanoid`, `ms` (through the live API, so the real Lambda -> Fargate path) and `esbuild`, `husky`, `sharp` (laptop reads the package text, sandbox runs on AWS) all came out SAFE with no false alarm. Timing: about 47 to 59 s of sandbox wall clock (mostly Fargate startup; the package itself runs in 2 to 3 s), 57 to 97 s per package in total including the AI. Two rule fixes came out of it: a child `npm` reading `~/.npmrc` (esbuild's installer) is not credential theft, and an entry file that fails to load because a stripped dependency is missing (sharp needs `detect-libc`) makes the report PARTIAL with a `coverage_gap` finding. **These two fixes are in the analyzer code but the deployed scan Lambda still runs the old rules until the next `sam build && sam deploy`.**
 - **Known limit: dependencies are stripped**, so packages whose real work sits in optional platform binaries (esbuild, sharp, swc) are only partly observed. Reported honestly as PARTIAL, never as a clean pass.
+- **The sandbox task has NO IAM role (changed 2026-09-19 after the pre-malware isolation re-check).** Fargate's task-metadata address (169.254.170.2) is reachable from inside every task and cannot be blocked, and it reveals the cluster and task ARN; the credentials endpoint needs a secret id the package cannot see. To leave nothing to steal, the task role was removed: the launcher hands each task two short-lived pre-signed S3 links (one GET for its input, one PUT for its trace, 15 minutes, one object each) through the container environment, which the package cannot read, instead of on the command line. `/proc/1/cmdline` now only shows `--input env --output env`. The links must use the regional hostname `bucket.s3.<region>.amazonaws.com` (`make_s3()`), the only S3 name the DNS Firewall allows.
+- **The isolation probe now checks credentials, not just reachability:** `ecs_credentials_obtainable`, `aws_credential_env_visible`, and that the supervisor's command line does not reveal S3 names. Reaching the metadata endpoint itself is reported as informational (`info_*`). 22 checks, all blocked. `s14-metadata-probe` is a diagnostic fixture for what package code can see there.
+- **Remaining known exposure, accepted:** package code can read the task metadata (cluster name, task ARN, account id). The pre-signed links appear in the RunTask overrides (visible in ECS `DescribeTasks` and CloudTrail for the account owner) until they expire after 15 minutes.
 - **Sinkhole details:** every DNS name gets its own `127.x.y.z` address so a later `connect()` maps back to the name; raw-IP connects fail but are still recorded from strace.
 
 **Commands**
@@ -59,6 +62,31 @@ uv run pkgguard-sandbox-eval --remote                             # all fixtures
 3. `uv run pkgguard-sandbox-remote --fixture ../sandbox/fixtures/s13-isolation-probe --show-probe` must print `ALL BLOCKED`. Also confirm from the task logs that a direct query to the VPC resolver returns nothing (DNS Firewall).
 4. Run the other fixtures remotely, then real samples.
 5. Disable with `SandboxEnabled=false` to stop the endpoint charges.
+
+---
+
+## 0b. Final evaluation results (2026-09-19/20)
+
+Run on AWS only, threat-intel lookups disabled (to measure our own layers), results stored in the live database (357 packages) and S3 (`pilot/final-*`). Sets: 100 malicious samples drawn at random (seed 20260920) from Datadog's public dataset (80 published with malicious intent + 20 compromised legitimate packages; none used in the earlier tuning pilot) and 200 clean packages (170 drawn at random from ~5,700 popular-search results + 30 legitimate-but-tricky native/binary-installer packages; 2 skipped as over the 50 MB limit). Summaries: `eval/final/results-summary.json`. Rules were **not** tuned on this data.
+
+| | Result |
+|---|---|
+| Malicious samples flagged (SUSPICIOUS or MALICIOUS) | **84 / 100** (77 MALICIOUS, 7 SUSPICIOUS) |
+| ...of those with real code (more than 3 files) | 45 / 53 flagged (85%), 40 called MALICIOUS |
+| ...malicious-intent packages / compromised legitimate packages | 68 / 80 and 16 / 20 |
+| Clean packages that came out SAFE | **184 / 198 (93%)**: false alarms 14 (13 SUSPICIOUS, 1 MALICIOUS) |
+| ...the 30 tricky legitimate packages | 28 / 30 SAFE |
+| Verdicts decided by proof from running the package (planted fake credential left the box, reverse shell) | 10 on the malicious set, **0 on the clean set** (no false proofs) |
+| Sandbox loaded the package entry file | 172 / 298 (58%); status COMPLETE 190, PARTIAL 108 |
+| Deciding layer on the malicious set | AI 88, sandbox 10, static rules 2 |
+| AI review cost (Claude Haiku 4.5, list price) | about $12.7 for 298 packages (about $0.04 each), real money (billed by Anthropic via Marketplace, not covered by credits) |
+
+What we learned:
+- **Empty placeholder samples cannot be caught by any tool that reads or runs code**; several dataset "malicious" entries contain only a package.json.
+- **Real misses on packages with code** include the Shai-Hulud-style pattern (an install script that downloads and runs the Bun runtime, `@uipath/data-fabric-tool`) and an obfuscated `router_init.js` the AI dismissed (`@tanstack/router-cli`). The AI is also not perfectly consistent between runs (MALICIOUS vs SUSPICIOUS flips).
+- **False alarms:** 11 of the 14 are static-rule findings (`exfiltration`, `decode_and_run`, `manifest_mismatch`) that the AI cleared, but a scoring rule forbids the AI from clearing a HIGH static finding. One is the AI wrongly calling `@typescript/typescript6` (the TypeScript team's own package, published by `typescript-deploys`) MALICIOUS. Computed offline on the stored results (not re-run, so not validated): letting a clean AI verdict clear those static findings would cut false alarms from 14 to about 3 and lose about 2 detections. Needs validation on new data before adopting.
+- **Sandbox noise on clean packages** (none changed a verdict): `sandbox_detection` 13 (legit libraries reading container files), `suspicious_process` 10 (installers that download prebuilt binaries), `decoy_read` 8, `eval_payload` 6.
+- Dependencies are now fetched outside the sandbox (registry only, `npm install --ignore-scripts`) and made available above the package, which raised entry-file loading from 44% to 58%; git/URL dependencies (a known worm delivery route) are deliberately not fetched.
 
 ---
 

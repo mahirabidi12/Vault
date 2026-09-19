@@ -15,7 +15,8 @@ from botocore.exceptions import ClientError
 from pkgguard_analyzer.ai.config import AIConfig, AIMode, Provider
 from pkgguard_analyzer.ai.reviewer import Reviewer, make_reviewer
 from pkgguard_analyzer.analyze import analyze
-from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig
+from pkgguard_analyzer.cloud.deps import fetch_dependencies
+from pkgguard_analyzer.cloud.sandbox_runner import FargateSandbox, SandboxConfig, make_s3
 from pkgguard_analyzer.cloud.store import VerdictStore
 from pkgguard_analyzer.schema import RanOn
 
@@ -59,12 +60,12 @@ def load_ai(secrets_client: Any = None) -> tuple[Reviewer | None, AIMode]:
 @cache
 def default_services() -> ScanServices:
     reviewer, ai_mode = load_ai()
-    s3 = boto3.client("s3")
+    s3 = make_s3()
     sandbox_config = SandboxConfig.from_env(dict(os.environ))
     return ScanServices(
         store=VerdictStore(boto3.resource("dynamodb"), os.environ["TABLE_NAME"]),
         s3=s3,
-        sandbox=FargateSandbox(sandbox_config, boto3.client("ecs"), s3) if sandbox_config else None,
+        sandbox=FargateSandbox(sandbox_config, boto3.client("ecs"), s3, deps_fetcher=fetch_dependencies) if sandbox_config else None,
         bucket=os.environ["BUCKET_NAME"],
         reviewer=reviewer,
         ai_mode=ai_mode,
@@ -77,6 +78,13 @@ def handler(event: dict, context: object, services: ScanServices | None = None) 
         from pkgguard_analyzer.cloud.sample_handler import fetch_samples
 
         return fetch_samples(event, services.s3, services.bucket)
+    if event.get("action") == "analyze_package":
+        from pkgguard_analyzer.cloud.sample_handler import analyze_package
+
+        try:
+            return analyze_package(event, services, WORK_ROOT)
+        finally:
+            shutil.rmtree(WORK_ROOT, ignore_errors=True)
     if event.get("action") == "analyze_sample":
         from pkgguard_analyzer.cloud.sample_handler import analyze_sample
 

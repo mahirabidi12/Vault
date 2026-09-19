@@ -80,3 +80,29 @@ def test_analyze_sample_saves_the_result_and_returns_only_a_summary(s3, tmp_path
     assert out["resultKey"] == "pilot/t1/demo-sample.json"
     saved = json.loads(s3.get_object(Bucket=BUCKET, Key=out["resultKey"])["Body"].read())
     assert saved["record"]["package"]["name"] == "demo-sample" and saved["report"]["findings"]
+
+
+def test_store_writes_the_verdict_and_report_where_the_website_reads_them(tmp_path) -> None:
+    from moto import mock_aws as mock
+
+    from cloud_helpers import BUCKET as CLOUD_BUCKET
+    from cloud_helpers import make_fake_cloud
+
+    with mock():
+        cloud = make_fake_cloud()
+        tarball, _ = repack(make_zip({"d/package.json": json.dumps({"name": "stored-sample", "version": "2.0.0", "scripts": {"postinstall": "node p.js"}}), "d/p.js": "require('https').get('https://x.example.invalid/')"}))
+        cloud.s3.put_object(Bucket=CLOUD_BUCKET, Key=sample_key("stored-sample", "2.0.0"), Body=tarball)
+        services = ScanServices(store=cloud.store, s3=cloud.s3, bucket=CLOUD_BUCKET)
+        event = {"run": "final", "store": True, "sample": {"name": "stored-sample", "version": "2.0.0", "label": "malicious", "s3Key": sample_key("stored-sample", "2.0.0")}}
+        out = analyze_sample(event, services, tmp_path)
+        assert out["stored"] is True
+        record = cloud.store.get("stored-sample", "2.0.0")
+        assert record and record.status.value == "COMPLETE" and record.report_s3_key == "reports/npm/stored-sample/2.0.0/0.1.0.json"
+        assert record.published_at is None and record.tarball_url is None  # the registry data was synthetic
+        report = json.loads(cloud.s3.get_object(Bucket=CLOUD_BUCKET, Key=record.report_s3_key)["Body"].read())
+        assert report["metadata"]["evaluationSample"] is True and "disabled" in report["metadata"]["intelLookup"]
+        assert cloud.store.stats()["scansCompleted"] == 1
+
+        # without the flag nothing touches the live table
+        out2 = analyze_sample({**event, "store": False, "sample": {**event["sample"], "name": "stored-sample", "version": "2.0.0"}}, services, tmp_path)
+        assert out2["stored"] is False and cloud.store.stats()["scansCompleted"] == 1

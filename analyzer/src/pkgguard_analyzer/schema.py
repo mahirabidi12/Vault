@@ -434,6 +434,9 @@ class SandboxCoverage(Model):
     bins_run: int = 0
     timed_out: bool = False
     dependencies_stripped: bool = True
+    dependencies_provided: bool = False  # the package's registry dependencies were fetched outside the sandbox and made available
+    dependencies_count: int = 0
+    dependencies_note: str | None = None
 
 
 class SandboxNetworkEvent(Model):
