@@ -28,3 +28,15 @@ tmp/
 .DS_Store
 .vscode/
 .idea/
+
+# Internal working notes (kept locally for the AI agents, not part of the public repo)
+/CLAUDE.md
+/PROGRESS.md
+/SANDBOX.md
+/FUTURE_SCOPE.md
+/eval/final/PACKAGES.md
+/web/AGENTS.md
+/web/BRIEF.md
+/web/CLAUDE.md
+/web/PROGRESS.md
+/pkgguard-test/

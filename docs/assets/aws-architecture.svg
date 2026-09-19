@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="860" viewBox="0 0 1240 860" role="img" aria-label="PkgGuard AWS architecture">
+<rect width="1240" height="860" rx="16" fill="#0d1117" stroke="#30363d"/>
+<text x="30" y="46" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="22" font-weight="700">PkgGuard on AWS</text>
+<text x="30" y="68" fill="#7d8590" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13">Region ap-south-1 · one SAM stack · the sandbox lives in a VPC with no way to the internet</text>
+<rect x="360" y="590" width="640" height="200" rx="14" fill="#ef4444" fill-opacity="0.05" stroke="#ef4444" stroke-dasharray="7 6"/>
+<text x="378" y="780" fill="#ef4444" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="12" font-weight="700">SANDBOX VPC · no internet gateway · no NAT · no credentials inside</text>
+<path d="M200 138 L235 138 L235 195 L270 195" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M200 218 L235 218 L270 208" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M200 298 L235 298 L235 240 L270 240" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M440 208 L510 208" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M700 190 L745 190 L745 128 L790 128" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M605 246 L595 400" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M680 438 L790 438" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M980 415 L1010 415 L1010 325 L1040 325" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M980 435 L1040 391" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M980 465 L1010 465 L1010 465 L1040 465" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M885 390 L885 316" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M790 410 L760 410 L760 150 L790 150" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M885 486 L885 560 L515 560 L515 640" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M515 724 L515 758 L895 758 L895 724" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M895 640 L895 590 L1000 590 L1000 280 L980 278" fill="none" stroke="#30363d" stroke-width="2"/>
+<path d="M300 682 L420 682" fill="none" stroke="#30363d" stroke-width="2" stroke-dasharray="5 5"/>
+<rect x="30" y="110" width="170" height="56" rx="10" fill="#161b22" stroke="#22c55e" stroke-width="1.6"/>
+<rect x="30" y="110" width="6" height="56" rx="3" fill="#22c55e"/>
+<text x="48" y="135.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">CLI</text>
+<text x="48" y="154.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">npx pkgguard-cli</text>
+<rect x="30" y="190" width="170" height="56" rx="10" fill="#161b22" stroke="#22c55e" stroke-width="1.6"/>
+<rect x="30" y="190" width="6" height="56" rx="3" fill="#22c55e"/>
+<text x="48" y="215.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">MCP tool</text>
+<text x="48" y="234.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">your AI agent</text>
+<rect x="30" y="270" width="170" height="56" rx="10" fill="#161b22" stroke="#22c55e" stroke-width="1.6"/>
+<rect x="30" y="270" width="6" height="56" rx="3" fill="#22c55e"/>
+<text x="48" y="295.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Website</text>
+<text x="48" y="314.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">AWS Amplify</text>
+<rect x="270" y="170" width="170" height="76" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="270" y="170" width="6" height="76" rx="3" fill="#ff9900"/>
+<text x="288" y="205.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">API Gateway</text>
+<text x="288" y="224.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">HTTP API · /v1/*</text>
+<rect x="510" y="170" width="190" height="76" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="510" y="170" width="6" height="76" rx="3" fill="#ff9900"/>
+<text x="528" y="205.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Lambda: API</text>
+<text x="528" y="224.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">lookup · batch · report</text>
+<rect x="790" y="90" width="190" height="76" rx="10" fill="#161b22" stroke="#3b82f6" stroke-width="1.6"/>
+<rect x="790" y="90" width="6" height="76" rx="3" fill="#3b82f6"/>
+<text x="808" y="125.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">DynamoDB</text>
+<text x="808" y="144.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">verdict cache · counters</text>
+<rect x="790" y="240" width="190" height="76" rx="10" fill="#161b22" stroke="#3b82f6" stroke-width="1.6"/>
+<rect x="790" y="240" width="6" height="76" rx="3" fill="#3b82f6"/>
+<text x="808" y="275.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">S3</text>
+<text x="808" y="294.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">reports · sandbox traces</text>
+<rect x="510" y="400" width="170" height="76" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="510" y="400" width="6" height="76" rx="3" fill="#ff9900"/>
+<text x="528" y="435.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Step Functions</text>
+<text x="528" y="454.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">one run per scan</text>
+<rect x="790" y="390" width="190" height="96" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="790" y="390" width="6" height="96" rx="3" fill="#ff9900"/>
+<text x="808" y="435.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Lambda: Scan</text>
+<text x="808" y="454.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">intel · static · model</text>
+<rect x="1040" y="300" width="170" height="50" rx="10" fill="#161b22" stroke="#64748b" stroke-width="1.6"/>
+<rect x="1040" y="300" width="6" height="50" rx="3" fill="#64748b"/>
+<text x="1058" y="322.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">npm registry</text>
+<text x="1058" y="341.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">the package</text>
+<rect x="1040" y="366" width="170" height="50" rx="10" fill="#161b22" stroke="#64748b" stroke-width="1.6"/>
+<rect x="1040" y="366" width="6" height="50" rx="3" fill="#64748b"/>
+<text x="1058" y="388.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">OSV · SafeDep</text>
+<text x="1058" y="407.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">threat intel</text>
+<rect x="1040" y="432" width="170" height="66" rx="10" fill="#161b22" stroke="#a855f7" stroke-width="1.6"/>
+<rect x="1040" y="432" width="6" height="66" rx="3" fill="#a855f7"/>
+<text x="1058" y="462.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Amazon Bedrock</text>
+<text x="1058" y="481.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">a language model</text>
+<rect x="420" y="640" width="190" height="84" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="420" y="640" width="6" height="84" rx="3" fill="#ff9900"/>
+<text x="438" y="679.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">ECS Fargate</text>
+<text x="438" y="698.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">the sandbox task</text>
+<rect x="640" y="640" width="150" height="84" rx="10" fill="#161b22" stroke="#ef4444" stroke-width="1.6"/>
+<rect x="640" y="640" width="6" height="84" rx="3" fill="#ef4444"/>
+<text x="658" y="679.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">Route 53</text>
+<text x="658" y="698.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">DNS Firewall</text>
+<rect x="820" y="640" width="150" height="84" rx="10" fill="#161b22" stroke="#ef4444" stroke-width="1.6"/>
+<rect x="820" y="640" width="6" height="84" rx="3" fill="#ef4444"/>
+<text x="838" y="679.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">VPC endpoints</text>
+<text x="838" y="698.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">S3 · ECR · Logs</text>
+<rect x="110" y="640" width="190" height="84" rx="10" fill="#161b22" stroke="#ff9900" stroke-width="1.6"/>
+<rect x="110" y="640" width="6" height="84" rx="3" fill="#ff9900"/>
+<text x="128" y="679.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">ECR</text>
+<text x="128" y="698.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">Lambda + sandbox images</text>
+<rect x="1040" y="620" width="170" height="56" rx="10" fill="#161b22" stroke="#94a3b8" stroke-width="1.6"/>
+<rect x="1040" y="620" width="6" height="56" rx="3" fill="#94a3b8"/>
+<text x="1058" y="645.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">CloudWatch</text>
+<text x="1058" y="664.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">logs</text>
+<rect x="1040" y="696" width="170" height="56" rx="10" fill="#161b22" stroke="#94a3b8" stroke-width="1.6"/>
+<rect x="1040" y="696" width="6" height="56" rx="3" fill="#94a3b8"/>
+<text x="1058" y="721.0" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700">AWS Budgets</text>
+<text x="1058" y="740.0" fill="#7d8590" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="11">email cost alarm</text>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.0187;0.0625;1" path="M200 138 L235 138 L235 195 L270 195"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0187;0.0625;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.0312;0.0750;1" path="M200 218 L235 218 L270 208"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0312;0.0750;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.0437;0.0875;1" path="M200 298 L235 298 L235 240 L270 240"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0437;0.0875;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.0875;0.1312;1" path="M440 208 L510 208"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0875;0.1312;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#3b82f6" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.1313;0.1938;1" path="M700 190 L745 190 L745 128 L790 128"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.1313;0.1938;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.2125;0.2750;1" path="M790 128 L745 128 L745 190 L700 190"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2125;0.2750;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.2687;0.3062;1" path="M510 208 L440 208"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2687;0.3062;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#22c55e" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.3000;0.3375;1" path="M270 208 L235 218 L200 218"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3000;0.3375;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#ff9900" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.3500;0.4375;1" path="M605 246 L595 400"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3500;0.4375;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#ff9900" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.4375;0.4938;1" path="M680 438 L790 438"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4375;0.4938;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#94a3b8" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.4750;0.5375;1" path="M980 415 L1010 415 L1010 325 L1040 325"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4750;0.5375;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#94a3b8" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.4875;0.5500;1" path="M980 435 L1040 391"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4875;0.5500;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#a855f7" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.5000;0.5625;1" path="M980 465 L1010 465 L1010 465 L1040 465"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5000;0.5625;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#ef4444" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.5625;0.6687;1" path="M885 486 L885 560 L515 560 L515 640"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5625;0.6687;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#ff9900" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.5625;0.6250;1" path="M300 682 L420 682"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5625;0.6250;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#ef4444" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.6750;0.7688;1" path="M515 724 L515 758 L895 758 L895 724"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.6750;0.7688;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#3b82f6" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.7500;0.8063;1" path="M895 640 L895 590 L1000 590 L1000 280 L980 278"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7500;0.8063;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#3b82f6" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.7937;0.8438;1" path="M885 390 L885 316"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7937;0.8438;1" values="0;1;0;0"/></circle>
+<circle r="6" fill="#3b82f6" opacity="0"><animateMotion dur="16.0s" repeatCount="indefinite" calcMode="linear" keyPoints="0;0;1;1" keyTimes="0;0.8125;0.8875;1" path="M790 410 L760 410 L760 150 L790 150"/><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.8125;0.8875;1" values="0;1;0;0"/></circle>
+<rect x="30" y="806" width="1180" height="34" rx="8" fill="#161b22" stroke="#30363d"/>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">1</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">A request comes in from the CLI, the AI agent or the website, and the cache is checked.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.0187;0.2000;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">2</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">Seen before? The answer comes straight back in milliseconds.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.2125;0.3375;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">3</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">Not seen? A scan starts through Step Functions.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.3500;0.4500;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">4</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">The scanner fetches the package, asks threat intel, reads the code and asks a model.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.4500;0.5625;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">5</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">The package is run in the sandbox: no internet, watched at the network and kernel level.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.5625;0.6750;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">6</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">What the sandbox saw is written to S3 through a private endpoint.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.6750;0.7875;1" values="0;1;0;0"/></g>
+<g opacity="0"><circle cx="54" cy="823" r="11" fill="#1f6feb"/><text x="54" y="828" text-anchor="middle" fill="#fff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="700">7</text><text x="76" y="828" fill="#e6edf3" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14">The report goes to S3, the verdict to DynamoDB, and everyone after gets it instantly.</text><animate attributeName="opacity" dur="16.0s" repeatCount="indefinite" calcMode="discrete" keyTimes="0;0.7875;0.9750;1" values="0;1;0;0"/></g>
+</svg>
