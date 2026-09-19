@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 import { PkgGuardClient, PkgGuardError, loadConfig } from "../client.js";
 import { decideOne, exitCode, formatDetail, summarize } from "../decide.js";
+import { printResults } from "../report-log.js";
 import { parseLockfile } from "../lockfile.js";
 import { parseSpec } from "../spec.js";
 import { Spinner } from "../spinner.js";
@@ -11,6 +12,7 @@ import type { VerdictRecord } from "../types.js";
 export interface CheckOptions {
   cwd: string;
   json?: boolean;
+  quiet?: boolean;
 }
 
 export async function runCheck(spec: string | undefined, options: CheckOptions): Promise<number> {
@@ -21,11 +23,16 @@ export async function runCheck(spec: string | undefined, options: CheckOptions):
 async function checkOne(client: PkgGuardClient, spec: string, options: CheckOptions): Promise<number> {
   const { name, version } = parseSpec(spec);
   const spinner = new Spinner();
+  const started = Date.now();
   spinner.start(`Checking ${spec}...`);
 
   let record: VerdictRecord;
+  let fresh = false;
   try {
-    record = await client.checkPackage(name, version, (r) => spinner.update(`Checking ${spec}... (${r.status.toLowerCase()})`));
+    record = await client.checkPackage(name, version, (r) => {
+      if (r.status === "PENDING" || r.status === "SCANNING") fresh = true;
+      spinner.update(`Checking ${spec}... (${r.status.toLowerCase()})`);
+    });
   } catch (error) {
     spinner.stop();
     console.error(error instanceof PkgGuardError ? error.message : String(error));
@@ -38,7 +45,7 @@ async function checkOne(client: PkgGuardClient, spec: string, options: CheckOpti
   if (options.json) {
     console.log(JSON.stringify({ ...decision, reportUrl }, null, 2));
   } else {
-    console.log(formatDetail(decision, reportUrl));
+    await printResults(client, [decision], { quiet: options.quiet, elapsedSeconds: (Date.now() - started) / 1000, fresh });
   }
   return exitCode(decision.recommendation);
 }

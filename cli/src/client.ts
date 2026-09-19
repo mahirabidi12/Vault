@@ -1,6 +1,10 @@
+import type { ReportLite } from "./layers.js";
 import type { CheckResponse, PackageRef, VerdictRecord } from "./types.js";
 
 export const MAX_CHECK_PACKAGES = 200; // must match analyzer/src/pkgguard_analyzer/cloud/api.py
+
+// Where the human-readable report pages live (Amplify site). Override with PKGGUARD_WEB_URL.
+export const DEFAULT_WEB_URL = "https://main.d37i3n9ev8lsz3.amplifyapp.com";
 
 export interface PkgGuardConfig {
   apiUrl: string;
@@ -27,7 +31,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PkgGuardConfig
   return {
     apiUrl: stripTrailingSlash(env.PKGGUARD_API_URL || DEFAULT_API_URL),
     apiKey: env.PKGGUARD_API_KEY || undefined,
-    webUrl: env.PKGGUARD_WEB_URL ? stripTrailingSlash(env.PKGGUARD_WEB_URL) : undefined,
+    webUrl: stripTrailingSlash(env.PKGGUARD_WEB_URL || DEFAULT_WEB_URL),
     pollIntervalMs: positiveInt(env.PKGGUARD_POLL_INTERVAL_MS, 1500),
     maxWaitMs: positiveInt(env.PKGGUARD_MAX_WAIT_MS, 60_000),
     requestTimeoutMs: positiveInt(env.PKGGUARD_REQUEST_TIMEOUT_MS, 10_000),
@@ -59,6 +63,15 @@ export class PkgGuardClient {
     const params = new URLSearchParams({ ecosystem: "npm", name });
     if (version) params.set("version", version);
     return this.requestJson<VerdictRecord>(`/v1/package?${params.toString()}`);
+  }
+
+  /** The full report of a finished scan, or undefined if it is not available (the log lines are optional extras). */
+  async getReport(name: string, version: string): Promise<ReportLite | undefined> {
+    try {
+      return await this.requestJson<ReportLite>(`/v1/report?ecosystem=npm&name=${encodeURIComponent(name)}&version=${encodeURIComponent(version)}`);
+    } catch {
+      return undefined;
+    }
   }
 
   /** Same as getPackage, but polls until the scan finishes or maxWaitMs runs out. */

@@ -23,6 +23,7 @@ $ echo $?
   to the latest published one.
 - `pkgguard check` (no argument, run inside a project) — reads `package-lock.json` and checks every
   resolved package (batched, ≤ 200 per request, chunked automatically for larger lockfiles).
+- `-q` / `--quiet` — print only the verdict (no per-check log). Without it, up to 3 packages get one line per check layer (threat intel, package info, static scan, sandbox, AI review).
 - `--json` — print the full decision(s) as JSON instead of (or alongside) the summary.
 
 ### `pkgguard install <packages...>`

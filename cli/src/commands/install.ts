@@ -2,7 +2,9 @@ import { copyFile } from "node:fs/promises";
 import { join } from "node:path";
 
 import { PkgGuardClient, PkgGuardError, loadConfig } from "../client.js";
-import { decideOne, exitCode, formatDetail, summarize } from "../decide.js";
+import { decideOne, exitCode, summarize } from "../decide.js";
+import { refOf } from "../layers.js";
+import { printResults } from "../report-log.js";
 import { confirm } from "../prompt.js";
 import { ResolveError, cleanupTree, npmRunner, resolveTree } from "../resolve-tree.js";
 import { Spinner } from "../spinner.js";
@@ -14,10 +16,12 @@ export interface InstallOptions {
   json?: boolean;
   /** Check every transitive dependency too, not only the packages that were named. */
   deep?: boolean;
+  quiet?: boolean;
 }
 
 export async function runInstall(specs: string[], options: InstallOptions): Promise<number> {
   const client = new PkgGuardClient(loadConfig());
+  const started = Date.now();
   const spinner = new Spinner();
   spinner.start(`Resolving ${specs.join(", ")}...`);
 
@@ -33,8 +37,10 @@ export async function runInstall(specs: string[], options: InstallOptions): Prom
   const toCheck = options.deep ? tree.all : tree.requested;
   spinner.update(`Checking ${toCheck.length} package(s) with PkgGuard...`);
   let records: VerdictRecord[];
+  let fresh = false;
   try {
     records = await client.checkMany(toCheck, (partial) => {
+      if (partial.some((r) => r.status === "PENDING" || r.status === "SCANNING")) fresh = true;
       const done = partial.filter((r) => r.status !== "PENDING" && r.status !== "SCANNING").length;
       spinner.update(`Checking ${toCheck.length} package(s) with PkgGuard... (${done}/${toCheck.length})`);
     });
@@ -47,10 +53,8 @@ export async function runInstall(specs: string[], options: InstallOptions): Prom
   spinner.stop();
 
   const decisions = records.map(decideOne);
-  const flagged = decisions.filter((d) => d.recommendation !== "allow");
-  for (const decision of flagged) {
-    console.log(formatDetail(decision, client.reportUrl(decision.record.package.name, decision.record.package.version)));
-  }
+  if (!options.quiet && !options.json) console.log(`→ Resolved ${specs.join(", ")} → ${tree.requested.map(refOf).join(", ")}`);
+  await printResults(client, decisions, { quiet: options.quiet, json: options.json, elapsedSeconds: (Date.now() - started) / 1000, fresh });
   if (options.json) console.log(JSON.stringify(decisions, null, 2));
 
   const overall = summarize(decisions);
