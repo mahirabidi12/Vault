@@ -47,6 +47,9 @@ export interface PackageMetadata {
   sha256?: string;
   fileCount?: number;
   unpackedBytes?: number;
+  /** Set by evaluation runs: registry data was synthetic and threat-intel lookup was off. */
+  evaluationSample?: boolean;
+  intelLookup?: string;
 }
 
 export interface CodeScanSummary {
@@ -79,6 +82,14 @@ export type {
   Assessment,
   ReviewMode,
   PackageRef,
+  SandboxReport,
+  SandboxStatus,
+  SandboxCoverage,
+  SandboxRunSummary,
+  SandboxNetworkEvent,
+  SandboxProcess,
+  SandboxFileEvent,
+  SandboxEval,
 } from "./report";
 
 export type {

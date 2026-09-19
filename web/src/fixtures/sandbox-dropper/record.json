@@ -1,0 +1,35 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-dropper",
+    "version": "1.0.0"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2V3ZBH5PJ07J72N3JJSKM3Y",
+  "verdict": "SUSPICIOUS",
+  "confidence": "MEDIUM",
+  "decidedBy": "rules",
+  "summary": "Suspicious: Runs a file it just created after contacting an outside host (dropper pattern); Runs a 'postinstall' script during install; Runs download / decode / shell tools.",
+  "signals": [
+    "Runs a 'postinstall' script during install",
+    "Runs a file it just created after contacting an outside host (dropper pattern)",
+    "Runs download / decode / shell tools"
+  ],
+  "sha256": "635fcc7af5e7a6f3821c4c9c39d26678dc4feccef5ddb1168b938ab897c6ddfd",
+  "integrity": "sha512-WLgIQ5/x4E4jKfPjb1g32XptjxQEstUZCeq7y9MLvbNoOGniAGND5U3Lp3yqGSyw2tIrRLY3NqHnjeskOeeMlw==",
+  "tarballUrl": "https://registry.npmjs.org/sbx-dropper/-/sbx-dropper-1.0.0.tgz",
+  "publishedAt": "2026-03-02T20:40:21.797050Z",
+  "requestedAt": "2026-09-18T20:40:21.797793Z",
+  "analyzedAt": "2026-09-18T20:40:21.828970Z",
+  "model": null,
+  "ranOn": "cloud",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null,
+  "needsReview": true,
+  "iocCount": 0,
+  "settingsHash": "c9edcfb6b502",
+  "sandboxStatus": "COMPLETE"
+}

@@ -19,6 +19,16 @@ import esbuildRecord from "@/fixtures/ai-cleared-esbuild/record.json";
 import esbuildReport from "@/fixtures/ai-cleared-esbuild/report.json";
 import maliciousRecord from "@/fixtures/malicious-safedep-test-pkg/record.json";
 import maliciousReport from "@/fixtures/malicious-safedep-test-pkg/report.json";
+import sbx0Record from "@/fixtures/sandbox-clean/record.json";
+import sbx0Report from "@/fixtures/sandbox-clean/report.json";
+import sbx1Record from "@/fixtures/sandbox-conditional-ci-gate/record.json";
+import sbx1Report from "@/fixtures/sandbox-conditional-ci-gate/report.json";
+import sbx2Record from "@/fixtures/sandbox-dropper/record.json";
+import sbx2Report from "@/fixtures/sandbox-dropper/report.json";
+import sbx3Record from "@/fixtures/sandbox-malicious-exfil/record.json";
+import sbx3Report from "@/fixtures/sandbox-malicious-exfil/report.json";
+import sbx4Record from "@/fixtures/sandbox-persistence/record.json";
+import sbx4Report from "@/fixtures/sandbox-persistence/report.json";
 import failedRecordShape from "@/fixtures/failed.record.json";
 import skippedRecordShape from "@/fixtures/skipped.record.json";
 import { FEED_SEED } from "@/fixtures/feed-seed";
@@ -41,6 +51,11 @@ const FIXTURES: Entry[] = [
   { record: safeLodashRecord as unknown as VerdictRecord, report: safeLodashReport as unknown as Report },
   { record: esbuildRecord as unknown as VerdictRecord, report: esbuildReport as unknown as Report },
   { record: maliciousRecord as unknown as VerdictRecord, report: maliciousReport as unknown as Report },
+  { record: sbx0Record as unknown as VerdictRecord, report: sbx0Report as unknown as Report },
+  { record: sbx1Record as unknown as VerdictRecord, report: sbx1Report as unknown as Report },
+  { record: sbx2Record as unknown as VerdictRecord, report: sbx2Report as unknown as Report },
+  { record: sbx3Record as unknown as VerdictRecord, report: sbx3Report as unknown as Report },
+  { record: sbx4Record as unknown as VerdictRecord, report: sbx4Report as unknown as Report },
   ...FEED_SEED,
 ];
 

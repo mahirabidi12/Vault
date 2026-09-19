@@ -399,3 +399,20 @@ cd ~/Vault
 git add web
 git commit -m "Web: redesign package info, threat intel and scan details cards"
 ```
+
+## Sandbox results on the report page (2026-09-19)
+- Ran `npm run gen:types`: the generated types now include `sandbox`, `sandboxStatus`, the `sandbox` layer and `decidedBy: "sandbox"`. `lib/verdict.ts` has the wording: **"Confirmed by sandbox run"** (decided by) and **"Dynamic analysis"** (layer); the findings section lists sandbox findings too.
+- New `lib/sandbox.ts` (pure logic, tested in `lib/sandbox.test.ts` against the real `schema/examples/sandbox-*` reports): stage summary, coverage line, coverage gaps, network ordering and host classes, hosts seen only in run B, process tree, file grouping (persistence / dropped / fake-credential reads / other) with the same change in both runs merged into one row.
+- **Check trace**: the hardcoded "Not run" sandbox step in `report-detail.tsx` is gone. Headline is the status (Complete / Partial / Failed / Skipped / Not run), the detail line says what ran (e.g. "2 runs, entry loaded, 64 dependencies"), and the tone is red for HIGH findings, amber for MEDIUM (or a partial run), green for a complete quiet run. One deliberate extra: a quiet run whose main file never loaded is grey, not green, so it doesn't read as an all-clear.
+- New `components/report/dynamic-analysis.tsx`, the "Dynamic analysis" section (placed after the check trace; a "not run" card when there is no sandbox report): status, duration and coverage chips; sandbox finding chips; an amber "Not everything could be observed" box with the specific reasons; a red "Carried your fake credentials out" proof box from `canaryHits`; run A vs run B cards (CI flag, clock offset, hostname, user, phases) plus an "Only appears under hostile conditions" callout; a network timeline (kind, host, port, class badge, count, request body via the existing Shiki `CodeEvidence`, red marker for `canaryHit`); the process tree per run; file activity groups with sha256 and previews; decoded eval payloads. The verdict hero shows a red "Confirmed by sandbox run" chip (linking to the section) when `decidedBy` is `sandbox`.
+- **Evaluation sample**: when `report.metadata.evaluationSample` is true the hero shows an "Evaluation sample" pill (tooltip explains the data was synthetic and intel lookup was off) and the threat-intel card shows the `intelLookup` note.
+- Fixtures: the five `sandbox-*` examples were copied into `src/fixtures/` and registered in `lib/api.ts`, so fixture mode can show them (`pkgguard-fixture-postinstall-exfil`, `sbx-persistence`, `sbx-conditional`, `sbx-dropper`, `pkgguard-fixture-clean-control`). The persistence fixture copy has `evaluationSample: true` added to demo the label.
+- Tests: `npm run test` now runs (49 passing). It was failing to start with the rolldown binding error; fixed locally with `npm install --no-save @rolldown/binding-darwin-arm64@1.2.9` (does not touch `package.json` or the lockfile, so Amplify's `npm ci` is unaffected; on another machine or CI the same optional-dependency bug may need the platform's binding). Also fixed a rounding bug in `typed()` that the run exposed.
+- Not done: the attack-chain diagram (stretch, §13 item 3), the home page's sandbox copy still says "Illustrative example" (unchanged), and the feed and search cards don't show "Confirmed by sandbox run". Checked in a browser at 1440px (exfil, persistence, conditional, clean) and once at 390px for overflow only; the sections were not visually reviewed at mobile width.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: dynamic analysis section, real sandbox stage in the check trace, evaluation sample label"
+```

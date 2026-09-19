@@ -9,7 +9,7 @@ import { LAYER_LABEL, SEVERITY_ORDER } from "@/lib/verdict";
 import type { Finding, FindingLayer } from "@/lib/types/domain";
 import { ShieldCheck, ChevronDown } from "lucide-react";
 
-const LAYER_ORDER: FindingLayer[] = ["intel", "metadata", "static"];
+const LAYER_ORDER: FindingLayer[] = ["intel", "metadata", "static", "sandbox"];
 
 export async function FindingsSection({ findings }: { findings: Finding[] }) {
   if (findings.length === 0) {

@@ -2,7 +2,7 @@ import { Radar, ShieldAlert, ShieldCheck, CircleAlert, UserCheck, Database } fro
 import { cn } from "@/lib/utils";
 import type { IntelResult } from "@/lib/types/domain";
 
-export function IntelSection({ intel }: { intel?: IntelResult }) {
+export function IntelSection({ intel, evaluationNote }: { intel?: IntelResult; evaluationNote?: string }) {
   if (!intel || (!intel.osv && !intel.safedep)) return null;
 
   const osv = intel.osv;
@@ -19,6 +19,12 @@ export function IntelSection({ intel }: { intel?: IntelResult }) {
           <p className="text-sm text-muted-foreground">Two public malware databases, checked live</p>
         </div>
       </header>
+
+      {evaluationNote && (
+        <p className="rounded-xl border border-brand/30 bg-brand/[0.07] px-4 py-3 text-sm text-foreground/85">
+          <span className="font-semibold text-brand">Evaluation sample.</span> Threat-intel lookup: {evaluationNote}
+        </p>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {osv && (

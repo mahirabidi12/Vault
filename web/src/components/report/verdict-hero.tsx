@@ -3,14 +3,14 @@ import { CopyButton } from "@/components/copy-button";
 import { formatDateTime, formatRelativeTime, truncateMiddle } from "@/lib/format";
 import { verdictStyle } from "@/lib/verdict";
 import type { VerdictRecord } from "@/lib/types/domain";
-import { Package, ShieldBan } from "lucide-react";
+import { Box, FlaskConical, Package, ShieldBan } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const CONFIDENCE_PCT: Record<string, number> = { HIGH: 0.94, MEDIUM: 0.66, LOW: 0.38 };
 const RING_R = 54;
 const RING_LEN = 2 * Math.PI * RING_R;
 
-export function VerdictHero({ record }: { record: VerdictRecord }) {
+export function VerdictHero({ record, evaluationSample = false }: { record: VerdictRecord; evaluationSample?: boolean }) {
   const style = verdictStyle(record.verdict);
   const Icon = style.icon;
   const malicious = record.verdict === "MALICIOUS";
@@ -58,6 +58,15 @@ export function VerdictHero({ record }: { record: VerdictRecord }) {
               npm
             </span>
             {record.source === "osv-import" && <OsvImportBadge />}
+            {evaluationSample && (
+              <span
+                title="The registry data for this package was synthetic and threat-intel lookups were switched off, so we measure our own layers."
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand/40 bg-brand/10 px-2.5 py-1 text-xs font-medium text-brand"
+              >
+                <FlaskConical className="size-3.5" />
+                Evaluation sample
+              </span>
+            )}
             <span className="inline-flex items-center gap-1.5 text-xs">
               <span className="relative flex size-2">
                 <span className="ping-ring absolute inline-flex size-full rounded-full" style={{ background: color }} />
@@ -77,7 +86,17 @@ export function VerdictHero({ record }: { record: VerdictRecord }) {
           <div className="rise-in flex flex-wrap items-center gap-2 pt-1 [animation-delay:160ms]">
             <VerdictBadge verdict={record.verdict} size="lg" />
             <ConfidencePill confidence={record.confidence} />
-            <DecidedByPill decidedBy={record.decidedBy} />
+            {record.decidedBy === "sandbox" ? (
+              <a
+                href="#dynamic-analysis"
+                className="inline-flex items-center gap-1.5 rounded-full border border-malicious/50 bg-malicious/10 px-3 py-1.5 text-sm font-semibold text-malicious transition-colors hover:bg-malicious/20"
+              >
+                <Box className="size-4" />
+                Confirmed by sandbox run
+              </a>
+            ) : (
+              <DecidedByPill decidedBy={record.decidedBy} />
+            )}
           </div>
 
           {record.summary && (

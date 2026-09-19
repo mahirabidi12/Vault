@@ -1,0 +1,37 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-persistence",
+    "version": "1.0.0"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2V3ZBJMWR21PCMNFH1QV2F8",
+  "verdict": "SUSPICIOUS",
+  "confidence": "MEDIUM",
+  "decidedBy": "rules",
+  "summary": "Suspicious: References SSH keys; Reads secrets and can send data over the network during install; Modifies a shell startup file so code keeps running later.",
+  "signals": [
+    "Runs a 'postinstall' script during install",
+    "References SSH keys",
+    "Reads secrets and can send data over the network during install",
+    "Downloads a script and pipes it straight into a shell",
+    "Makes network requests during install"
+  ],
+  "sha256": "1f488fc4157172f25038fd309248ae1c50406bba95eaf40a978d398fea6a75ff",
+  "integrity": "sha512-siRSgmuvLatuP2dF9yLf4JuVWrVQK17pV/HSIdS4lmJwxlBI0s+D7IppP1/p0o1gKq515ah3UsUCOGBYvned9g==",
+  "tarballUrl": "https://registry.npmjs.org/sbx-persistence/-/sbx-persistence-1.0.0.tgz",
+  "publishedAt": "2026-03-02T20:40:21.843939Z",
+  "requestedAt": "2026-09-18T20:40:21.844468Z",
+  "analyzedAt": "2026-09-18T20:40:21.898106Z",
+  "model": null,
+  "ranOn": "cloud",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null,
+  "needsReview": true,
+  "iocCount": 1,
+  "settingsHash": "c9edcfb6b502",
+  "sandboxStatus": "COMPLETE"
+}

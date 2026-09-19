@@ -18,6 +18,7 @@ import {
   Code2,
   Sparkles,
   UserCheck,
+  Box,
   type LucideIcon,
 } from "lucide-react";
 import type { Verdict, ScanStatus, DecidedBy } from "@/lib/types/domain";
@@ -131,6 +132,7 @@ export const DECIDED_BY_LABEL: Record<DecidedBy, string> = {
   rules: "Automated rules",
   ai: "AI review",
   human: "Human verified",
+  sandbox: "Confirmed by sandbox run",
 };
 
 export const DECIDED_BY_ICON: Record<DecidedBy, LucideIcon> = {
@@ -138,18 +140,21 @@ export const DECIDED_BY_ICON: Record<DecidedBy, LucideIcon> = {
   rules: FileCog,
   ai: Sparkles,
   human: UserCheck,
+  sandbox: Box,
 };
 
 export const LAYER_LABEL: Record<FindingLayer, string> = {
   intel: "Threat intelligence",
   metadata: "Package info",
   static: "Code",
+  sandbox: "Dynamic analysis",
 };
 
 export const LAYER_ICON: Record<FindingLayer, LucideIcon> = {
   intel: Radar,
   metadata: FileCog,
   static: Code2,
+  sandbox: Box,
 };
 
 export const SEVERITY_ORDER: Record<Severity, number> = {

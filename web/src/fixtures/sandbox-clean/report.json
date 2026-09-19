@@ -1,0 +1,192 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "pkgguard-fixture-clean-control",
+    "version": "1.0.0"
+  },
+  "analyzerVersion": "0.1.0",
+  "generatedAt": "2026-09-18T20:40:23.104033Z",
+  "findings": [],
+  "intel": {
+    "osv": {
+      "maliciousIds": [],
+      "vulnerabilityIds": []
+    },
+    "safedep": {
+      "found": false
+    }
+  },
+  "metadata": {
+    "description": null,
+    "license": null,
+    "publisher": "fixture-author",
+    "trustedPublishing": false,
+    "provenance": false,
+    "maintainers": [
+      "fixture-author"
+    ],
+    "publishedAt": "2026-03-02T20:40:23.051039+00:00",
+    "previousVersion": null,
+    "installScripts": {},
+    "repository": "git+https://example.invalid/pkgguard-fixture-clean-control.git",
+    "dependencies": {},
+    "sha256": "de0599d34c31ec5febe191b8cdd5aa4b401a1264b621c20fd3df7b46f9908719",
+    "fileCount": 2,
+    "unpackedBytes": 266
+  },
+  "codeScan": {
+    "filesScanned": 1,
+    "filesParsed": 1,
+    "filesWithParseErrors": 0,
+    "installTimeFiles": [],
+    "entryFiles": [
+      "index.js"
+    ],
+    "executables": [],
+    "skipped": [],
+    "findingsTruncated": false
+  },
+  "aiReview": null,
+  "aiError": null,
+  "behavior": {
+    "networkModules": [],
+    "hosts": [],
+    "ipAddresses": [],
+    "envVars": [],
+    "readsAllEnv": false,
+    "sensitivePaths": [],
+    "runsCommands": false,
+    "dynamicCode": false,
+    "decodesData": false,
+    "readsMachineInfo": false,
+    "nativeExecutables": [],
+    "installTime": {
+      "network": false,
+      "commands": false,
+      "files": []
+    },
+    "filesByCapability": {}
+  },
+  "iocs": [],
+  "fileHashes": [
+    {
+      "path": "index.js",
+      "size": 175,
+      "sha256": "ce0c37cc2857f3eab5211d759bfc7e862756adc34b3a700dc423e163d87241e7"
+    },
+    {
+      "path": "package.json",
+      "size": 91,
+      "sha256": "38065171573c9dfc6bc886fd1f0e027cc467c05bf67dcb24654910969b33c579"
+    }
+  ],
+  "fileHashesTruncated": false,
+  "settings": {
+    "analyzerVersion": "0.1.0",
+    "rulesHash": "cdd49f6359d5",
+    "promptHashes": {},
+    "ai": {
+      "mode": "off"
+    },
+    "settingsHash": "c9edcfb6b502"
+  },
+  "timings": {
+    "downloadSeconds": 0.003,
+    "unpackSeconds": 0.016,
+    "intelSeconds": 0.003,
+    "metadataSeconds": 0.021,
+    "codeScanSeconds": 0.002,
+    "sandboxSeconds": 0.006,
+    "aiSeconds": 0.0,
+    "totalSeconds": 0.051
+  },
+  "reviewFlags": {
+    "rulesAiDisagree": false,
+    "workerCoordinatorDisagree": false,
+    "promptInjectionDetected": false,
+    "lowCoverage": false,
+    "aiFailed": false,
+    "needsHumanReview": false,
+    "reasons": []
+  },
+  "codeIssues": [],
+  "sandbox": {
+    "version": "0.1.0",
+    "status": "COMPLETE",
+    "skipReason": null,
+    "durationSeconds": 2.4,
+    "rawTraceS3Key": "sandbox-traces/npm/pkgguard-fixture-clean-control/1.0.0/0.1.0.json",
+    "coverage": {
+      "installed": true,
+      "installScriptsRan": true,
+      "entryLoaded": true,
+      "entryError": null,
+      "binsRun": 0,
+      "timedOut": false,
+      "dependenciesStripped": true
+    },
+    "runs": [
+      {
+        "name": "baseline",
+        "ci": false,
+        "clockOffsetDays": 0,
+        "hostname": "container",
+        "user": "sandbox",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 1.01,
+            "cpuSeconds": 0.88
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.12,
+            "cpuSeconds": 0.09
+          }
+        ],
+        "notes": []
+      },
+      {
+        "name": "hostile",
+        "ci": true,
+        "clockOffsetDays": 60,
+        "hostname": "ci-runner-04",
+        "user": "runner",
+        "phases": [
+          {
+            "name": "install",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 2.05,
+            "cpuSeconds": 1.74
+          },
+          {
+            "name": "require",
+            "exitCode": 0,
+            "timedOut": false,
+            "seconds": 0.34,
+            "cpuSeconds": 0.23
+          }
+        ],
+        "notes": []
+      }
+    ],
+    "network": [],
+    "processes": [],
+    "files": [],
+    "evalPayloads": [],
+    "canaryHits": [],
+    "conditional": [],
+    "resources": {
+      "peakCpuSeconds": 1.74,
+      "peakMemoryMb": 73.0,
+      "timedOutPhases": []
+    },
+    "findings": []
+  },
+  "humanReview": null
+}

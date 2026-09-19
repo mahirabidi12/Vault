@@ -1,0 +1,37 @@
+{
+  "package": {
+    "ecosystem": "npm",
+    "name": "pkgguard-fixture-postinstall-exfil",
+    "version": "1.0.0"
+  },
+  "status": "COMPLETE",
+  "scanId": "01M2V3ZB98EPX28QA5NWY1JXNQ",
+  "verdict": "MALICIOUS",
+  "confidence": "HIGH",
+  "decidedBy": "sandbox",
+  "summary": "Confirmed by running it in the sandbox: Sent planted fake credentials (npm token, github token, aws access key id, aws secret access key, openai api key, database url) to collector.example.invalid.",
+  "signals": [
+    "Runs a 'postinstall' script during install",
+    "Reads secrets and can send data over the network during install",
+    "Reads all environment variables at once",
+    "Makes network requests during install",
+    "Sent planted fake credentials (npm token, github token, aws access key id, aws secret access key, openai api key, database url) to collector.example.invalid"
+  ],
+  "sha256": "a0f49a150e7577661f685f76c73c1cbbeacf5b2e0ad35fbc28cff0544fc59984",
+  "integrity": "sha512-7XSb+iCjGSdD9QMhCgfx6v6aIu8wxk/l1xFbFAfXC6e+GjxRV2V/DKlHrtv2QMJkcv8WXv14hLwRZwDfA02H3w==",
+  "tarballUrl": "https://registry.npmjs.org/pkgguard-fixture-postinstall-exfil/-/pkgguard-fixture-postinstall-exfil-1.0.0.tgz",
+  "publishedAt": "2026-03-02T20:40:21.541977Z",
+  "requestedAt": "2026-09-18T20:40:21.543953Z",
+  "analyzedAt": "2026-09-18T20:40:21.683807Z",
+  "model": null,
+  "ranOn": "cloud",
+  "analyzerVersion": "0.1.0",
+  "source": "pkgguard",
+  "reportS3Key": null,
+  "aiFailed": false,
+  "failureReason": null,
+  "needsReview": false,
+  "iocCount": 0,
+  "settingsHash": "c9edcfb6b502",
+  "sandboxStatus": "COMPLETE"
+}

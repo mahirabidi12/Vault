@@ -65,7 +65,7 @@ export function between(t: number, from: number, to: number): number {
 
 /** The first part of `text`, typed out as `t` moves from `from` to `to`. */
 export function typed(text: string, t: number, from: number, to: number): string {
-  return text.slice(0, Math.floor(text.length * between(t, from, to)));
+  return text.slice(0, Math.floor(text.length * between(t, from, to) + 1e-9));
 }
 
 // ---------------------------------------------------------------------------

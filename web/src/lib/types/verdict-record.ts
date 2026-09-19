@@ -10,7 +10,7 @@ export type ScanStatus = "PENDING" | "SCANNING" | "COMPLETE" | "FAILED" | "SKIPP
 export type Scanid = string;
 export type Verdict = "SAFE" | "SUSPICIOUS" | "MALICIOUS";
 export type Confidence = "HIGH" | "MEDIUM" | "LOW";
-export type DecidedBy = "intel" | "rules" | "ai" | "human";
+export type DecidedBy = "intel" | "rules" | "ai" | "human" | "sandbox";
 export type Summary = string | null;
 export type Signals = string[];
 export type Sha256 = string | null;
@@ -29,6 +29,7 @@ export type Failurereason = string | null;
 export type Needsreview = boolean;
 export type Ioccount = number;
 export type Settingshash = string | null;
+export type SandboxStatus = "COMPLETE" | "PARTIAL" | "SKIPPED" | "FAILED" | "NOT_RUN";
 
 /**
  * Summary stored in DynamoDB and returned by the API.
@@ -58,6 +59,7 @@ export interface VerdictRecord {
   needsReview?: Needsreview;
   iocCount?: Ioccount;
   settingsHash?: Settingshash;
+  sandboxStatus?: SandboxStatus | null;
 }
 export interface PackageRef {
   ecosystem: Ecosystem;
