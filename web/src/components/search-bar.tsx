@@ -31,7 +31,7 @@ export function SearchBar({
     <form onSubmit={onSubmit} className={cn("relative w-full", className)}>
       <Search
         className={cn(
-          "pointer-events-none absolute top-1/2 -translate-y-1/2 text-muted-foreground",
+          "pointer-events-none absolute top-1/2 z-10 -translate-y-1/2 text-muted-foreground",
           variant === "hero" ? "left-4 size-5" : "left-3 size-4"
         )}
       />

@@ -357,3 +357,22 @@ cd ~/Vault
 git add web
 git commit -m "Web: navbar scrolls away instead of following the page"
 ```
+- Footer text and buttons are about 15% larger (2026-09-19): bigger closing heading, subtitle, buttons, logo, description, link columns and copyright line.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: slightly larger footer"
+```
+
+## Search results page redesign (2026-09-19)
+- `app/search/page.tsx`: a proper page header ("Search" kicker, "Results for <query>", a count line), then result cards with a verdict-colored edge and icon tile, the package name and a version pill, the summary, and a meta row (analyzed time, who decided it, confidence), the verdict badge on the right and a hover lift. The "Scan it now" prompt is a full-width card with a button and a time estimate. The search icon in the hero search box was hidden behind the input; it now sits on top (`search-bar.tsx`).
+- `site-footer.tsx` now checks the route: the big "Know before you npm install." block and the overlap with the page above only appear on the home page. Other pages get the compact footer with normal spacing (this was what made the closing block collide with the search results).
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: redesigned search results, footer CTA only on the home page"
+```
