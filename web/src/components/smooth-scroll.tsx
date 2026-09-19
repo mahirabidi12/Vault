@@ -26,6 +26,12 @@ function scrollsInside(start: EventTarget | null, dy: number): boolean {
 /** Slows and smooths mouse-wheel and trackpad scrolling so the page glides at a gentle, capped speed. */
 export function SmoothScroll() {
   React.useEffect(() => {
+    // A refresh always starts at the top of the page.
+    const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    if (nav?.type === "reload" && !window.location.hash) window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
+  React.useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     if (window.matchMedia("(pointer: coarse)").matches) return;
 

@@ -5,10 +5,13 @@ export function TerminalBlock({
   command,
   label,
   className,
+  wrap,
 }: {
   command: string;
   label?: string;
   className?: string;
+  /** Let a long command wrap onto a second line instead of scrolling sideways. */
+  wrap?: boolean;
 }) {
   return (
     <div
@@ -17,9 +20,9 @@ export function TerminalBlock({
         className
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 overflow-x-auto">
+      <div className={cn("flex min-w-0 gap-2", wrap ? "items-start" : "items-center overflow-x-auto")}>
         <span className="shrink-0 select-none text-zinc-500">{label ?? "$"}</span>
-        <code className="whitespace-pre text-zinc-100">{command}</code>
+        <code className={cn("text-zinc-100", wrap ? "whitespace-pre-wrap break-words" : "whitespace-pre")}>{command}</code>
       </div>
       <CopyButton
         value={command}

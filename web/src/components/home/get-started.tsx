@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { TerminalBlock } from "@/components/terminal-block";
 import { Reveal } from "@/components/reveal";
-import { SpotlightCard } from "@/components/spotlight-card";
 import { TerminalDemo, type DemoLine } from "@/components/home/terminal-demo";
 import { DemoClockProvider } from "@/components/home/demo-clock";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +79,7 @@ const CARDS = [
       "Malicious is blocked, suspicious asks first, clean installs.",
     ],
     cta: "CLI setup",
+    accent: "96,165,250",
     demos: CLI_DEMOS,
     demoTitle: "pkgguard",
   },
@@ -88,14 +88,15 @@ const CARDS = [
     badge: "For your AI agent",
     title: "Agent tool (MCP)",
     tagline: "Gives Claude Code, Cursor or any MCP client a check it can't skip.",
-    command: "npx pkgguard-mcp@0.1.0",
-    label: "run",
+    command: "claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1",
+    label: "$",
     steps: [
-      "Add the server to your MCP client config.",
-      "The agent gets a check_package tool.",
-      "It asks PkgGuard before installing anything.",
+      "Run the command once to add PkgGuard to Claude Code.",
+      "Ask your agent to install a package as usual.",
+      "It checks PkgGuard first: malicious is refused, clean goes ahead.",
     ],
     cta: "Agent setup",
+    accent: "167,139,250",
     demos: MCP_DEMOS,
     demoTitle: "claude code",
   },
@@ -105,46 +106,63 @@ const LENGTHS = [0, 1].map((i) => Math.max(...CARDS.map((c) => c.demos[i].length
 
 export function GetStarted() {
   return (
-    <section id="get-started" className="mx-auto w-full max-w-4xl scroll-mt-20 px-4 py-14 sm:px-6 sm:py-20">
-      <Reveal className="mx-auto mb-10 max-w-2xl text-center">
+    <section id="get-started" data-snap className="mx-auto flex min-h-[100svh] w-full max-w-6xl scroll-mt-0 flex-col justify-center px-4 py-16 sm:px-8">
+      <Reveal className="mx-auto mb-8 max-w-2xl text-center">
         <p className="kicker text-brand">Get started in one line</p>
-        <h2 className="mt-3 text-[clamp(1.9rem,4.2vw,3rem)] font-semibold leading-[1.05] tracking-[-0.04em]">
+        <h2 className="mt-3 text-[clamp(1.8rem,3.8vw,2.8rem)] font-semibold leading-[1.05] tracking-[-0.04em]">
           Guard every install, from your terminal or your agent.
         </h2>
       </Reveal>
 
-      <DemoClockProvider lengths={LENGTHS} className="grid gap-5 md:grid-cols-2">
+      <DemoClockProvider lengths={LENGTHS} className="grid gap-5 lg:grid-cols-2">
         {CARDS.map((c, idx) => (
           <Reveal key={c.title} delay={idx * 120}>
-          <SpotlightCard beam className="h-full">
-          <div className="flex h-full flex-col gap-3.5 p-4 sm:p-5">
-            <div className="flex items-center justify-between">
-              <span className="flex size-8 items-center justify-center rounded-lg border border-border bg-background">
-                <c.icon className="size-4" />
-              </span>
-              <Badge variant="outline">{c.badge}</Badge>
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <h3 className="text-lg font-semibold tracking-tight">{c.title}</h3>
-              <p className="text-[13px] leading-snug text-muted-foreground">{c.tagline}</p>
-            </div>
-            <TerminalBlock command={c.command} label={c.label} className="gap-2 px-3 py-2 text-[12.5px]" />
-            <TerminalDemo scenarios={c.demos} title={c.demoTitle} />
-            <ol className="flex flex-col gap-1.5">
-              {c.steps.map((s, i) => (
-                <li key={s} className="flex items-start gap-2.5 text-[13px] text-foreground/80">
-                  <span className="mt-px flex size-4.5 shrink-0 items-center justify-center rounded-full border border-border font-mono text-[10px] text-muted-foreground">
-                    {i + 1}
+            <div
+              className="group relative h-full overflow-hidden rounded-3xl p-px transition-transform duration-500 hover:-translate-y-1"
+              style={{ background: `linear-gradient(160deg, rgba(${c.accent},0.55), rgba(255,255,255,0.08) 35%, rgba(255,255,255,0.04) 70%, rgba(${c.accent},0.25))` }}
+            >
+              <div className="relative isolate flex h-full flex-col gap-3 overflow-hidden rounded-[calc(1.5rem-1px)] bg-[#06070a] p-4 sm:p-5">
+                <div
+                  aria-hidden
+                  className="blob-drift pointer-events-none absolute -right-16 -top-20 -z-10 size-56 rounded-full blur-3xl"
+                  style={{ background: `rgba(${c.accent},0.16)` }}
+                />
+                <div className="flex items-center gap-3">
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-xl border"
+                    style={{ borderColor: `rgba(${c.accent},0.45)`, background: `rgba(${c.accent},0.12)`, color: `rgb(${c.accent})` }}
+                  >
+                    <c.icon className="size-5" />
                   </span>
-                  {s}
-                </li>
-              ))}
-            </ol>
-            <Link href="/docs" className="mt-auto inline-flex w-fit items-center gap-1 text-sm font-medium hover:underline">
-              {c.cta} <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
-          </SpotlightCard>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-lg font-semibold leading-tight tracking-tight">{c.title}</h3>
+                    <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">{c.tagline}</p>
+                  </div>
+                  <Badge variant="outline" className="hidden shrink-0 sm:inline-flex">{c.badge}</Badge>
+                </div>
+
+                <TerminalBlock command={c.command} label={c.label} wrap className="gap-3 px-4 py-3.5 text-[15px] leading-snug" />
+                <TerminalDemo scenarios={c.demos} title={c.demoTitle} height={220} />
+
+                <ol className="grid gap-2 sm:grid-cols-3">
+                  {c.steps.map((st, i) => (
+                    <li key={st} className="flex items-start gap-2 rounded-xl border border-white/8 bg-white/[0.03] p-2.5 text-[12px] leading-snug text-foreground/80 transition-colors group-hover:border-white/15">
+                      <span
+                        className="flex size-5 shrink-0 items-center justify-center rounded-full font-mono text-[10px] font-semibold"
+                        style={{ background: `rgba(${c.accent},0.18)`, color: `rgb(${c.accent})` }}
+                      >
+                        {i + 1}
+                      </span>
+                      {st}
+                    </li>
+                  ))}
+                </ol>
+
+                <Link href="/docs" className="inline-flex w-fit items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground">
+                  {c.cta} <ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
           </Reveal>
         ))}
       </DemoClockProvider>

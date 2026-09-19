@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col">
       {/* Hero */}
-      <section className="relative flex -mt-[68px] min-h-screen flex-col items-center justify-center overflow-hidden">
+      <section data-snap className="relative flex -mt-[68px] min-h-screen flex-col items-center justify-center overflow-hidden">
         <AuroraField className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,black_65%,transparent_100%)]" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_42%_at_50%_46%,rgba(0,0,0,0.55),transparent_100%)]" />
           <div className="relative flex max-w-4xl flex-col items-center gap-7 px-4 py-24 text-center">
@@ -51,14 +51,14 @@ export default function HomePage() {
       </section>
 
       {/* Live stats, under the ticker */}
-      <section className="mx-auto w-full max-w-6xl px-4 pb-14 pt-16 sm:px-6 sm:pt-20">
+      <section data-snap className="mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-4 py-16 sm:px-6">
         <Reveal><LiveStats /></Reveal>
       </section>
 
       <GetStarted />
 
       {/* One shared brain: CLI + MCP flow */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-28">
+      <section data-snap className="mx-auto flex min-h-[100svh] w-full max-w-6xl flex-col justify-center px-4 py-16 sm:px-6">
         <Reveal className="mx-auto mb-12 max-w-2xl text-center">
           <p className="kicker text-brand">Two ways in, one source of truth</p>
           <h2 className="mt-3 text-[clamp(1.9rem,4.2vw,3rem)] font-semibold leading-[1.05] tracking-[-0.04em]">
@@ -74,7 +74,7 @@ export default function HomePage() {
       </section>
 
       {/* Step-by-step journey; soft fades at both edges so it melts into the page */}
-      <div className="relative">
+      <div data-snap className="relative">
         <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 z-10 h-24 bg-gradient-to-b from-background to-transparent" />
         <div className="dots">
           <ScanJourney />

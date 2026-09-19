@@ -29,7 +29,7 @@ const COLUMNS = [
 export function SiteFooter() {
   const home = usePathname() === "/";
   return (
-    <footer className={cn("relative isolate z-20 overflow-hidden", home ? "-mt-24" : "mt-16")}>
+    <footer data-snap={home ? "" : undefined} className={cn("relative isolate z-20 overflow-hidden", home ? "-mt-24" : "mt-16")}>
       {/* melts the page into the footer instead of cutting it off */}
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-full bg-gradient-to-b from-transparent via-[#05060a]/70 to-[#05060a]" />
       <div

@@ -479,3 +479,36 @@ cd ~/Vault
 git add web
 git commit -m "Web: hero back in place with ticker overlaid, terminal logs fill top-down, lighter scroll limit"
 ```
+
+## Docs page corrected (edited by the scanner agent at the user's request, 2026-09-20)
+
+`src/app/docs/page.tsx` only. CLI section now uses `npx pkgguard-cli install express` (no setup), explains that only named packages are checked by default and `--deep` checks the whole tree, mentions `check`, `--quiet` and exit codes. MCP section uses `claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1` and pins `@0.1.1` in the JSON config. API section: added `/v1/report`, states no key is needed, removed the false "strict rate limits / sign up for a key" text. The home page cards (`components/home/get-started.tsx`: MCP command still `@0.1.0`, CLI card text and mock terminal) are still to do.
+
+## Setup cards redesign, one-section-at-a-time scrolling, MCP command fix (2026-09-20)
+- **MCP install command fixed** (from the other agent's brief): the site no longer tells people to run `npx pkgguard-mcp@0.1.0` (that version has no built-in API address and fails for a new user). The MCP card now shows `claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1` (label `$`) with the three new steps (run once to add PkgGuard to Claude Code; ask your agent to install as usual; it checks first, malicious is refused, clean goes ahead). `app/docs/page.tsx` MCP section shows the same command, the line "Other MCP clients (Cursor etc.): use the config below.", and the JSON config now pins `pkgguard-mcp@0.1.1`. Version stays pinned, no API key or API URL is mentioned in the MCP section. I checked with `npm view` that 0.1.1 is the published version.
+- **Setup cards** (`get-started.tsx`): wider (max-w-6xl, full width instead of a narrow centered column), shorter, and restyled: a gradient border in each card's accent colour (blue for CLI, violet for MCP), a drifting glow, an accent icon tile, a compact terminal (220 px), and the three steps as small numbered tiles in a row instead of a tall list.
+- **Scrolling settles into sections, without forcing anything:** the first version jumped one section per wheel gesture, which felt forced, so it was replaced. Scrolling is now free and continuous (the capped smoothing, never blocked). When you stop, and you are near the top of a home-page section (`data-snap`: hero with ticker, stats, setup, request flow, walkthrough, footer), the page eases the last stretch into place: it reaches up to 40% of a screen ahead in the direction you were travelling and 20% back. The tall walkthrough also rests on its last screen. New wheel movement cancels the settle instantly. Checked with simulated wheel gestures: short scrolls that end far from a section stay where they are, ones that end near a section top ease onto it (413 to 900, 750 to 900, 1764 to 1800), and a 30-notch flick is never blocked. Tuning: the `0.4` / `0.2` reach factors and the 170 ms idle delay in `smooth-scroll.tsx`.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: MCP install command 0.1.1, redesigned setup cards, settling scroll"
+```
+
+- Follow-up (2026-09-20): the install commands in the CLI and MCP cards are bigger (15 px, roomier box); `TerminalBlock` got a `wrap` option so the long MCP command wraps onto a second line instead of scrolling sideways. **A refresh now starts at the top:** the layout sets `history.scrollRestoration = "manual"` in an inline head script (so the browser doesn't restore the old position) and `smooth-scroll.tsx` scrolls to 0 on a reload (skipped when the URL has a `#hash`). Verified: scrolled to 2000 px, reloaded, landed at 0. Back and forward inside the app are unchanged.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: larger install commands, refresh starts at the top"
+```
+- Scroll settling removed (2026-09-20): the "ease into the nearest section when you stop" behaviour made the page move on its own after scrolling, which was unwanted. `smooth-scroll.tsx` is back to plain slowed, smoothed wheel scrolling (`SPEED` 0.85, `MAX_STEP` 130, `EASE` 0.14) with no snapping of any kind; the page stops exactly where you stop. Checked: after wheel gestures it rests at the position the wheel reached (413, 728, 750...), not at a section top. The `data-snap` attributes and full-screen sections remain but no longer do anything on their own.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: remove scroll settling, page stops where you stop"
+```
