@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { LayoutGrid } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/icons/github-icon";
 
@@ -24,7 +24,7 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className="rounded-full px-3.5 py-2 text-[14px] text-muted-foreground transition-colors hover:bg-white/8 hover:text-foreground"
+              className="rounded-full px-4 py-2 text-[16px] font-medium text-muted-foreground transition-colors hover:bg-white/8 hover:text-foreground"
             >
               {item.label}
             </Link>
@@ -32,18 +32,18 @@ export function SiteHeader() {
         </nav>
 
         <div className="ml-auto flex items-center gap-1.5">
-          <SearchBar className="hidden w-56 lg:block" placeholder="Search packages" />
           <Button
             variant="ghost"
             size="icon"
-            className="size-9 rounded-full"
+            className="size-10 rounded-full"
             nativeButton={false}
             render={<a href="https://github.com/mahirabidi12/Vault" target="_blank" rel="noreferrer" aria-label="PkgGuard on GitHub" />}
           >
-            <GithubIcon className="size-4" />
+            <GithubIcon className="size-6" />
           </Button>
-          <Button size="sm" className="h-9 rounded-full px-5 text-[14px] font-semibold" render={<Link href="/packages" />} nativeButton={false}>
-            Scan
+          <Button size="sm" className="h-9 gap-2 rounded-full px-5 text-[14px] font-semibold" render={<Link href="/packages" />} nativeButton={false}>
+            <LayoutGrid className="size-4" />
+            Packages
           </Button>
         </div>
       </div>

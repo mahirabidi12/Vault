@@ -606,3 +606,20 @@ cd ~/Vault
 git add web
 git commit -m "Web: directory shows a mix of verdicts with numbered pages for every filter"
 ```
+
+- Navbar (2026-09-20): the search box is gone. The white pill on the right (previously "Scan") is now **Packages** with a grid icon and opens the directory (`/packages`), where searching and scanning happen. Checked at 1440px; clicking it lands on `/packages`.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: navbar search replaced by a Packages button"
+```
+- Navbar sizes (2026-09-20): the "Docs" link is larger (16 px, medium weight) and the GitHub icon is bigger (24 px in a 40 px button).
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: larger Docs text and GitHub icon in the navbar"
+```
