@@ -1,86 +1,122 @@
-import { Radar, ShieldAlert, ShieldCheck, CircleAlert, UserCheck } from "lucide-react";
+import { Radar, ShieldAlert, ShieldCheck, CircleAlert, UserCheck, Database } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { IntelResult } from "@/lib/types/domain";
 
 export function IntelSection({ intel }: { intel?: IntelResult }) {
   if (!intel || (!intel.osv && !intel.safedep)) return null;
 
-  return (
-    <section className="flex flex-col gap-4 p-6">
-      <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
-        <Radar className="size-4.5" />
-        Threat intelligence
-      </h2>
+  const osv = intel.osv;
+  const sd = intel.safedep;
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {intel.osv && (
-          <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-background/50 p-4">
-            <span className="text-xs font-semibold text-muted-foreground">OSV.dev</span>
-            {intel.osv.error ? (
-              <ErrorRow message={intel.osv.error} />
-            ) : intel.osv.maliciousIds.length > 0 ? (
-              <StatusRow icon={ShieldAlert} tone="malicious" text={`Known malware: ${intel.osv.maliciousIds.join(", ")}`} />
+  return (
+    <section className="flex flex-col gap-6 p-6 sm:p-8">
+      <header className="flex items-center gap-3">
+        <span className="flex size-11 items-center justify-center rounded-xl border border-white/10 bg-white/[0.05]">
+          <Radar className="size-5" />
+        </span>
+        <div>
+          <h2 className="font-display text-xl font-semibold tracking-tight">Threat intelligence</h2>
+          <p className="text-sm text-muted-foreground">Two public malware databases, checked live</p>
+        </div>
+      </header>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        {osv && (
+          <SourceTile name="OSV.dev" sub="Open-source vulnerability and malware advisories">
+            {osv.error ? (
+              <Status tone="muted" icon={CircleAlert} text="Lookup failed" note={osv.error} />
+            ) : osv.maliciousIds.length > 0 ? (
+              <Status tone="bad" icon={ShieldAlert} text="Known malware" note={osv.maliciousIds.join(", ")} />
             ) : (
-              <StatusRow icon={ShieldCheck} tone="safe" text="No malicious-package advisory" />
+              <Status tone="ok" icon={ShieldCheck} text="No malware advisory" />
             )}
-            {intel.osv.vulnerabilityIds.length > 0 && (
-              <p className="text-xs text-muted-foreground">
-                {intel.osv.vulnerabilityIds.length} known vulnerabilit
-                {intel.osv.vulnerabilityIds.length !== 1 ? "ies" : "y"}: {intel.osv.vulnerabilityIds.join(", ")}
+            {osv.vulnerabilityIds.length > 0 && (
+              <p className="text-sm text-muted-foreground">
+                {osv.vulnerabilityIds.length} known vulnerabilit{osv.vulnerabilityIds.length !== 1 ? "ies" : "y"}:{" "}
+                <span className="font-mono">{osv.vulnerabilityIds.join(", ")}</span>
               </p>
             )}
-          </div>
+          </SourceTile>
         )}
 
-        {intel.safedep && (
-          <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-background/50 p-4">
-            <span className="text-xs font-semibold text-muted-foreground">SafeDep</span>
-            {intel.safedep.error ? (
-              <ErrorRow message={intel.safedep.error} />
-            ) : !intel.safedep.found ? (
-              <StatusRow icon={ShieldCheck} tone="muted" text="Not analyzed by SafeDep" />
-            ) : intel.safedep.isMalware ? (
-              <StatusRow icon={ShieldAlert} tone="malicious" text="Flagged as malware" />
+        {sd && (
+          <SourceTile name="SafeDep" sub="Community malware analysis feed">
+            {sd.error ? (
+              <Status tone="muted" icon={CircleAlert} text="Lookup failed" note={sd.error} />
+            ) : !sd.found ? (
+              <Status tone="muted" icon={ShieldCheck} text="Not analyzed" />
+            ) : sd.isMalware ? (
+              <Status tone="bad" icon={ShieldAlert} text="Flagged as malware" />
             ) : (
-              <StatusRow icon={ShieldCheck} tone="safe" text="No malware flag" />
+              <Status tone="ok" icon={ShieldCheck} text="No malware flag" />
             )}
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              {intel.safedep.confidence && <span>{intel.safedep.confidence.replace("CONFIDENCE_", "").toLowerCase()} confidence</span>}
-              {intel.safedep.humanVerified && (
-                <span className="inline-flex items-center gap-1 text-safe">
-                  <UserCheck className="size-3" /> Human verified
-                </span>
-              )}
-            </div>
-          </div>
+            {sd.confidence && <ConfidenceBars level={sd.confidence.replace("CONFIDENCE_", "")} />}
+            {sd.humanVerified && (
+              <span className="inline-flex items-center gap-1.5 text-sm text-safe">
+                <UserCheck className="size-4" /> Human verified
+              </span>
+            )}
+          </SourceTile>
         )}
       </div>
     </section>
   );
 }
 
-function StatusRow({
-  icon: Icon,
-  tone,
-  text,
-}: {
-  icon: typeof ShieldCheck;
-  tone: "safe" | "malicious" | "muted";
-  text: string;
-}) {
-  const toneClass = tone === "safe" ? "text-safe" : tone === "malicious" ? "text-malicious" : "text-muted-foreground";
+function SourceTile({ name, sub, children }: { name: string; sub: string; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center gap-2 text-sm font-medium ${toneClass}`}>
-      <Icon className="size-4" />
-      {text}
-    </span>
+    <div className="group flex flex-col gap-4 rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.06]">
+      <div className="flex items-center gap-2.5">
+        <span className="flex size-8 items-center justify-center rounded-lg border border-white/10 bg-white/5">
+          <Database className="size-4 text-muted-foreground" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[15px] font-semibold leading-tight">{name}</p>
+          <p className="truncate text-xs text-muted-foreground">{sub}</p>
+        </div>
+      </div>
+      {children}
+    </div>
   );
 }
 
-function ErrorRow({ message }: { message: string }) {
+function Status({
+  tone,
+  icon: Icon,
+  text,
+  note,
+}: {
+  tone: "ok" | "bad" | "muted";
+  icon: typeof ShieldCheck;
+  text: string;
+  note?: string;
+}) {
+  const color = tone === "ok" ? "text-safe" : tone === "bad" ? "text-malicious" : "text-muted-foreground";
+  const ring = tone === "ok" ? "border-safe/40 bg-safe/10" : tone === "bad" ? "border-malicious/40 bg-malicious/10" : "border-white/15 bg-white/5";
   return (
-    <span className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground">
-      <CircleAlert className="size-4" />
-      Lookup failed: {message}
-    </span>
+    <div className="flex items-center gap-3">
+      <span className={cn("relative flex size-11 shrink-0 items-center justify-center rounded-full border", ring, color)}>
+        {tone === "ok" && <span aria-hidden className="ping-ring absolute inset-0 rounded-full border border-safe/40" />}
+        <Icon className="size-5" />
+      </span>
+      <div className="min-w-0">
+        <p className={cn("text-lg font-semibold leading-tight", color)}>{text}</p>
+        {note && <p className="break-all font-mono text-xs text-muted-foreground">{note}</p>}
+      </div>
+    </div>
+  );
+}
+
+function ConfidenceBars({ level }: { level: string }) {
+  const n = level === "HIGH" ? 3 : level === "MEDIUM" ? 2 : 1;
+  return (
+    <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
+      <span className="flex items-end gap-1" aria-hidden>
+        {[1, 2, 3].map((i) => (
+          <span key={i} className={cn("w-1.5 rounded-full", i <= n ? "bg-safe" : "bg-white/15")} style={{ height: 6 + i * 4 }} />
+        ))}
+      </span>
+      {level.toLowerCase()} confidence
+    </div>
   );
 }

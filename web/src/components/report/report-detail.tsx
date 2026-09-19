@@ -112,12 +112,12 @@ export async function ReportDetail({
         />
       </Reveal>
       <div className="grid gap-6 lg:grid-cols-2">
-        <Reveal>
+        <Reveal className="min-w-0">
           <SpotlightCard className="h-full">
             <PackageInfoCard metadata={report.metadata} />
           </SpotlightCard>
         </Reveal>
-        <div className="flex flex-col gap-6">
+        <div className="flex min-w-0 flex-col gap-6">
           <Reveal delay={100}>
             <SpotlightCard>
               <IntelSection intel={report.intel} />

@@ -390,3 +390,12 @@ cd ~/Vault
 git add web
 git commit -m "Web: animated package report page (verdict gauge, count-up stats, check trace, reveal and glow cards)"
 ```
+
+- Report info cards redesigned (2026-09-19): **Package info**, **Threat intelligence** and **Scan details** now use icon headers with a subtitle, much larger text, and tile layouts. Package info has icon fact tiles, two trust tiles (trusted publishing, provenance), maintainer chips with colored initials, install scripts in a callout, and a footer with the dependency toggle and a "View repository" button. Threat intel has two source tiles with a large status circle (pulsing when clean) and confidence bars. Scan details has four stat tiles (scan duration counted up, where it ran, AI model, analyzer version), request and analysis times, a copyable scan ID, and a code-scan block with a parsed-files bar and four mini counters. Fixed a mobile overflow (grid children needed `min-w-0`). Checked at 1440px and 375px.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: redesign package info, threat intel and scan details cards"
+```
