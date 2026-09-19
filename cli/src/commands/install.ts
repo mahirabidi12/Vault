@@ -20,7 +20,10 @@ export interface InstallOptions {
 }
 
 export async function runInstall(specs: string[], options: InstallOptions): Promise<number> {
-  const client = new PkgGuardClient(loadConfig());
+  const config = loadConfig();
+  // A full-tree check may have to scan many new packages, which takes minutes. Explicit PKGGUARD_MAX_WAIT_MS still wins.
+  if (options.deep && !process.env.PKGGUARD_MAX_WAIT_MS) config.maxWaitMs = Math.max(config.maxWaitMs, 600_000);
+  const client = new PkgGuardClient(config);
   const started = Date.now();
   const spinner = new Spinner();
   spinner.start(`Resolving ${specs.join(", ")}...`);

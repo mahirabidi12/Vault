@@ -131,3 +131,35 @@ describe("PkgGuardClient.reportUrl", () => {
     await expect(client.getPackage("example")).rejects.toThrow(PkgGuardError);
   });
 });
+
+describe("PkgGuardClient retries a busy API", () => {
+  const pkg: PackageRef = { ecosystem: "npm", name: "express", version: "5.2.1" };
+  const slow = { ...config, maxWaitMs: 2000 };
+
+  it("keeps asking after 503 until the API answers", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse(503, { message: "Service Unavailable" }))
+      .mockResolvedValueOnce(jsonResponse(503, { message: "Service Unavailable" }))
+      .mockResolvedValue(jsonResponse(200, record(pkg)));
+    const result = await new PkgGuardClient(slow, fetchImpl).getPackage("express", "5.2.1");
+    expect(result.status).toBe("COMPLETE");
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+  });
+
+  it("retries a dropped connection", async () => {
+    const fetchImpl = vi.fn().mockRejectedValueOnce(new Error("socket hang up")).mockResolvedValue(jsonResponse(200, record(pkg)));
+    await expect(new PkgGuardClient(slow, fetchImpl).getPackage("express", "5.2.1")).resolves.toMatchObject({ status: "COMPLETE" });
+  });
+
+  it("gives up with a clear message when it stays busy", async () => {
+    const fetchImpl = vi.fn().mockImplementation(async () => jsonResponse(503, { message: "Service Unavailable" }));
+    await expect(new PkgGuardClient(config, fetchImpl).getPackage("express", "5.2.1")).rejects.toThrow(/busy/);
+  });
+
+  it("does not retry real errors like 404", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(jsonResponse(404, { error: "unknown package" }));
+    await expect(new PkgGuardClient(slow, fetchImpl).getPackage("nope")).rejects.toThrow(/unknown package/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+  });
+});

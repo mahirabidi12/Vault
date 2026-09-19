@@ -1,6 +1,8 @@
 import type { ReportLite } from "./layers.js";
 import type { CheckResponse, PackageRef, VerdictRecord } from "./types.js";
 
+const RETRYABLE_STATUS = new Set([429, 502, 503, 504]);
+
 export const MAX_CHECK_PACKAGES = 200; // must match analyzer/src/pkgguard_analyzer/cloud/api.py
 
 // Where the human-readable report pages live (Amplify site). Override with PKGGUARD_WEB_URL.
@@ -144,9 +146,30 @@ export class PkgGuardClient {
     }
   }
 
+  /**
+   * One API call. A busy or unreachable API (429/502/503/504, timeouts, dropped connections) is retried with a growing
+   * pause until maxWaitMs runs out: while many packages are being scanned the API can answer "busy" for a while.
+   */
   private async requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.config.apiUrl}${path}`;
-    const response = await this.fetchWithTimeout(url, init);
+    const deadline = Date.now() + this.config.maxWaitMs;
+    for (let attempt = 0; ; attempt++) {
+      let response: Response | undefined;
+      let failure: PkgGuardError | undefined;
+      try {
+        response = await this.fetchWithTimeout(url, init);
+      } catch (error) {
+        failure = error instanceof PkgGuardError ? error : new PkgGuardError(String(error));
+      }
+      if (response && !RETRYABLE_STATUS.has(response.status)) return this.parseJson<T>(response, url);
+      if (Date.now() >= deadline) {
+        throw failure ?? new PkgGuardError(`PkgGuard API is busy (HTTP ${response!.status}) and did not recover in time. Try again in a few minutes.`);
+      }
+      await sleep(Math.min(this.config.pollIntervalMs * 2 ** Math.min(attempt, 4), 15_000));
+    }
+  }
+
+  private async parseJson<T>(response: Response, url: string): Promise<T> {
     let body: unknown;
     try {
       body = await response.json();

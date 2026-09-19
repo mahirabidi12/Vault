@@ -5,7 +5,7 @@ import { Command } from "commander";
 import { runCheck } from "./commands/check.js";
 import { runInstall } from "./commands/install.js";
 
-const PACKAGE_VERSION = "0.1.3";
+const PACKAGE_VERSION = "0.1.4";
 
 /** Loads ../.env (next to package.json) into process.env, without overriding real env vars. No .env file is fine. */
 function loadDotEnv(): void {
