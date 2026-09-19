@@ -4,14 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { ScrollLink } from "@/components/scroll-link";
 import { cn } from "@/lib/utils";
 
 const COLUMNS = [
   {
     title: "Product",
     links: [
-      { href: "/scan", label: "Scan a project" },
-      { href: "/feed", label: "Threat feed" },
       { href: "/docs", label: "Docs" },
     ],
   },
@@ -47,12 +46,12 @@ export function SiteFooter() {
             Check any package in seconds, from your terminal, your agent, or the browser.
           </p>
           <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <Link
-              href="/scan"
+            <ScrollLink
+              to="get-started"
               className="inline-flex h-12 items-center gap-2 rounded-lg bg-foreground px-6 text-[15px] font-semibold text-background transition-opacity hover:opacity-90"
             >
-              Scan a project <ArrowRight className="size-4" />
-            </Link>
+              Get the CLI <ArrowRight className="size-4" />
+            </ScrollLink>
             <Link
               href="/docs"
               className="inline-flex h-12 items-center rounded-lg border border-border bg-black/40 px-6 text-[15px] font-medium transition-colors hover:bg-white/5"

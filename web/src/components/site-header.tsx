@@ -5,8 +5,6 @@ import { Button } from "@/components/ui/button";
 import { GithubIcon } from "@/components/icons/github-icon";
 
 const NAV = [
-  { href: "/scan", label: "Scan a project" },
-  { href: "/feed", label: "Threat feed" },
   { href: "/docs", label: "Docs" },
 ];
 
@@ -43,9 +41,6 @@ export function SiteHeader() {
             render={<a href="https://github.com/mahirabidi12/Vault" target="_blank" rel="noreferrer" aria-label="PkgGuard on GitHub" />}
           >
             <GithubIcon className="size-4" />
-          </Button>
-          <Button size="sm" className="h-9 rounded-full px-5 text-[14px] font-semibold" render={<Link href="/scan" />} nativeButton={false}>
-            Scan
           </Button>
         </div>
       </div>

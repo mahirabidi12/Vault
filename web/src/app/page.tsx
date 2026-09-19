@@ -5,11 +5,11 @@ import { HeroTitle } from "@/components/home/hero-title";
 import { Ticker } from "@/components/home/ticker";
 import { Reveal } from "@/components/reveal";
 import { GetStarted } from "@/components/home/get-started";
+import { ScrollLink } from "@/components/scroll-link";
 import { RequestFlow } from "@/components/home/request-flow";
 import { LiveStats } from "@/components/home/live-stats";
 import { ScanJourney } from "@/components/home/scan-journey";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
 
 export default function HomePage() {
   return (
@@ -24,16 +24,13 @@ export default function HomePage() {
               className="animate-fade-up max-w-xl text-balance text-base text-foreground/80 sm:text-lg"
               style={{ animationDelay: "2000ms" }}
             >
-              PkgGuard checks every npm package for malware and shady install scripts. Use the CLI in your terminal, or give your AI agent a tool that checks before it installs.
+              PkgGuard checks every npm package for malware and shady install scripts. Use the CLI in your terminal, or give your AI agent an MCP tool that checks before it installs.
             </p>
             <div className="animate-fade-up flex flex-wrap justify-center gap-3" style={{ animationDelay: "2200ms" }}>
-              <Button size="lg" className="h-11 rounded-lg px-6 text-[15px] font-semibold" render={<Link href="/scan" />} nativeButton={false}>
-                Scan a project <ArrowRight className="size-4" />
-              </Button>
-              <Button size="lg" variant="outline" className="h-11 rounded-lg bg-black/60 px-6 text-[15px] font-medium" render={<Link href="#how-it-works" />} nativeButton={false}>
+              <Button size="lg" className="h-11 rounded-lg px-6 text-[15px] font-semibold" render={<ScrollLink to="how-it-works" />} nativeButton={false}>
                 How it works
               </Button>
-              <Button size="lg" variant="outline" className="h-11 rounded-lg bg-black/60 px-6 text-[15px] font-medium" render={<Link href="#get-started" />} nativeButton={false}>
+              <Button size="lg" variant="outline" className="h-11 rounded-lg bg-black/60 px-6 text-[15px] font-medium" render={<ScrollLink to="get-started" />} nativeButton={false}>
                 Get the CLI
               </Button>
             </div>

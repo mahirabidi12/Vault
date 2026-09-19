@@ -4,12 +4,10 @@ import { useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   getPackage,
   getReport,
-  getFeed,
   getStats,
   search,
-  checkPackages,
 } from "@/lib/api";
-import type { PackageRef, Report, ScanStatus, VerdictRecord } from "@/lib/types/domain";
+import type { Report, ScanStatus, VerdictRecord } from "@/lib/types/domain";
 
 const LIVE_STATUSES: ScanStatus[] = ["PENDING", "SCANNING"];
 
@@ -33,10 +31,6 @@ export function useReport(
   });
 }
 
-export function useFeed() {
-  return useQuery({ queryKey: ["feed"], queryFn: () => getFeed() });
-}
-
 export function useStats() {
   return useQuery({ queryKey: ["stats"], queryFn: () => getStats() });
 }
@@ -46,15 +40,5 @@ export function useSearch(query: string) {
     queryKey: ["search", query],
     queryFn: () => search(query),
     enabled: query.trim().length > 0,
-  });
-}
-
-export function useCheckPackages(list: PackageRef[]) {
-  return useQuery({
-    queryKey: ["check", list.map((p) => `${p.name}@${p.version}`).join(",")],
-    queryFn: () => checkPackages(list),
-    enabled: list.length > 0,
-    refetchInterval: (query) =>
-      query.state.data?.some((r) => LIVE_STATUSES.includes(r.status)) ? 600 : false,
   });
 }

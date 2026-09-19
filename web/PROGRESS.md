@@ -512,3 +512,68 @@ cd ~/Vault
 git add web
 git commit -m "Web: remove scroll settling, page stops where you stop"
 ```
+
+## "Scan a project" feature removed (2026-09-20)
+- Removed completely: the `/scan` page (`app/scan/`), the lockfile drop-zone (`components/scan/`), the lockfile parser and its tests (`lib/lockfile.ts`, `lib/lockfile.test.ts`), and the batch-check code that only it used (`checkPackages` in `lib/api.ts` with its helpers, `useCheckPackages` in `lib/queries.ts`). `/scan` now returns 404.
+- Links and copy removed or changed: the header no longer has the "Scan a project" link or the white "Scan" button; the hero buttons are now "How it works" (primary) and "Get the CLI"; the footer's Product column drops the link and its closing block's button is now "Get the CLI" (goes to `/#get-started`); the docs privacy note no longer mentions the project scan page. The CLI's own `pkgguard check` (which reads a lockfile in a terminal) is unchanged. Older entries in this file that describe the scan page are history.
+- `tsc`, `eslint` and the tests are clean (33 tests, down from 49 because the lockfile tests went with the feature).
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: remove the scan-a-project feature"
+```
+
+## CLI card wording fixed (2026-09-20)
+- The CLI card in `get-started.tsx` still described the old behaviour (whole dependency tree). Since CLI 0.1.2 `pkgguard install <pkg>` checks only the packages you name, and the whole tree only with `--deep`, as the demo terminal shows ("65 dependencies were not checked; add --deep"). Tagline now reads "For developers: checks the package you install and shows each result. Add --deep for its dependencies." (the longer wording from the brief overflowed the card's two-line clamp, so it was shortened); step 2 now reads "PkgGuard checks the package and shows what each check found." Nothing else changed. A search of `src/` finds no remaining "whole tree" or "every package in the tree" wording.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: CLI card describes the real default (named package only, --deep for the tree)"
+```
+
+## Hero and footer section links stay on the page (2026-09-20)
+- "How it works" and "Get the CLI" (and the footer's "Get the CLI") used plain `#hash` links: the URL changed, and once the hash was already in the address bar, clicking again after scrolling back to the top did nothing. New `components/scroll-link.tsx`: on the home page it glides to the section with `scrollIntoView` and never touches the URL, so it works every time; from any other page it is an ordinary link to `/#section`. Verified in a browser: from the top, each button scrolled to its section on both the first and second click, and the URL stayed `/`.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: CLI card wording matches --deep behaviour; section links scroll in place"
+```
+
+## Threat feed removed (2026-09-20)
+- Removed the `/feed` page (`app/feed/`), the "Threat feed" links in the header and footer, and the code only it used (`getFeed` and `FeedItem` in `lib/api.ts`, `useFeed` in `lib/queries.ts`). `/feed` now returns 404. Kept on purpose: the demo seed data in `fixtures/feed-seed.ts` (fixture mode still uses it for the home-page stats) and the `/v1/feed` row in the docs' API table, because that backend endpoint still exists. `tsc`, `eslint` and the 33 tests are clean.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: remove the threat feed"
+```
+
+## Docs page redesign and hero wording (2026-09-20)
+- **Hero copy** now says "give your AI agent an MCP tool that checks before it installs."
+- **Docs page** (`app/docs/page.tsx`) rebuilt, keeping the accurate text the other agent wrote (CLI default checks only the named package, `--deep`, exit codes, MCP command at `@0.1.1`, no API key needed, base URL). New: a header panel with three quick-start tiles (CLI, agent tool, API, each with its command) that link to their sections; a sticky "On this page" sidebar that follows your scroll (`components/docs/toc.tsx`); a "Reading a verdict" section with three coloured verdict cards and a note on which layers are final; the CLI as three numbered steps with copyable command blocks, an options table and colour-coded exit codes; the MCP section with tabs for Claude Code and for Cursor and other clients (`components/docs/mcp-tabs.tsx`, the JSON config with a copy button via `components/docs/code-block.tsx`) plus a strip of what the agent is told (ALLOW, WARN, BLOCK, WAIT, from `mcp/src/format.ts`); the API as endpoint cards with method badges plus a real request and response example (the response is a trimmed copy of a live `express@5.2.1` answer); a privacy card. Sections fade in on scroll. Checked at 1440px and 390px (no sideways scroll); the Cursor tab and the mobile layout were not looked at closely.
+- The step that used "whole tree" is now titled "Check its dependencies too" so the default behaviour is never described that way.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: redesigned docs page; hero says MCP tool"
+```
+
+## Search error (HTTP 503): cause and a safer site (2026-09-20)
+- **Cause (not a website bug):** the API answered `503 Service Unavailable`. The AWS account allows only 10 Lambda executions at once (`ConcurrentExecutions` limit 10). At the time all 10 were taken by scan jobs (`ScanFunction` peaked at 10 concurrent, 3 Step Functions executions running), so the API's own Lambda was throttled (7 throttles) and API Gateway returned 503 for every route. It cleared by itself minutes later; the API answered 200 again. A bulk scan run from the scanner side, or many parallel scans, will do this again. The real fix is on AWS: request a Lambda concurrency quota increase (Service Quotas, "Concurrent executions"), or cap how many scans run at once so the API always has room. (Reserving concurrency for the API is not possible while the account limit is 10, because AWS requires 10 to stay unreserved.)
+- **Site hardening:** `lib/api.ts` now retries a request up to three times (0.4 s, 0.9 s, 1.8 s) when the backend answers 502, 503 or 504, so a short throttle usually never reaches the user; `ApiClientError` carries the HTTP status and a 404 is now detected by status. If it still fails, the search and package pages show a friendly "PkgGuard is busy right now" screen with a Try again button (`components/api-error.tsx`, `app/search/error.tsx`, `app/npm/[...name]/error.tsx`) instead of the raw error overlay. Not tested against a real 503 (the API had recovered), only that the pages still load.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: retry on 503 and show a friendly busy screen"
+```

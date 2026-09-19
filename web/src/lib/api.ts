@@ -310,9 +310,19 @@ function delay(ms: number): Promise<void> {
 //   #                 NEXT_PUBLIC_USE_FIXTURES=false
 // ---------------------------------------------------------------------------
 
-export const MAX_CHECK_PACKAGES = 200; // must match analyzer's cloud/api.py
+class ApiClientError extends Error {
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
 
-class ApiClientError extends Error {}
+// The backend can briefly answer 502/503/504 when its Lambda concurrency is used up by scans. Those clear in
+// seconds, so requests are retried a few times before an error reaches the page.
+const RETRY_STATUSES = new Set([502, 503, 504]);
+const RETRY_DELAYS_MS = [400, 900, 1800];
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 /** Every route (cloud/api.py `handler`) returns JSON, {"error": msg} on 4xx/5xx. */
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -321,77 +331,47 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       "NEXT_PUBLIC_API_URL is not set. Run `uv run pkgguard-dev-api` in analyzer/ and point NEXT_PUBLIC_API_URL at it."
     );
   }
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, {
-      ...init,
-      headers: {
-        "content-type": "application/json",
-        ...(API_KEY ? { "x-api-key": API_KEY } : {}),
-        ...init?.headers,
-      },
-    });
-  } catch (error) {
-    const detail = error instanceof Error ? error.message : String(error);
-    throw new ApiClientError(`Could not reach the PkgGuard API at ${API_URL}: ${detail}`);
+  let res: Response | undefined;
+  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+    try {
+      res = await fetch(`${API_URL}${path}`, {
+        ...init,
+        headers: {
+          "content-type": "application/json",
+          ...(API_KEY ? { "x-api-key": API_KEY } : {}),
+          ...init?.headers,
+        },
+      });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new ApiClientError(`Could not reach the PkgGuard API at ${API_URL}: ${detail}`);
+    }
+    if (!RETRY_STATUSES.has(res.status) || attempt === RETRY_DELAYS_MS.length) break;
+    await sleep(RETRY_DELAYS_MS[attempt]);
   }
+  if (!res) throw new ApiClientError("No response from the PkgGuard API.");
   let body: unknown;
   try {
     body = await res.json();
   } catch {
-    throw new ApiClientError(`PkgGuard API returned a non-JSON response (HTTP ${res.status}) for ${path}.`);
+    if (RETRY_STATUSES.has(res.status)) throw new ApiClientError("PkgGuard is busy right now. Please try again in a few seconds.", res.status);
+    throw new ApiClientError(`PkgGuard API returned a non-JSON response (HTTP ${res.status}) for ${path}.`, res.status);
   }
   if (res.status >= 400) {
-    const message = (body as { error?: string } | null)?.error ?? `HTTP ${res.status}`;
-    throw new ApiClientError(`PkgGuard API error: ${message}`);
+    const message = (body as { error?: string } | null)?.error ?? (RETRY_STATUSES.has(res.status) ? "PkgGuard is busy right now. Please try again in a few seconds." : `HTTP ${res.status}`);
+    throw new ApiClientError(RETRY_STATUSES.has(res.status) ? message : `PkgGuard API error: ${message}`, res.status);
   }
   return body as T;
 }
 
 /** Like apiFetch, but a 404 resolves to null instead of throwing (report not ready / scan not found). */
 async function apiFetchOrNull<T>(path: string): Promise<T | null> {
-  if (!API_URL) return apiFetch<T>(path); // let the missing-URL error surface normally
-  const res = await fetch(`${API_URL}${path}`, { headers: API_KEY ? { "x-api-key": API_KEY } : undefined });
-  if (res.status === 404) return null;
-  let body: unknown;
   try {
-    body = await res.json();
-  } catch {
-    throw new ApiClientError(`PkgGuard API returned a non-JSON response (HTTP ${res.status}) for ${path}.`);
+    return await apiFetch<T>(path);
+  } catch (error) {
+    if (error instanceof ApiClientError && error.status === 404) return null;
+    throw error;
   }
-  if (res.status >= 400) {
-    const message = (body as { error?: string } | null)?.error ?? `HTTP ${res.status}`;
-    throw new ApiClientError(`PkgGuard API error: ${message}`);
-  }
-  return body as T;
-}
-
-function chunk<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
-  return chunks;
-}
-
-function errorRecord(pkg: PackageRef, reason: string): VerdictRecord {
-  return {
-    package: pkg,
-    status: "FAILED",
-    scanId: "",
-    requestedAt: new Date().toISOString(),
-    failureReason: reason,
-    signals: [],
-    ranOn: "cloud",
-    analyzerVersion: "unknown",
-  };
-}
-
-function packageKey(pkg: PackageRef): string {
-  return `${pkg.ecosystem}:${pkg.name}@${pkg.version}`;
-}
-
-interface CheckResponse {
-  results: VerdictRecord[];
-  errors: { package: Partial<PackageRef>; error: string }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -451,57 +431,6 @@ export async function getVersions(name: string): Promise<VerdictRecord[]> {
 
   await delay(100);
   return FIXTURES.filter((e) => e.record.package.name.toLowerCase() === name.toLowerCase()).map((e) => e.record);
-}
-
-export async function checkPackages(list: PackageRef[]): Promise<VerdictRecord[]> {
-  if (!USE_FIXTURES) {
-    if (list.length === 0) return [];
-    const byKey = new Map<string, PackageRef>();
-    for (const pkg of list) byKey.set(packageKey(pkg), pkg);
-    const unique = [...byKey.values()];
-
-    const results = new Map<string, VerdictRecord>();
-    for (const batch of chunk(unique, MAX_CHECK_PACKAGES)) {
-      const response = await apiFetch<CheckResponse>("/v1/check", {
-        method: "POST",
-        body: JSON.stringify({ packages: batch }),
-      });
-      for (const record of response.results) results.set(packageKey(record.package), record);
-      for (const failure of response.errors) {
-        const pkg = failure.package as PackageRef;
-        results.set(packageKey(pkg), errorRecord(pkg, failure.error));
-      }
-    }
-    return unique.map((pkg) => results.get(packageKey(pkg)) ?? errorRecord(pkg, "No result returned by the API."));
-  }
-
-  return Promise.all(list.map((p) => getPackage(p.name, p.version)));
-}
-
-export interface FeedItem {
-  record: VerdictRecord;
-  // The real /v1/feed only returns summaries (VerdictRecord), never the full
-  // report — nothing in the UI reads .report today, so this stays nullable
-  // rather than firing N extra report fetches just to satisfy a type.
-  report: Report | null;
-}
-
-export async function getFeed(limit = 20): Promise<FeedItem[]> {
-  if (!USE_FIXTURES) {
-    const { items } = await apiFetch<{ items: VerdictRecord[] }>(`/v1/feed`);
-    return items.slice(0, limit).map((record) => ({ record, report: null }));
-  }
-
-  await delay(150);
-  const items = FIXTURES.filter(
-    (e) => e.record.status === "COMPLETE" && e.record.verdict !== "SAFE"
-  );
-  const live = [...liveScans.values()]
-    .map((s) => BY_SCAN_ID.get(s.scanId))
-    .filter((e): e is Entry => !!e && e.record.status === "COMPLETE" && e.record.verdict !== "SAFE");
-  return [...items, ...live]
-    .sort((a, b) => (b.record.analyzedAt ?? "").localeCompare(a.record.analyzedAt ?? ""))
-    .slice(0, limit);
 }
 
 export interface Stats {
