@@ -174,7 +174,7 @@ Real malware is never run locally, only inside the AWS sandbox.
 
 ![PkgGuard AWS architecture, animated](docs/assets/aws-architecture.svg)
 
-▶ **[Open the full-screen, step-by-step architecture page](https://htmlpreview.github.io/?https://github.com/mahirabidi12/Vault/blob/main/docs/architecture.html)** (or open [`docs/architecture.html`](docs/architecture.html) locally in a browser).
+▶ **[Open the full-screen, step-by-step architecture page](https://main.d37i3n9ev8lsz3.amplifyapp.com/architecture.html)** (also in this repo as [`docs/architecture.html`](docs/architecture.html)).
 
 **How it flows**
 
