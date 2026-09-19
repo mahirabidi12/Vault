@@ -13,7 +13,7 @@ export function PackageInfoCard({ metadata }: { metadata?: PackageMetadata }) {
   const scripts = Object.entries(metadata.installScripts ?? {});
 
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card/60 p-6">
+    <section className="flex flex-col gap-4 p-6">
       <h2 className="font-display text-lg font-semibold tracking-tight">Package info</h2>
 
       {metadata.description && <p className="text-sm text-foreground/80">{metadata.description}</p>}

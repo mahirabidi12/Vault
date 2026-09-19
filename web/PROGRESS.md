@@ -376,3 +376,17 @@ cd ~/Vault
 git add web
 git commit -m "Web: redesigned search results, footer CTA only on the home page"
 ```
+
+## Report page: motion and a live feel (2026-09-19)
+- `verdict-hero.tsx` rebuilt: a large glass hero with drifting glow blobs tinted by the verdict, a one-time light sweep, staggered rise-in of the name, badges and summary, and a **verdict gauge** (a ring that fills to the confidence level with a pinging halo and the verdict icon). The metadata card sits under the gauge.
+- New `stat-tiles.tsx` (with `components/count-up.tsx`): four tiles (files scanned, findings, install-time files, unpacked KB) whose numbers count up when scrolled into view.
+- New `pipeline-trace.tsx`: "Every check this package went through": six stages (threat intel, package info, static scan, sandbox, AI review, verdict) that light up one after another with a connector line filling between them, each showing a real result from the report. The sandbox stage says "Not run" because no report carries sandbox data yet; it will need the report type regenerated once the scanner agent ships it.
+- `report-detail.tsx`: sections reveal on scroll (`Reveal`), and the info, intel and scan-detail cards get the cursor-following glow (`SpotlightCard`); their own borders were removed from the three card components. New CSS motion classes at the end of `globals.css` (blob-drift, ring-fill, sweep-x, rise-in, ping-ring, line-grow); all are switched off under reduced motion.
+- Checked in a browser at 1440px and 375px with the express report; the malicious and suspicious variants and the live "scanning" page were not restyled or re-checked.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: animated package report page (verdict gauge, count-up stats, check trace, reveal and glow cards)"
+```

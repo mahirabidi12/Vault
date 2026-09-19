@@ -11,7 +11,7 @@ export function ScanMetaCard({
   codeScan?: CodeScanSummary;
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card/60 p-6">
+    <section className="flex flex-col gap-4 p-6">
       <h2 className="flex items-center gap-2 font-display text-lg font-semibold tracking-tight">
         <Cpu className="size-4.5" />
         Scan details

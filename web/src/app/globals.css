@@ -415,3 +415,55 @@
 @media (prefers-reduced-motion: reduce) {
   .border-beam { animation: none; opacity: 0; }
 }
+
+/* ---- Report page motion ---- */
+@keyframes blob-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(4%, -6%, 0) scale(1.08); }
+  66% { transform: translate3d(-5%, 4%, 0) scale(0.95); }
+}
+.blob-drift {
+  animation: blob-drift 16s ease-in-out infinite;
+}
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--ring-len); }
+  to { stroke-dashoffset: var(--ring-to); }
+}
+.ring-fill {
+  animation: ring-fill 1.6s cubic-bezier(0.22, 1, 0.36, 1) 0.3s both;
+}
+@keyframes sweep-x {
+  0% { transform: translateX(-120%); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateX(320%); opacity: 0; }
+}
+.sweep-x {
+  animation: sweep-x 2.2s cubic-bezier(0.4, 0, 0.2, 1) 0.4s 1 both;
+}
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.rise-in {
+  animation: rise-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes ping-ring {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+.ping-ring {
+  animation: ping-ring 2.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes line-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.line-grow {
+  transform-origin: left;
+  animation: line-grow 1.4s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .blob-drift, .sweep-x, .ping-ring { animation: none; }
+  .ring-fill, .rise-in, .line-grow { animation-duration: 0.01ms; animation-delay: 0s; }
+}
