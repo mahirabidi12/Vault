@@ -416,3 +416,26 @@ cd ~/Vault
 git add web
 git commit -m "Web: dynamic analysis section, real sandbox stage in the check trace, evaluation sample label"
 ```
+
+## Live scan page: the whole test process, step by step (2026-09-19)
+- `components/report/live-scan-progress.tsx` (the page shown while a new package is being scanned) is rebuilt. A header with the package name, a live mm:ss timer and a seven-segment progress bar; a **step rail** of all seven steps (fetch, threat intel, package info, static scan, sandbox, AI review, verdict) with done / running / waiting states; and a large **"now running" panel** for the current step with its own animated view: the tarball travelling and the hash filling in (fetch), two database lookups (intel), a checklist flipping (info), a code view with a scanning beam (static), the **sandbox container** (planted decoys, what it is doing now, run A and run B bars filling in parallel, the blocked internet, an "analysing" badge), AI tool calls appearing with a thinking indicator, and a verdict ring. The old page had five steps and no sandbox.
+- **Honest by design:** the API only reports pending / scanning / done, not which step a scan is on, so the step shown is an **estimate from typical timings** (about 3, 3, 2, 5, 14, 14, 2 seconds). Every panel is tagged "estimated view", the sandbox panel says it shows the steps rather than the package's real events, and a footer note explains this. If a scan runs long the last step stays on screen with a "taking longer than usual" note; nothing claims to be stuck or finished. The timer starts from the request time (bounded to one minute of offset in case of clock differences) and shows a "waiting for a worker" state while the record is pending.
+- To make the page show real steps later, the backend would need to expose a stage field on the scan record; the estimate can then be replaced by it.
+- Checked in a browser at 1440px by holding the fixture simulator in "scanning" for a few minutes (temporarily; restored) and screenshotting steps 4, 5 and 7. Not checked at mobile width; fetch, intel, info and the AI panel were only seen in an earlier screenshot of the AI step.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: live scan page shows every step, with a sandbox analysing view"
+```
+
+## Home: stats moved under the hero and redesigned (2026-09-20)
+- `components/home/live-stats.tsx` now sits directly below the hero (before the ticker) instead of further down the page. New layout: a large "Packages scanned" tile (huge counting number, a pulsing "Live" tag, an animated equalizer strip, drifting glow) and three verdict tiles ("No issues found", "Suspicious", "Malicious caught") each with a **ring gauge that fills to that verdict's share of all scans**, a pinging halo, a colored glow, a count-up number and the percentage. Below them, a segmented **distribution bar** grows in with a legend. Tiles rise in one after another and lift on hover. Uses the shared `components/count-up.tsx`; new `eq-bar` and `grow-x` keyframes in `globals.css`, all switched off under reduced motion. Checked at 1440px with the live API numbers (418 scanned: 316, 23, 79); the 390px view was rendered but not looked at.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: stats under the hero with ring gauges, count-up and distribution bar"
+```

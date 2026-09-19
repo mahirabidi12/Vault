@@ -55,6 +55,11 @@ export default function HomePage() {
           </div>
       </section>
 
+      {/* Live stats, right under the hero */}
+      <section className="mx-auto w-full max-w-6xl px-4 pb-14 pt-16 sm:px-6 sm:pt-20">
+        <Reveal><LiveStats /></Reveal>
+      </section>
+
       <Ticker />
 
       <GetStarted />
@@ -73,11 +78,6 @@ export default function HomePage() {
         <Reveal delay={100}>
           <RequestFlow />
         </Reveal>
-      </section>
-
-      {/* Live stats */}
-      <section className="mx-auto -mt-2 w-full max-w-5xl px-4 py-10 sm:px-6">
-        <Reveal><LiveStats /></Reveal>
       </section>
 
       {/* Step-by-step journey; soft fades at both edges so it melts into the page */}
