@@ -86,19 +86,22 @@ def cmd_run(plan: list[dict], run_id: str, workers: int, store: bool = False) ->
 
 def cmd_run_packages(list_file: Path, run_id: str, workers: int, store: bool) -> None:
     """Real npm packages (latest version, real threat intel), scanned by the Lambda like a live scan."""
-    from pkgguard_analyzer.sandbox.pilot import parse_list
-
     fn = scan_function_name()
     results_dir = OUT / run_id
     results_dir.mkdir(parents=True, exist_ok=True)
+    items: list[tuple[str, str, str | None]] = []
+    for line in list_file.read_text().splitlines():
+        parts = line.split("#", 1)[0].split()
+        if parts:
+            items.append((parts[0], parts[1] if len(parts) > 1 else "clean", parts[2] if len(parts) > 2 else None))  # optional exact version
 
-    def run(item: tuple[str, str]) -> dict:
-        name, label = item
+    def run(item: tuple[str, str, str | None]) -> dict:
+        name, label, version = item
         target = results_dir / (name.replace("/", "__") + ".json")
         if target.exists():
             return json.loads(target.read_text())
         try:
-            summary = invoke(fn, {"action": "analyze_package", "run": run_id, "store": store, "name": name, "label": label})["summary"]
+            summary = invoke(fn, {"action": "analyze_package", "run": run_id, "store": store, "name": name, "label": label, "version": version})["summary"]
         except Exception as error:
             summary = {"name": name, "label": label, "error": f"{type(error).__name__}: {error}"[:300]}
         if not _transient(summary):
@@ -107,7 +110,7 @@ def cmd_run_packages(list_file: Path, run_id: str, workers: int, store: bool) ->
         return summary
 
     with ThreadPoolExecutor(workers) as pool:
-        summaries = list(pool.map(run, parse_list(list_file)))
+        summaries = list(pool.map(run, items))
     (OUT / f"{run_id}-summary.json").write_text(json.dumps(summaries, indent=1))
     print(f"\n{len(summaries)} packages analysed")
 

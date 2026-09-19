@@ -9,7 +9,7 @@ Parameters:
     Description: Secrets Manager secret holding the OpenAI API key (plain string).
   ApiKeySecretName:
     Type: String
-    Default: pkgguard/api-shared-key
+    Default: ""
     Description: Secrets Manager secret holding the shared API key. Empty means no auth (open API).
   OpenAIModel:
     Type: String
