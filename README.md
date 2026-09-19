@@ -1,14 +1,18 @@
+<div align="center">
+
 # 🛡️ PkgGuard
 
 ## Your system is compromised, and you don't even know it.
 
-**Every** `npm install` **runs code written by strangers. PkgGuard reads it, runs it in a cage, and tells you the truth *before* it touches your machine.**
+**Every `npm install` runs code written by strangers. PkgGuard reads it, runs it in a cage, and tells you the truth *before* it touches your machine.**
 
-![npm cli](https://img.shields.io/npm/v/pkgguard-cli?label=pkgguard-cli&color=cb3837)
-![npm mcp](https://img.shields.io/npm/v/pkgguard-mcp?label=pkgguard-mcp&color=cb3837)
-![live site](https://img.shields.io/badge/live%20site-open-3fb950)
+<a href="https://www.npmjs.com/package/pkgguard-cli"><img src="https://img.shields.io/npm/v/pkgguard-cli?label=pkgguard-cli&color=cb3837" alt="pkgguard-cli on npm"></a>
+<a href="https://www.npmjs.com/package/pkgguard-mcp"><img src="https://img.shields.io/npm/v/pkgguard-mcp?label=pkgguard-mcp&color=cb3837" alt="pkgguard-mcp on npm"></a>
+<a href="https://main.d37i3n9ev8lsz3.amplifyapp.com"><img src="https://img.shields.io/badge/live%20site-open-3fb950" alt="live site"></a>
 
-![A package passes five checks and gets a verdict](docs/assets/pipeline.svg)
+<img src="docs/assets/pipeline.svg" alt="A package passes five checks and gets a verdict" width="860">
+
+</div>
 
 ---
 
@@ -102,7 +106,7 @@ Reading code can be fooled. So PkgGuard also **runs** the package in a locked-do
 - **Tricks handled:** the package is run under different conditions (like a CI machine, or a date far in the future) so malware that waits or hides will still show itself.
 - **Code analysis:** alongside the run, the source is read statically for stealers, hidden `eval`, reverse shells and download-and-run patterns.
 
-Malware only ever runs **inside AWS**, in a network with no route to the internet, never on a laptop. See the [AWS architecture](#-aws-architecture) below.
+Malware only ever runs **inside AWS**, in a network with no route to the internet, never on a laptop. See the [AWS architecture](#aws-architecture) below.
 
 ---
 
@@ -137,13 +141,13 @@ A package is scanned **once**, then served from cache to everyone, so the first 
 
 | Folder                        | What it is                                                                                          |
 | ----------------------------- | --------------------------------------------------------------------------------------------------- |
-| `[analyzer/](analyzer)`       | The scanner: metadata checks, static rules, sandbox analysis, model review, scoring, cloud handlers |
-| `[sandbox/](sandbox)`         | The container image, the supervisor, the fake internet, and harmless test fixtures                  |
-| `[infra/](infra)`             | The whole AWS stack as one SAM template                                                             |
-| `[cli/](cli)` · `[mcp/](mcp)` | The two published tools                                                                             |
-| `[web/](web)`                 | The website                                                                                         |
-| `[schema/](schema)`           | The data contract shared by everything, with real examples                                          |
-| `[eval/](eval)`               | Harmless fixtures and the evaluation runs                                                           |
+| [`analyzer/`](analyzer)       | The scanner: metadata checks, static rules, sandbox analysis, model review, scoring, cloud handlers |
+| [`sandbox/`](sandbox)         | The container image, the supervisor, the fake internet, and harmless test fixtures                  |
+| [`infra/`](infra)             | The whole AWS stack as one SAM template                                                             |
+| [`cli/`](cli) · [`mcp/`](mcp) | The two published tools                                                                             |
+| [`web/`](web)                 | The website                                                                                         |
+| [`schema/`](schema)           | The data contract shared by everything, with real examples                                          |
+| [`eval/`](eval)               | Harmless fixtures and the evaluation runs                                                           |
 
 
 
@@ -164,11 +168,13 @@ Real malware is never run locally, only inside the AWS sandbox.
 
 
 
+<a id="aws-architecture"></a>
+
 ## ☁️ AWS architecture
 
 ![PkgGuard AWS architecture, animated](docs/assets/aws-architecture.svg)
 
-For a full-screen, step-by-step version to present, open `[docs/architecture.html](docs/architecture.html)` in a browser.
+▶ **[Open the full-screen, step-by-step architecture page](https://htmlpreview.github.io/?https://github.com/mahirabidi12/Vault/blob/main/docs/architecture.html)** (or open [`docs/architecture.html`](docs/architecture.html) locally in a browser).
 
 **How it flows**
 
@@ -202,7 +208,7 @@ For a full-screen, step-by-step version to present, open `[docs/architecture.htm
 | Outside AWS                              | npm registry, OSV.dev, SafeDep                                                          |
 
 
-The whole stack is one SAM template: `[infra/template.yaml](infra/template.yaml)`.
+The whole stack is one SAM template: [`infra/template.yaml`](infra/template.yaml).
 
 ---
 
