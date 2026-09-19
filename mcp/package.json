@@ -1,6 +1,6 @@
 {
   "name": "pkgguard-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server: check any npm package for malware, typosquats and supply-chain risk before an AI coding agent installs it.",
   "license": "MIT",
   "type": "module",

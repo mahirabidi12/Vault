@@ -27,6 +27,7 @@ $ echo $?
 
 ### `pkgguard install <packages...>`
 
+0. By default only the packages you name are checked (same as the website and the MCP tool). Add `--deep` to check every transitive dependency too; that scans each dependency that is not cached yet, so it is slower.
 1. Copies your `package.json` (+ lockfile, if you have one) into a temp dir and runs
    `npm install --package-lock-only --ignore-scripts --save-exact` there — this resolves the *full*
    dependency tree (every transitive package) without installing anything or running any script.
@@ -58,7 +59,7 @@ npm link                # optional: makes `pkgguard` available globally while de
 Published as `pkgguard-cli` (plain `pkgguard` was blocked by npm as too similar to an unrelated
 existing package, `pkg-guard`). Once installed (`npm install -g pkgguard-cli`), the command is still
 just `pkgguard` — only the package name on npm differs from the command name. Use
-`npx pkgguard-cli@0.1.0 install <pkg>` with the version pinned, for the same reason the MCP tool's
+`npx pkgguard-cli@0.1.2 install <pkg>` with the version pinned, for the same reason the MCP tool's
 README gives: an unpinned `npx -y pkgguard-cli` trusts whatever that package currently resolves to.
 
 ## Development

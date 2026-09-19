@@ -6,7 +6,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { PkgGuardClient, loadConfig } from "./client.js";
 import { registerCheckPackageTool } from "./tools/check-package.js";
 
-const PACKAGE_VERSION = "0.1.0";
+const PACKAGE_VERSION = "0.1.1";
 
 /** Loads ../.env (next to package.json) into process.env, without overriding real env vars. No .env file is fine. */
 function loadDotEnv(): void {

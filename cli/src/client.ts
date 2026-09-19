@@ -16,13 +16,16 @@ function positiveInt(raw: string | undefined, fallback: number): number {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
+// The public PkgGuard API. Set PKGGUARD_API_URL to point at a different one (e.g. the local dev API).
+export const DEFAULT_API_URL = "https://632dcqt3l3.execute-api.ap-south-1.amazonaws.com";
+
 function stripTrailingSlash(url: string): string {
   return url.replace(/\/+$/, "");
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): PkgGuardConfig {
   return {
-    apiUrl: stripTrailingSlash(env.PKGGUARD_API_URL ?? ""),
+    apiUrl: stripTrailingSlash(env.PKGGUARD_API_URL || DEFAULT_API_URL),
     apiKey: env.PKGGUARD_API_KEY || undefined,
     webUrl: env.PKGGUARD_WEB_URL ? stripTrailingSlash(env.PKGGUARD_WEB_URL) : undefined,
     pollIntervalMs: positiveInt(env.PKGGUARD_POLL_INTERVAL_MS, 1500),

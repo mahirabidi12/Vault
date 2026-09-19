@@ -64,7 +64,7 @@ npm run build
 
 **Cursor** (`~/.cursor/mcp.json`): same shape, under `mcpServers`.
 
-Once published to npm, this becomes `"command": "npx", "args": ["pkgguard-mcp@0.1.0"]` — **pin the
+Once published to npm, this becomes `"command": "npx", "args": ["pkgguard-mcp@0.1.1"]` — **pin the
 exact version** (`npx -y pkgguard-mcp` without a version lets anyone who compromises the package
 silently change what your agent trusts).
 

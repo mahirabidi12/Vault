@@ -12,12 +12,14 @@ export interface InstallOptions {
   cwd: string;
   yes?: boolean;
   json?: boolean;
+  /** Check every transitive dependency too, not only the packages that were named. */
+  deep?: boolean;
 }
 
 export async function runInstall(specs: string[], options: InstallOptions): Promise<number> {
   const client = new PkgGuardClient(loadConfig());
   const spinner = new Spinner();
-  spinner.start(`Resolving the dependency tree for ${specs.join(", ")}...`);
+  spinner.start(`Resolving ${specs.join(", ")}...`);
 
   let tree;
   try {
@@ -28,12 +30,13 @@ export async function runInstall(specs: string[], options: InstallOptions): Prom
     return exitCode("wait");
   }
 
-  spinner.update(`Checking ${tree.all.length} package(s) with PkgGuard...`);
+  const toCheck = options.deep ? tree.all : tree.requested;
+  spinner.update(`Checking ${toCheck.length} package(s) with PkgGuard...`);
   let records: VerdictRecord[];
   try {
-    records = await client.checkMany(tree.all, (partial) => {
+    records = await client.checkMany(toCheck, (partial) => {
       const done = partial.filter((r) => r.status !== "PENDING" && r.status !== "SCANNING").length;
-      spinner.update(`Checking ${tree.all.length} package(s) with PkgGuard... (${done}/${tree.all.length})`);
+      spinner.update(`Checking ${toCheck.length} package(s) with PkgGuard... (${done}/${toCheck.length})`);
     });
   } catch (error) {
     spinner.stop();
@@ -70,6 +73,9 @@ export async function runInstall(specs: string[], options: InstallOptions): Prom
       return exitCode("warn");
     }
   }
+
+  const skipped = tree.all.length - toCheck.length;
+  if (skipped > 0) console.log(`\nChecked ${toCheck.length} package(s). ${skipped} dependencies were not checked; add --deep to check them too.`);
 
   const pinned = tree.requested.map((r) => `${r.name}@${r.version}`).join(", ");
   console.log(`\nInstalling ${pinned} (exact, checked versions)...`);
