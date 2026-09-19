@@ -32,6 +32,7 @@ import sbx4Report from "@/fixtures/sandbox-persistence/report.json";
 import failedRecordShape from "@/fixtures/failed.record.json";
 import skippedRecordShape from "@/fixtures/skipped.record.json";
 import { FEED_SEED } from "@/fixtures/feed-seed";
+import directorySnapshot from "@/fixtures/directory-snapshot.json";
 
 const USE_FIXTURES = process.env.NEXT_PUBLIC_USE_FIXTURES !== "false";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
@@ -495,4 +496,114 @@ export async function search(query: string): Promise<VerdictRecord[]> {
       if (bn === ql) return 1;
       return an.localeCompare(bn);
     });
+}
+
+// ---------------------------------------------------------------------------
+// Package directory: every package PkgGuard has scanned
+// ---------------------------------------------------------------------------
+
+export interface PackageListParams {
+  q?: string;
+  verdict?: "SAFE" | "SUSPICIOUS" | "MALICIOUS";
+  /** 1-based page number. */
+  page?: number;
+  limit?: number;
+}
+
+export interface PackageList {
+  items: VerdictRecord[];
+  total: number;
+  page: number;
+  pages: number;
+  /** True while the server has no /v1/packages route yet: the list comes from a saved snapshot plus recent flagged scans. */
+  partial: boolean;
+  snapshotAt: string | null;
+}
+
+const matchesQuery = (r: VerdictRecord, q: string) => r.package.name.toLowerCase().includes(q.trim().toLowerCase());
+const keyOf = (r: VerdictRecord) => `${r.package.name}@${r.package.version}`;
+
+function fromSnapshot(row: (typeof directorySnapshot.rows)[number]): VerdictRecord {
+  return {
+    package: { ecosystem: "npm", name: row.n, version: row.v },
+    status: "COMPLETE",
+    verdict: row.d as VerdictRecord["verdict"],
+    confidence: row.c as VerdictRecord["confidence"],
+    decidedBy: row.b as VerdictRecord["decidedBy"],
+    summary: row.s || undefined,
+    scanId: "",
+    requestedAt: row.t ?? new Date(0).toISOString(),
+    analyzedAt: row.t ?? undefined,
+    signals: [],
+    ranOn: "cloud",
+    analyzerVersion: "",
+  } as VerdictRecord;
+}
+
+/**
+ * Newest first, but with every page showing a spread of verdicts (mostly no-issues packages, with suspicious and
+ * malicious ones sprinkled in), so the default view isn't a wall of one colour.
+ */
+function mixed(list: VerdictRecord[]): VerdictRecord[] {
+  const queues = {
+    SAFE: list.filter((r) => r.verdict === "SAFE"),
+    SUSPICIOUS: list.filter((r) => r.verdict === "SUSPICIOUS"),
+    MALICIOUS: list.filter((r) => r.verdict === "MALICIOUS"),
+  };
+  const pattern: (keyof typeof queues)[] = ["SAFE", "MALICIOUS", "SAFE", "SUSPICIOUS", "SAFE", "SAFE", "MALICIOUS", "SAFE", "SUSPICIOUS", "SAFE", "SAFE", "SAFE"];
+  const out: VerdictRecord[] = [];
+  let i = 0;
+  while (out.length < list.length) {
+    const q = queues[pattern[i++ % pattern.length]];
+    const next = q.shift();
+    if (next) out.push(next);
+    else if (i > list.length * 4) break;
+  }
+  for (const q of Object.values(queues)) out.push(...q);
+  return out;
+}
+
+function paginate(list: VerdictRecord[], page: number, limit: number) {
+  const pages = Math.max(1, Math.ceil(list.length / limit));
+  const p = Math.min(Math.max(1, page), pages);
+  return { items: list.slice((p - 1) * limit, p * limit), total: list.length, page: p, pages };
+}
+
+/**
+ * GET /v1/packages?q=&verdict=&page=&limit= -> { items, total }, newest first (spec in web/PROGRESS.md).
+ * Until that route exists (HTTP 404) the list comes from a saved snapshot of the scan database, refreshed with the
+ * live flagged-package feed and an exact-name lookup.
+ */
+export async function listPackages(params: PackageListParams = {}): Promise<PackageList> {
+  const limit = params.limit ?? 12;
+  const page = params.page ?? 1;
+  const q = params.q?.trim() ?? "";
+
+  if (!USE_FIXTURES) {
+    const qs = new URLSearchParams({ limit: String(limit), page: String(page) });
+    if (q) qs.set("q", q);
+    if (params.verdict) qs.set("verdict", params.verdict);
+    try {
+      const r = await apiFetch<{ items: VerdictRecord[]; total: number }>(`/v1/packages?${qs.toString()}`);
+      return { items: r.items, total: r.total, page, pages: Math.max(1, Math.ceil(r.total / limit)), partial: false, snapshotAt: null };
+    } catch (error) {
+      if (!(error instanceof ApiClientError) || error.status !== 404) throw error;
+    }
+  }
+
+  const merged = new Map<string, VerdictRecord>();
+  const source = USE_FIXTURES ? FIXTURES.map((e) => e.record) : directorySnapshot.rows.map(fromSnapshot);
+  for (const r of source) merged.set(keyOf(r), r);
+  if (!USE_FIXTURES) {
+    // Fresher, live data wins over the snapshot: recent flagged scans and every scanned version of an exact name.
+    const feed = await apiFetch<{ items: VerdictRecord[] }>("/v1/feed").catch(() => ({ items: [] as VerdictRecord[] }));
+    for (const r of feed.items) merged.set(keyOf(r), r);
+    if (q) for (const r of await getVersions(q).catch(() => [] as VerdictRecord[])) merged.set(keyOf(r), r);
+  }
+  const list = [...merged.values()]
+    .filter((r) => r.status === "COMPLETE" && (!q || matchesQuery(r, q)) && (!params.verdict || r.verdict === params.verdict))
+    .sort((a, b) => (b.analyzedAt ?? "").localeCompare(a.analyzedAt ?? ""));
+  const ordered = !q && !params.verdict ? mixed(list) : list;
+  if (USE_FIXTURES) await delay(120);
+  return { ...paginate(ordered, page, limit), partial: !USE_FIXTURES, snapshotAt: USE_FIXTURES ? null : directorySnapshot.generatedAt };
 }

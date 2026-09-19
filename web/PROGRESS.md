@@ -577,3 +577,32 @@ cd ~/Vault
 git add web
 git commit -m "Web: retry on 503 and show a friendly busy screen"
 ```
+
+## Package directory and the Scan button (2026-09-20)
+- **New page `/packages`** (`app/packages/page.tsx`, `components/packages/package-directory.tsx`): a directory of every scanned package with search, verdict filter chips (All, No issues found, Suspicious, Malicious), coloured cards (name, version, verdict badge, one-line summary, time) that open the full report, a "Load more" button, and a big search box. If what you type is not in the list and looks like a valid npm name, a "We haven't scanned <name> yet" card with a **Scan "<name>" now** button appears (it opens `/npm/<name>`, which starts the scan and shows the live progress). The Scan button next to the search box does the same. Entry points: a new primary **Scan a package** button in the home hero, a **Scan** pill in the navbar, and a footer link.
+- **Backend gap, needs the scanner agent:** the API has no route that lists all scanned packages (only `/v1/feed`, which returns flagged ones). The site calls `listPackages()` in `lib/api.ts` which expects:
+  `GET /v1/packages?q=&verdict=&limit=&cursor=`
+  - `q`: optional, case-insensitive substring of the package name. `verdict`: optional `SAFE`, `SUSPICIOUS` or `MALICIOUS`. `limit`: default 24, max 100. `cursor`: the opaque `nextCursor` from the previous page.
+  - Response `200`: `{"items": VerdictRecord[], "nextCursor": string | null, "total": number | null}`; only `COMPLETE` records, newest `analyzedAt` first; it must never start a scan; `400` on bad parameters.
+  - A DynamoDB scan with a filter is fine at this size (a few hundred records); a GSI on `analyzedAt` would be tidier.
+  Until that route exists (HTTP 404) the page falls back to the flagged feed plus an exact-name lookup and shows an amber "the full list isn't switched on yet" note. Once the route ships, the note disappears by itself and no web change is needed. Fixture mode lists the fixtures.
+- **Bug found and fixed while testing (affects every page):** clicking a link on the **home page** never navigated in the test browser (`_rsc` request returned 200 but the URL stayed `/`); it worked from every other page and with reduced motion on. Cause: the request-flow diagram set React state on every animation frame (`setWave`), so React's low-priority route transition was starved. `request-flow.tsx` now updates the box borders directly on the DOM (no React state) and pauses when off screen. Verified: home to `/docs` navigates in about 0.5 s with normal motion; the wave still animates (border opacities change over time). Slow machines could have hit this too.
+- Checked in a browser with the real API through the fallback: 24 cards load, searching `express` shows 2, an unknown name shows the scan card, the Suspicious filter shows 18, and the hero and navbar buttons open `/packages`. Not checked at phone width.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: package directory with search and scan prompt; fix home-page navigation starvation"
+```
+
+- **Directory update (2026-09-20): mixed default view and numbered pages.** The default view now shows a spread on every page (12 per page: about 8 no-issues, 2 malicious, 2 suspicious, each group newest first); searching or picking a filter switches to plain newest-first. The "Load more" button is replaced by **numbered pagination** (Previous, 1 2 3 ... 27 28, Next) that works for every filter: the No issues found filter (28 pages), Suspicious, Malicious and search results; a new search or filter always starts on page 1, and changing page scrolls back to the top of the list.
+- **Where the list comes from now:** there is still no backend list route, so `listPackages()` uses `fixtures/directory-snapshot.json`, a snapshot of the scan database taken 2026-09-20 (429 completed records: 329 no issues, 21 suspicious, 79 malicious; name, version, verdict, decided by, confidence, a 170-character summary, time), refreshed with the live flagged feed and an exact-name lookup (live data wins). The page says it is a snapshot. Regenerate it with a `dynamodb scan` of the verdicts table if you want it fresher. **The backend spec changed to page numbers:** `GET /v1/packages?q=&verdict=&page=&limit=` returning `{"items": VerdictRecord[], "total": number}` (newest first, COMPLETE only, never starts a scan, `limit` default 12, max 100). When that route exists the site uses it automatically and drops the snapshot note.
+- Checked in a browser: page 1 shows 8 / 2 / 2; pages 3 and 4 and Next work; the No issues found filter shows 12 no-issues cards per page with pages 1 2 3 4 5 ... 27 28 and page 4 works; the Malicious filter shows 7 pages.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: directory shows a mix of verdicts with numbered pages for every filter"
+```

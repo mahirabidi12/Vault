@@ -42,6 +42,9 @@ export function SiteHeader() {
           >
             <GithubIcon className="size-4" />
           </Button>
+          <Button size="sm" className="h-9 rounded-full px-5 text-[14px] font-semibold" render={<Link href="/packages" />} nativeButton={false}>
+            Scan
+          </Button>
         </div>
       </div>
     </header>

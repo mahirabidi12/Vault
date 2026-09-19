@@ -1,11 +1,13 @@
 "use client";
 
-import { useQuery, type UseQueryResult } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, type UseQueryResult } from "@tanstack/react-query";
 import {
   getPackage,
   getReport,
   getStats,
+  listPackages,
   search,
+  type PackageListParams,
 } from "@/lib/api";
 import type { Report, ScanStatus, VerdictRecord } from "@/lib/types/domain";
 
@@ -40,5 +42,13 @@ export function useSearch(query: string) {
     queryKey: ["search", query],
     queryFn: () => search(query),
     enabled: query.trim().length > 0,
+  });
+}
+
+export function usePackageDirectory(params: PackageListParams) {
+  return useQuery({
+    queryKey: ["packages", params.q ?? "", params.verdict ?? "ALL", params.page ?? 1],
+    queryFn: () => listPackages(params),
+    placeholderData: keepPreviousData,
   });
 }

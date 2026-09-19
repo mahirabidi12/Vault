@@ -11,6 +11,7 @@ const COLUMNS = [
   {
     title: "Product",
     links: [
+      { href: "/packages", label: "Scan a package" },
       { href: "/docs", label: "Docs" },
     ],
   },

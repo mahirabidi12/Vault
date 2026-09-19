@@ -37,25 +37,39 @@ const CHECKS = [
 export function RequestFlow() {
   const [i, setI] = React.useState(0);
   // A wave of light travels left to right across the diagram; each box glows by its distance from the wave.
-  const [wave, setWave] = React.useState(450);
+  // Its borders are updated straight on the DOM (no React state), so the animation never competes with page
+  // navigation for React's attention.
+  const svgRef = React.useRef<SVGSVGElement>(null);
   React.useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % EVENTS.length), 2600);
     return () => clearInterval(t);
   }, []);
   React.useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const svg = svgRef.current;
+    if (!svg || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const nodes = Array.from(svg.querySelectorAll<SVGRectElement>("rect[data-cx]"));
     const period = 5200;
     const start = performance.now();
     let raf = 0;
+    let visible = true;
+    const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
+    io.observe(svg);
     const loop = (now: number) => {
-      const p = ((now - start) % period) / period;
-      setWave(-160 + p * 1220);
       raf = requestAnimationFrame(loop);
+      if (!visible) return;
+      const wave = -160 + (((now - start) % period) / period) * 1220;
+      for (const n of nodes) {
+        const b = Math.exp(-(((Number(n.dataset.cx) - wave) / 120) ** 2));
+        n.setAttribute("stroke-opacity", String(0.16 + 0.84 * b));
+        n.setAttribute("stroke-width", String(1.5 + 1.3 * b));
+      }
     };
     raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      io.disconnect();
+    };
   }, []);
-  const glowAt = (cx: number) => Math.exp(-(((cx - wave) / 120) ** 2));
   const ev = EVENTS[i];
   const allPaths = [CLI_PATH, MCP_PATH, ...FAN_IN, ...FAN_OUT];
 
@@ -64,7 +78,7 @@ export function RequestFlow() {
       <div className="overflow-x-auto rounded-2xl border border-border bg-card/40">
         <div className="relative min-w-[720px]">
           <div className="bg-grid pointer-events-none absolute inset-0 opacity-60 [mask-image:radial-gradient(ellipse_70%_70%_at_50%_50%,black,transparent)]" />
-          <svg viewBox="0 0 900 440" className="relative block w-full" role="img" aria-label="CLI and MCP agent requests flow into the PkgGuard API, which runs static checks, dynamic checks and agent checks, and combines them into one verdict">
+          <svg ref={svgRef} viewBox="0 0 900 440" className="relative block w-full" role="img" aria-label="CLI and MCP agent requests flow into the PkgGuard API, which runs static checks, dynamic checks and agent checks, and combines them into one verdict">
             {allPaths.map((d, k) => (
               <path key={k} d={d} fill="none" stroke="white" strokeOpacity="0.14" strokeWidth="1.5" />
             ))}
@@ -83,13 +97,13 @@ export function RequestFlow() {
               <Packet key={`o${k}`} path={d} dur="2s" begin={`${0.9 + k * 0.5}s`} />
             ))}
 
-            <Node x={20} y={70} w={170} h={80} b={glowAt(105)} />
-            <Node x={20} y={290} w={170} h={80} b={glowAt(105)} />
-            <Node x={230} y={170} w={150} h={100} b={glowAt(305)} />
+            <Node x={20} y={70} w={170} h={80} cx={105} />
+            <Node x={20} y={290} w={170} h={80} cx={105} />
+            <Node x={230} y={170} w={150} h={100} cx={305} />
             {CHECK_Y.map((y) => (
-              <Node key={y} x={470} y={y - 45} w={180} h={90} b={glowAt(560)} />
+              <Node key={y} x={470} y={y - 45} w={180} h={90} cx={560} />
             ))}
-            <Node x={730} y={170} w={150} h={100} b={glowAt(805)} />
+            <Node x={730} y={170} w={150} h={100} cx={805} />
           </svg>
 
           <Label left="2.2%" top="15.9%" w="18.9%" h="18.2%" icon={<Terminal className="size-4" />} title="pkgguard CLI" sub="npm install, checked" />
@@ -137,7 +151,7 @@ function Packet({ path, dur, begin }: { path: string; dur: string; begin: string
   );
 }
 
-function Node({ x, y, w, h, b }: { x: number; y: number; w: number; h: number; b: number }) {
+function Node({ x, y, w, h, cx }: { x: number; y: number; w: number; h: number; cx: number }) {
   return (
     <rect
       x={x}
@@ -147,8 +161,9 @@ function Node({ x, y, w, h, b }: { x: number; y: number; w: number; h: number; b
       rx="14"
       fill="#050505"
       stroke="white"
-      strokeOpacity={0.16 + 0.84 * b}
-      strokeWidth={1.5 + 1.3 * b}
+      strokeOpacity={0.16}
+      strokeWidth={1.5}
+      data-cx={cx}
     />
   );
 }

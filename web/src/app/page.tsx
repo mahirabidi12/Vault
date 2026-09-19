@@ -27,7 +27,10 @@ export default function HomePage() {
               PkgGuard checks every npm package for malware and shady install scripts. Use the CLI in your terminal, or give your AI agent an MCP tool that checks before it installs.
             </p>
             <div className="animate-fade-up flex flex-wrap justify-center gap-3" style={{ animationDelay: "2200ms" }}>
-              <Button size="lg" className="h-11 rounded-lg px-6 text-[15px] font-semibold" render={<ScrollLink to="how-it-works" />} nativeButton={false}>
+              <Button size="lg" className="h-11 rounded-lg px-6 text-[15px] font-semibold" render={<Link href="/packages" />} nativeButton={false}>
+                Scan a package
+              </Button>
+              <Button size="lg" variant="outline" className="h-11 rounded-lg bg-black/60 px-6 text-[15px] font-medium" render={<ScrollLink to="how-it-works" />} nativeButton={false}>
                 How it works
               </Button>
               <Button size="lg" variant="outline" className="h-11 rounded-lg bg-black/60 px-6 text-[15px] font-medium" render={<ScrollLink to="get-started" />} nativeButton={false}>
