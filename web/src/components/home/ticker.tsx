@@ -1,3 +1,5 @@
+import { cn } from "@/lib/utils";
+
 const ITEMS: { name: string; verdict: "ok" | "sus" | "bad" }[] = [
   { name: "express@4.21.2", verdict: "ok" },
   { name: "left-pad-pro@1.0.3", verdict: "bad" },
@@ -13,10 +15,10 @@ const ITEMS: { name: string; verdict: "ok" | "sus" | "bad" }[] = [
 const TONE = { ok: "bg-safe", sus: "bg-suspicious", bad: "bg-malicious" };
 const TEXT = { ok: "No issues found", sus: "Suspicious", bad: "Malicious" };
 
-export function Ticker() {
+export function Ticker({ className }: { className?: string }) {
   const row = [...ITEMS, ...ITEMS];
   return (
-    <div className="relative overflow-hidden border-y border-border/60 py-6 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+    <div className={cn("relative overflow-hidden border-y border-border/60 py-6 [mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]", className)}>
       <div className="animate-marquee flex w-max gap-3">
         {row.map((it, i) => (
           <span key={i} className="flex shrink-0 items-center gap-2.5 rounded-full border border-border bg-card/70 px-5 py-3 font-mono text-sm">

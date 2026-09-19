@@ -486,3 +486,56 @@
   .eq-bar { animation: none; transform: scaleY(0.6); }
   .grow-x { animation-duration: 0.01ms; animation-delay: 0s; }
 }
+
+/* ---- Hero headline: line one slides up from behind a mask, line two is typed like a command ---- */
+.mask-word {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+@keyframes slide-up-word {
+  from { transform: translateY(115%); }
+  to { transform: translateY(0); }
+}
+.mask-word > span {
+  display: inline-block;
+  animation: slide-up-word 0.85s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes char-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes caret-pass {
+  0%, 100% { opacity: 1; }
+}
+@keyframes caret-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+.tchar {
+  position: relative;
+  display: inline-block;
+  animation: char-in 1ms linear both;
+}
+.tchar::after {
+  content: "";
+  position: absolute;
+  right: -0.09em;
+  top: 0.14em;
+  width: 0.085em;
+  height: 0.78em;
+  border-radius: 1px;
+  background: white;
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.7);
+  opacity: 0;
+  animation: caret-pass 0.065s steps(1) none;
+  animation-delay: inherit;
+}
+.tchar-last::after {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mask-word > span, .tchar, .tchar::after { animation: none !important; }
+}

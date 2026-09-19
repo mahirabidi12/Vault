@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SearchBar } from "@/components/search-bar";
 import { AuroraField } from "@/components/home/aurora-field";
+import { HeroTitle } from "@/components/home/hero-title";
 import { Ticker } from "@/components/home/ticker";
 import { Reveal } from "@/components/reveal";
 import { GetStarted } from "@/components/home/get-started";
@@ -18,21 +19,14 @@ export default function HomePage() {
         <AuroraField className="pointer-events-none absolute inset-0 h-full w-full [mask-image:linear-gradient(to_bottom,black_65%,transparent_100%)]" />
         <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_45%_42%_at_50%_46%,rgba(0,0,0,0.55),transparent_100%)]" />
           <div className="relative flex max-w-4xl flex-col items-center gap-7 px-4 py-24 text-center">
-            <h1
-              className="animate-fade-up text-balance text-[clamp(2.8rem,8vw,6rem)] font-bold leading-[1.02] tracking-[-0.05em]"
-              style={{ animationDelay: "80ms" }}
-            >
-              Know before you
-              <br />
-              <span className="text-fade">npm install.</span>
-            </h1>
+            <HeroTitle />
             <p
               className="animate-fade-up max-w-xl text-balance text-base text-foreground/80 sm:text-lg"
-              style={{ animationDelay: "150ms" }}
+              style={{ animationDelay: "2000ms" }}
             >
               PkgGuard checks every npm package for malware and shady install scripts. Use the CLI in your terminal, or give your AI agent a tool that checks before it installs.
             </p>
-            <div className="animate-fade-up flex flex-wrap justify-center gap-3" style={{ animationDelay: "220ms" }}>
+            <div className="animate-fade-up flex flex-wrap justify-center gap-3" style={{ animationDelay: "2200ms" }}>
               <Button size="lg" className="h-11 rounded-lg px-6 text-[15px] font-semibold" render={<Link href="/scan" />} nativeButton={false}>
                 Scan a project <ArrowRight className="size-4" />
               </Button>
@@ -43,7 +37,7 @@ export default function HomePage() {
                 Get the CLI
               </Button>
             </div>
-            <div className="animate-fade-up flex w-full max-w-xl flex-col gap-3" style={{ animationDelay: "300ms" }}>
+            <div className="animate-fade-up flex w-full max-w-xl flex-col gap-3" style={{ animationDelay: "2400ms" }}>
               <SearchBar variant="hero" />
               <p className="kicker flex flex-wrap justify-center gap-x-5 gap-y-1.5 text-muted-foreground">
                 <span>Try:</span>
@@ -53,14 +47,13 @@ export default function HomePage() {
               </p>
             </div>
           </div>
+        <Ticker className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/70 to-transparent" />
       </section>
 
-      {/* Live stats, right under the hero */}
+      {/* Live stats, under the ticker */}
       <section className="mx-auto w-full max-w-6xl px-4 pb-14 pt-16 sm:px-6 sm:pt-20">
         <Reveal><LiveStats /></Reveal>
       </section>
-
-      <Ticker />
 
       <GetStarted />
 

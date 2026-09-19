@@ -431,11 +431,51 @@ git commit -m "Web: live scan page shows every step, with a sandbox analysing vi
 ```
 
 ## Home: stats moved under the hero and redesigned (2026-09-20)
-- `components/home/live-stats.tsx` now sits directly below the hero (before the ticker) instead of further down the page. New layout: a large "Packages scanned" tile (huge counting number, a pulsing "Live" tag, an animated equalizer strip, drifting glow) and three verdict tiles ("No issues found", "Suspicious", "Malicious caught") each with a **ring gauge that fills to that verdict's share of all scans**, a pinging halo, a colored glow, a count-up number and the percentage. Below them, a segmented **distribution bar** grows in with a legend. Tiles rise in one after another and lift on hover. Uses the shared `components/count-up.tsx`; new `eq-bar` and `grow-x` keyframes in `globals.css`, all switched off under reduced motion. Checked at 1440px with the live API numbers (418 scanned: 316, 23, 79); the 390px view was rendered but not looked at.
+- `components/home/live-stats.tsx` now sits directly below the hero, under the scrolling ticker of package names (which is right under the hero), instead of further down the page. New layout: a large "Packages scanned" tile (huge counting number, a pulsing "Live" tag, an animated equalizer strip, drifting glow) and three verdict tiles ("No issues found", "Suspicious", "Malicious caught") each with a **ring gauge that fills to that verdict's share of all scans**, a pinging halo, a colored glow, a count-up number and the percentage. Below them, a segmented **distribution bar** grows in with a legend. Tiles rise in one after another and lift on hover. Uses the shared `components/count-up.tsx`; new `eq-bar` and `grow-x` keyframes in `globals.css`, all switched off under reduced motion. Checked at 1440px with the live API numbers (418 scanned: 316, 23, 79); the 390px view was rendered but not looked at.
 
 Commit:
 ```bash
 cd ~/Vault
 git add web
 git commit -m "Web: stats under the hero with ring gauges, count-up and distribution bar"
+```
+
+## Home: hero headline animation (2026-09-20)
+- `components/home/hero-title.tsx` (used in `page.tsx`): the first attempt (blur and tilt per word) was dropped. Now line one, "Know before you", rises word by word from behind an invisible line (crisp, no blur), and line two, "npm install.", is **typed out character by character like a terminal command** (70 ms per character) with a glowing caret that moves along and blinks at the end. The paragraph, buttons and search box fade in afterwards (2.0 s, 2.2 s, 2.4 s). Pure CSS (`mask-word`, `tchar` and keyframes in `globals.css`), so the text is real HTML with a screen-reader copy of the command; everything is off under reduced motion. Checked with screenshots at several points in the first 3.4 s at 1440px; the typing speed and the timing are easy to tweak (`TYPE_STEP_MS`, `TYPE_START_MS`, `WORD_STEP_MS`).
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: hero headline rises word by word, then types the command"
+```
+- Hero and setup-card fixes (2026-09-20): the blinking caret that stayed after "install." in the headline is gone. The CLI and agent demos on the home page now show **real output**: the CLI card alternates two sessions captured from the live API with the actual CLI (`npx pkgguard-cli install express`, a SAFE run with the five check lines, and `install cookie-validate`, blocked because the sandbox saw it send fake credentials), including the "checked 1 package, 65 dependencies were not checked, add --deep" and "Installing … (exact, checked versions)" lines. The agent card shows the real text the MCP tool returns (ALLOW and BLOCK, from `mcp/src/format.ts`); only the agent's own chat lines are illustrative. `terminal-demo.tsx` now plays several scenarios in a loop with a fixed window height so nothing jumps.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: remove headline caret; CLI and agent demos use real output"
+```
+
+## Home: smaller setup cards, synced demos, ticker on landing, gentler scrolling (2026-09-20)
+- **Setup cards** (`get-started.tsx`) are smaller: tighter padding, smaller icon, title, text and step list, a narrower section (max-w-4xl) and a 250 px terminal window. The terminal now behaves like a real one: new lines appear at the bottom and older ones scroll up.
+- **Demos start on scroll and run in sync:** new `components/home/demo-clock.tsx` gives both terminals one shared clock. It starts only when the two cards are scrolled into view (IntersectionObserver, at least 30% visible), pauses while they are off screen, and both terminals advance the same line at the same time and switch scenario together (the shorter agent script simply finishes first). With reduced motion the first script is shown in full.
+- **Ticker visible on landing:** the hero is now `100svh - 104px` tall with less padding, so the scrolling package bar sits at the bottom of the first screen (checked at 1280x720, 1440x900 and 1920x1080).
+- **Slower scrolling:** new `components/smooth-scroll.tsx` (mounted in `providers.tsx`) intercepts the mouse wheel and trackpad, scales movement to 55% and caps a single wheel event at 70 px, then eases the page toward the target, so the page glides slowly (five 100 px notches now move about 275 px, browsers default to 500). It is skipped for touch, reduced motion, horizontal scrolls, pinch zoom and scrollable inner panels, and it backs off when something else moves the page (links, route changes). No new dependency. The three constants at the top (`SPEED`, `MAX_STEP`, `EASE`) tune it.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: smaller setup cards with synced scroll-triggered demos, ticker in first view, slower scrolling"
+```
+
+- Follow-up (2026-09-20): **Hero** is back to its original size and position (`min-h-screen`, original padding); the ticker is now overlaid along the bottom edge of the hero (`Ticker` takes a `className`), so it shows on the first screen without moving anything up. **Terminal demos** fill from the top down (a 290 px window); only when a long session (the CLI's SAFE run) fills the window does it follow the newest line, like a real terminal. **Scrolling** is no longer so heavy: `SPEED` 0.85, `MAX_STEP` 130, `EASE` 0.14 (five 100 px wheel notches move about 425 px instead of 500), still capped per wheel event.
+
+Commit:
+```bash
+cd ~/Vault
+git add web
+git commit -m "Web: hero back in place with ticker overlaid, terminal logs fill top-down, lighter scroll limit"
 ```
