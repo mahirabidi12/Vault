@@ -23,7 +23,7 @@ describe("loadConfig", () => {
   it("strips trailing slashes and applies defaults", () => {
     const loaded = loadConfig({ PKGGUARD_API_URL: "http://api.example//" } as NodeJS.ProcessEnv);
     expect(loaded.apiUrl).toBe("http://api.example");
-    expect(loaded.maxWaitMs).toBe(60_000);
+    expect(loaded.maxWaitMs).toBe(300_000);
   });
 });
 

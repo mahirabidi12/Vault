@@ -35,7 +35,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): PkgGuardConfig
     apiKey: env.PKGGUARD_API_KEY || undefined,
     webUrl: stripTrailingSlash(env.PKGGUARD_WEB_URL || DEFAULT_WEB_URL),
     pollIntervalMs: positiveInt(env.PKGGUARD_POLL_INTERVAL_MS, 1500),
-    maxWaitMs: positiveInt(env.PKGGUARD_MAX_WAIT_MS, 60_000),
+    maxWaitMs: positiveInt(env.PKGGUARD_MAX_WAIT_MS, 300_000),
     requestTimeoutMs: positiveInt(env.PKGGUARD_REQUEST_TIMEOUT_MS, 10_000),
   };
 }

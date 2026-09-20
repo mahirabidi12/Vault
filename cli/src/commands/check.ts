@@ -31,7 +31,7 @@ async function checkOne(client: PkgGuardClient, spec: string, options: CheckOpti
   try {
     record = await client.checkPackage(name, version, (r) => {
       if (r.status === "PENDING" || r.status === "SCANNING") fresh = true;
-      spinner.update(`Checking ${spec}... (${r.status.toLowerCase()})`);
+      spinner.update(`Checking ${spec}... (${r.status === "PENDING" || r.status === "SCANNING" ? "new scan, usually 1-2 minutes" : r.status.toLowerCase()})`);
     });
   } catch (error) {
     spinner.stop();
