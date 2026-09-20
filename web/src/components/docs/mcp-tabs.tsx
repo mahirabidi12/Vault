@@ -8,7 +8,7 @@ const CONFIG = `{
   "mcpServers": {
     "pkgguard": {
       "command": "npx",
-      "args": ["-y", "pkgguard-mcp@0.1.1"]
+      "args": ["-y", "pkgguard-mcp@0.1.2"]
     }
   }
 }`;
@@ -22,7 +22,7 @@ export function McpTabs() {
       </TabsList>
       <TabsContent value="claude" className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">Run this once. Claude Code adds PkgGuard and runs it for you from then on.</p>
-        <TerminalBlock command="claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1" label="$" wrap className="px-4 py-3.5 text-[14px]" />
+        <TerminalBlock command="claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.2" label="$" wrap className="px-4 py-3.5 text-[14px]" />
       </TabsContent>
       <TabsContent value="others" className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">Add this to your client&apos;s MCP config.</p>

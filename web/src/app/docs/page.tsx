@@ -23,7 +23,7 @@ const TOC: TocItem[] = [
 
 const QUICKSTART = [
   { id: "cli", icon: Terminal, title: "CLI", who: "For developers", command: "npx pkgguard-cli install express", accent: "96,165,250" },
-  { id: "mcp", icon: Bot, title: "Agent tool", who: "For your AI agent", command: "claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1", accent: "167,139,250" },
+  { id: "mcp", icon: Bot, title: "Agent tool", who: "For your AI agent", command: "claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.2", accent: "167,139,250" },
   { id: "api", icon: Globe, title: "API", who: "For your own tools", command: "GET /v1/package?ecosystem=npm&name=express", accent: "52,211,153" },
 ];
 

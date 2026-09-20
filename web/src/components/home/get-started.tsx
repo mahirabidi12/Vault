@@ -88,7 +88,7 @@ const CARDS = [
     badge: "For your AI agent",
     title: "Agent tool (MCP)",
     tagline: "Gives Claude Code, Cursor or any MCP client a check it can't skip.",
-    command: "claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.1",
+    command: "claude mcp add pkgguard -- npx -y pkgguard-mcp@0.1.2",
     label: "$",
     steps: [
       "Run the command once to add PkgGuard to Claude Code.",
