@@ -22,10 +22,11 @@ export function decide(record: VerdictRecord, timedOut: boolean): CheckPackageRe
   const base = {
     status: record.status,
     package: record.package,
-    verdict: record.verdict,
-    confidence: record.confidence,
-    decidedBy: record.decidedBy,
-    summary: record.summary ?? record.failureReason,
+    // The API sends explicit nulls while a scan is still running; treat those as "not there".
+    verdict: record.verdict ?? undefined,
+    confidence: record.confidence ?? undefined,
+    decidedBy: record.decidedBy ?? undefined,
+    summary: record.summary ?? record.failureReason ?? undefined,
     signals: record.signals ?? [],
     scanId: record.scanId,
     needsReview: record.needsReview ?? false,

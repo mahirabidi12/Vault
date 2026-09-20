@@ -86,3 +86,13 @@ describe("formatText", () => {
     expect(text).toMatch(/flagged this scan for human review/);
   });
 });
+
+describe("decide with a scan still running", () => {
+  it("copes with the explicit nulls the API sends and asks the agent to wait", () => {
+    const pending = { ...record({ status: "SCANNING" }), verdict: null, confidence: null, decidedBy: null, summary: null } as unknown as VerdictRecord;
+    const result = decide(pending, true);
+    expect(result.recommendation).toBe("wait");
+    expect(result.verdict).toBeUndefined();
+    expect(result.summary).toBeUndefined();
+  });
+});
