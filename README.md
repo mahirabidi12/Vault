@@ -8,7 +8,6 @@
 
 <a href="https://www.npmjs.com/package/pkgguard-cli"><img src="https://img.shields.io/npm/v/pkgguard-cli?label=pkgguard-cli&color=cb3837" alt="pkgguard-cli on npm"></a>
 <a href="https://www.npmjs.com/package/pkgguard-mcp"><img src="https://img.shields.io/npm/v/pkgguard-mcp?label=pkgguard-mcp&color=cb3837" alt="pkgguard-mcp on npm"></a>
-<a href="https://main.d37i3n9ev8lsz3.amplifyapp.com"><img src="https://img.shields.io/badge/live%20site-open-3fb950" alt="live site"></a>
 
 <img src="docs/assets/pipeline.svg" alt="A package passes five checks and gets a verdict" width="860">
 
@@ -90,7 +89,7 @@ Works with Claude Code, Cursor and any MCP client.
 
 ### 🌐 Website
 
-**[main.d37i3n9ev8lsz3.amplifyapp.com](https://main.d37i3n9ev8lsz3.amplifyapp.com)**: search any package, see the verdict, the evidence, and exactly what the sandbox saw.
+A website to search any package, see the verdict, the evidence, and exactly what the sandbox saw.
 
 ---
 
