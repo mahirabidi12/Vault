@@ -44,15 +44,20 @@ def decide(findings: list[Finding], ai: AIReview | None = None) -> Decision:
         return Decision(Verdict.SUSPICIOUS, ai.confidence, DecidedBy.AI, ai.summary)
 
     # 3. The AI says SAFE: it may clear rule warnings, but not strong evidence.
-    blockers = [
-        f
-        for f in findings
-        if f.rule_id in AI_CANNOT_CLEAR_RULES
-        or (f.severity == Severity.HIGH and f.confidence != Confidence.LOW and f.layer != FindingLayer.INTEL)
-    ]
-    if blockers or safedep:
-        titles = "; ".join(dict.fromkeys(f.title for f in (blockers or safedep)))
+    hard_blockers = [f for f in findings if f.rule_id in AI_CANNOT_CLEAR_RULES]
+    if hard_blockers or safedep:
+        titles = "; ".join(dict.fromkeys(f.title for f in (hard_blockers or safedep)))
         return Decision(Verdict.SUSPICIOUS, Confidence.LOW, DecidedBy.RULES, f"AI review found no harm, but automated checks found strong warning signs: {titles}.")
+
+    # A HIGH-severity static finding can still be cleared, but only when the AI is itself HIGH
+    # confidence it's safe. If the AI is only somewhat sure, stay conservative like before.
+    high_severity = [
+        f for f in findings if f.severity == Severity.HIGH and f.confidence != Confidence.LOW and f.layer != FindingLayer.INTEL
+    ]
+    if high_severity and ai.confidence != Confidence.HIGH:
+        titles = "; ".join(dict.fromkeys(f.title for f in high_severity))
+        return Decision(Verdict.SUSPICIOUS, Confidence.LOW, DecidedBy.RULES, f"AI review found no harm, but automated checks found strong warning signs: {titles}.")
+
     if ai.confidence == Confidence.LOW:
         return rules
     return Decision(Verdict.SAFE, ai.confidence, DecidedBy.AI, ai.summary)

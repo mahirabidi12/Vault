@@ -59,8 +59,14 @@ def test_ai_clears_rule_warnings():
     assert (decision.verdict, decision.decided_by, decision.summary) == (Verdict.SAFE, DecidedBy.AI, "AI says SAFE")
 
 
-def test_ai_cannot_clear_strong_high_findings():
+def test_confident_ai_clears_high_severity_finding():
+    # e.g. a real HIGH finding that's actually normal minified/bundled code: trust a HIGH-confidence AI.
     decision = decide([finding("code.exfiltration", "HIGH", "MEDIUM", layer="static")], ai("SAFE", "HIGH"))
+    assert (decision.verdict, decision.decided_by) == (Verdict.SAFE, DecidedBy.AI)
+
+
+def test_unsure_ai_cannot_clear_high_severity_finding():
+    decision = decide([finding("code.exfiltration", "HIGH", "MEDIUM", layer="static")], ai("SAFE", "MEDIUM"))
     assert (decision.verdict, decision.decided_by) == (Verdict.SUSPICIOUS, DecidedBy.RULES)
 
 
