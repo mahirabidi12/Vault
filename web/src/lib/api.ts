@@ -375,6 +375,11 @@ async function apiFetchOrNull<T>(path: string): Promise<T | null> {
   }
 }
 
+/** True when `error` is an API 404 — e.g. `getPackage` for a name that doesn't exist on npm at all. */
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiClientError && error.status === 404;
+}
+
 // ---------------------------------------------------------------------------
 // Public API — every page/component calls through these
 // ---------------------------------------------------------------------------

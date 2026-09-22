@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { getPackage, getReport } from "@/lib/api";
+import { getPackage, getReport, isNotFoundError } from "@/lib/api";
 import { segmentsToName } from "@/lib/package-ref";
 import { ReportDetail } from "@/components/report/report-detail";
 import { LiveScanProgress } from "@/components/report/live-scan-progress";
 import { ScanFailedState } from "@/components/report/scan-failed-state";
 import { ScanAutoRefresh } from "@/components/report/scan-auto-refresh";
+import { PackageNotFound } from "@/components/report/package-not-found";
 
 type Props = {
   params: Promise<{ name: string[] }>;
@@ -15,7 +16,15 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
   const { name: segments } = await params;
   const { version } = await searchParams;
   const name = segmentsToName(segments);
-  const record = await getPackage(name, version);
+  let record;
+  try {
+    record = await getPackage(name, version);
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return { title: `${name} — not found`, description: `There's no npm package named ${name}.` };
+    }
+    throw error;
+  }
   const verdictLabel =
     record.status === "COMPLETE"
       ? record.verdict === "SAFE"
@@ -33,7 +42,15 @@ export default async function PackageReportPage({ params, searchParams }: Props)
   const { version } = await searchParams;
   const name = segmentsToName(segments);
 
-  const record = await getPackage(name, version);
+  let record;
+  try {
+    record = await getPackage(name, version);
+  } catch (error) {
+    if (isNotFoundError(error)) {
+      return <PackageNotFound name={name} version={version} />;
+    }
+    throw error;
+  }
 
   if (record.status === "PENDING" || record.status === "SCANNING") {
     return (

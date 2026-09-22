@@ -21,3 +21,19 @@ export function packageHref(name: string, version?: string | null): string {
 export function isScopedName(name: string): boolean {
   return name.startsWith("@") && name.includes("/");
 }
+
+/**
+ * Splits a user-typed "name@version" query into its parts. Splits on the
+ * LAST "@", but only when something other than "@" precedes it — so a bare
+ * scoped name ("@babel/core") is left alone, while a scoped name with a
+ * version ("@babel/core@7.2.0") still splits correctly.
+ */
+export function parsePackageQuery(input: string): { name: string; version?: string } {
+  const trimmed = input.trim();
+  const at = trimmed.lastIndexOf("@");
+  if (at > 0) {
+    const version = trimmed.slice(at + 1).trim();
+    return { name: trimmed.slice(0, at), version: version || undefined };
+  }
+  return { name: trimmed };
+}

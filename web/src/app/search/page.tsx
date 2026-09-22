@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { search } from "@/lib/api";
-import { packageHref } from "@/lib/package-ref";
+import { packageHref, parsePackageQuery } from "@/lib/package-ref";
 import { VerdictBadge, StatusBadge } from "@/components/verdict-ui";
 import { SearchBar } from "@/components/search-bar";
 import { Button } from "@/components/ui/button";
@@ -19,8 +19,11 @@ export async function generateMetadata({ searchParams }: Props): Promise<Metadat
 
 export default async function SearchPage({ searchParams }: Props) {
   const { q = "" } = await searchParams;
-  const results = q ? await search(q) : [];
-  const exactMatch = results.some((r) => r.package.name.toLowerCase() === q.trim().toLowerCase());
+  const { name: qName, version: qVersion } = parsePackageQuery(q);
+  const results = q ? await search(qName) : [];
+  const exactMatch = results.some(
+    (r) => r.package.name.toLowerCase() === qName.toLowerCase() && (!qVersion || r.package.version === qVersion)
+  );
 
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pb-24 pt-14 sm:px-6 sm:pt-20">
@@ -125,7 +128,7 @@ export default async function SearchPage({ searchParams }: Props) {
                   </p>
                 </div>
               </div>
-              <Button size="lg" className="h-11 shrink-0 rounded-lg px-5" render={<Link href={packageHref(q)} />} nativeButton={false}>
+              <Button size="lg" className="h-11 shrink-0 rounded-lg px-5" render={<Link href={packageHref(qName, qVersion)} />} nativeButton={false}>
                 <ScanSearch className="size-4" />
                 Scan &quot;{q}&quot; now
               </Button>
